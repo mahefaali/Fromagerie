@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>fromagerie</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script>
+      window.wvcClient = window.wvcClient || {
+        getLogo: async () => ({
+          attachment_id: 0,
+          url: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 40'%3E%3Crect width='120' height='40' fill='%23000'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='Arial, sans-serif' font-size='24' fill='%23fff'%3EFA%3C/text%3E%3C/svg%3E"
+        }),
+        getMenuItems: async () => [
+          { id: 1, title: 'Tableau de bord', resolved_url: '/tableau-de-bord' },
+          { id: 2, title: 'Fabrication', resolved_url: '/fabrication' },
+          { id: 3, title: 'Traçabilité', resolved_url: '/tracabilite' },
+        ],
+        get_wp_query_results: async () => ({
+          posts: [],
+          total: 0,
+          total_pages: 0,
+        }),
+        isAuthenticated: false,
+        userRole: null,
+        userName: null,
+        userEmail: null,
+        getSessionId: () => 'unknown',
+        formSubmission: async (submissionData) => {
+          console.warn('wvcClient.formSubmission stub called', submissionData);
+          return { success: true };
+        },
+      };
+      window.__WVC_FORMS__ = window.__WVC_FORMS__ || {};
+    </script>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
