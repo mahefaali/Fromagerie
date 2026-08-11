@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { Link } from "./../../components/common/Link";
-import Navigation from "../../reusable_sections/Header"
 import UsersSection from "./sections/Users";
 import SiteSection from "./sections/Site";
 import NavigationSection from "./sections/Navigation";
@@ -10,8 +9,7 @@ export default function Configuration() {
   const [active, setActive] = useState<"users" | "site" | "nav" | "reports">("users");
 
   return (
-    <div>
-        <Navigation/>
+    <div className="pb-24">
         <section className="min-h-screen bg-background text-foreground px-6 py-14 md:px-10 lg:px-16">
             <div className="mx-auto max-w-6xl">
                 <header className="mb-10 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -30,7 +28,7 @@ export default function Configuration() {
 
                 <div className="flex flex-col gap-3 sm:items-end">
                     <Link
-                    to="/"
+                    to="/home"
                     className="text-sm font-mono uppercase tracking-[0.18em] text-secondary transition hover:text-foreground"
                     >
                     Retour à l’accueil

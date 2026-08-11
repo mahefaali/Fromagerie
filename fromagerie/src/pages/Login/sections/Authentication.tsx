@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Loader } from "lucide-react";
 import { Button } from "./../../../components/ui/button";
 import {
@@ -15,6 +17,7 @@ import { FormProvider, useWvcForm } from "./../../../integrations/forms/FormProv
 import { useRevealOnScroll } from "./../../../hooks/useRevealOnScroll";
 import { useWatch } from "react-hook-form";
 import { cn } from "./../../../lib/utils";
+import { WvcLogo } from "./../../../integrations/wordpress/WvcLogo";
 
 const accessLevels = [
   { label: "Propriétaire", sublabel: "Mot de passe", value: "Propriétaire" },
@@ -22,6 +25,7 @@ const accessLevels = [
 ];
 
 function InnerCircleForm() {
+  const navigate = useNavigate();
   const {
     isSubmitting,
     isSubmitted,
@@ -31,6 +35,12 @@ function InnerCircleForm() {
     resetForm,
     control,
   } = useWvcForm();
+
+  useEffect(() => {
+    if (isSubmitted && !submitError) {
+      navigate("/home", { replace: true });
+    }
+  }, [isSubmitted, submitError, navigate]);
 
   const selectedRole = useWatch({
     control,
@@ -200,6 +210,28 @@ export default function Authentification() {
             transform: headerVisible ? "translateY(0)" : "translateY(16px)",
           }}
         >
+          <div className="mb-8 flex items-center justify-center">
+            <div className="rounded-[1.75rem] border border-[#D8C3A5]/80 bg-[#FFFDF9]/95 px-6 py-4 shadow-[0_18px_45px_rgba(63,74,79,0.12)] backdrop-blur-sm sm:px-8 sm:py-5">
+              <div className="flex items-center gap-4">
+                <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full border border-[#C96A4A]/20 bg-[#F7F3EC] text-[#C96A4A] shadow-inner">
+                  <WvcLogo className="h-8 w-auto sm:h-9" />
+                </div>
+
+                <div className="text-left">
+                  <p
+                    className="text-[1.15rem] font-semibold leading-none tracking-[0.08em] text-[#3F4A4F] sm:text-[1.35rem]"
+                    style={{ fontFamily: "'Playfair Display', serif" }}
+                  >
+                    Fromagerie
+                  </p>
+                  <p className="mt-1 font-mono text-[0.62rem] uppercase tracking-[0.34em] text-[#7E9A9A] sm:text-[0.7rem]">
+                    Artisanale
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <p className="font-mono uppercase text-[0.75rem] tracking-[0.22em] text-[#C96A4A]">
             § 01 / Accès — Fromagerie Artisanale
           </p>
@@ -215,38 +247,6 @@ export default function Authentification() {
             <span className="ml-2 h-1.5 w-1.5 rounded-lg bg-[#C96A4A]" />
           </div>
 
-          <h2
-            className="mt-12 font-default font-light text-[#3F4A4F]"
-            style={{
-              fontSize: "clamp(2.25rem, 5vw, 4.5rem)",
-              letterSpacing: "-0.025em",
-              lineHeight: 1.02,
-            }}
-          >
-            Gestion de la{" "}
-            <span
-              className="italic text-[#C96A4A] transition-opacity duration-500"
-              style={{
-                opacity: headerVisible ? 1 : 0,
-                transitionDelay: "200ms",
-              }}
-            >
-              production
-            </span>
-            .
-          </h2>
-
-          <p
-            className="mx-auto mt-10 font-default text-[#3F4A4F]"
-            style={{
-              fontSize: "clamp(1.0625rem, 1.25vw, 1.25rem)",
-              lineHeight: 1.65,
-              maxWidth: "52ch",
-            }}
-          >
-            Accédez à votre espace de gestion pour piloter la traçabilité, 
-            suivre les lots en affinage et optimiser vos indicateurs de performance.
-          </p>
         </div>
 
         <div
@@ -271,7 +271,7 @@ export default function Authentification() {
               credentials: { required: true },
             }}
             submitText="Se connecter"
-            successMessage="Accès sécurisé. Redirection vers le tableau de bord."
+            successMessage="Accès sécurisé. Redirection vers la fabrication."
             errorMessage="Identifiants incorrects. Veuillez réessayer."
           >
             <InnerCircleForm />

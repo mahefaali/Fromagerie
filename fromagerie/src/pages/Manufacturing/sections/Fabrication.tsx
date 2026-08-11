@@ -1,8 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ArrowRight, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "./../../../components/ui/button";
+import { Input } from "./../../../components/ui/input";
+import { Label } from "./../../../components/ui/label";
+import { Textarea } from "./../../../components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./../../../components/ui/select";
+import { Modal } from "./../../../components/ui/modal";
 import { useRevealOnScroll } from "./../../../hooks/useRevealOnScroll";
 
 type DraftFabrication = {
@@ -158,116 +163,228 @@ export default function Fabrication() {
       case 0:
         return (
           <div className="grid gap-4 md:grid-cols-2">
-            <label className="space-y-2 text-sm">
+            <Label className="flex flex-col gap-2 text-sm">
               <span className="text-muted-foreground">Type de fromage</span>
-              <select value={draft.productType} onChange={(e) => handleDraftChange("productType", e.target.value)} className="h-11 w-full rounded-xl border border-border bg-background px-3">
-                <option>Fromage des Hauts</option>
-                <option>Brin d'Est</option>
-                <option>Cirque</option>
-                <option>Salazien</option>
-              </select>
-            </label>
-            <label className="space-y-2 text-sm">
-              <span className="text-muted-foreground">Opérateur(doit etre utilisateur connecté)</span>
-              <select value={draft.operator} onChange={(e) => handleDraftChange("operator", e.target.value as DraftFabrication["operator"])} className="h-11 w-full rounded-xl border border-border bg-background px-3">
-                <option>M. Payet</option>
-                <option>Employé</option>
-              </select>
-            </label>
-            <label className="space-y-2 text-sm">
+              <Select value={draft.productType} onValueChange={(value) => handleDraftChange("productType", value)}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Sélectionnez un fromage" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Fromage des Hauts">Fromage des Hauts</SelectItem>
+                  <SelectItem value="Brin d'Est">Brin d'Est</SelectItem>
+                  <SelectItem value="Cirque">Cirque</SelectItem>
+                  <SelectItem value="Salazien">Salazien</SelectItem>
+                </SelectContent>
+              </Select>
+            </Label>
+
+            <Label className="flex flex-col gap-2 text-sm">
+              <span className="text-muted-foreground">Opérateur (utilisateur connecté)</span>
+              <Select value={draft.operator} onValueChange={(value) => handleDraftChange("operator", value as DraftFabrication["operator"])}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Choisir un opérateur" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="M. Payet">M. Payet</SelectItem>
+                  <SelectItem value="Employé">Employé</SelectItem>
+                </SelectContent>
+              </Select>
+            </Label>
+
+            <Label className="flex flex-col gap-2 text-sm">
               <span className="text-muted-foreground">Début de fabrication</span>
-              <input type="datetime-local" value={draft.startAt} onChange={(e) => handleDraftChange("startAt", e.target.value)} className="h-11 w-full rounded-xl border border-border bg-background px-3" />
-            </label>
-            <label className="space-y-2 text-sm md:col-span-2">
+              <Input
+                type="datetime-local"
+                value={draft.startAt}
+                onChange={(e) => handleDraftChange("startAt", e.target.value)}
+                className="w-full"
+              />
+            </Label>
+
+            <Label className="flex flex-col gap-2 text-sm md:col-span-2">
               <span className="text-muted-foreground">Numéro de lot</span>
-              <input value={draft.lotCode} onChange={(e) => handleDraftChange("lotCode", e.target.value)} className="h-11 w-full rounded-xl border border-border bg-background px-3" placeholder="LOT-YYYYMMDD-HHMM-XX" />
-            </label>
+              <Input
+                value={draft.lotCode}
+                onChange={(e) => handleDraftChange("lotCode", e.target.value)}
+                placeholder="LOT-YYYYMMDD-HHMM-XX"
+                className="w-full"
+              />
+            </Label>
           </div>
         );
       case 1:
         return (
           <div className="grid gap-4 md:grid-cols-2">
-            <label className="space-y-2 text-sm">
+            <Label className="flex flex-col gap-2 text-sm">
               <span className="text-muted-foreground">Quantité de lait (L)</span>
-              <input type="number" value={draft.milkQuantityL} onChange={(e) => handleDraftChange("milkQuantityL", e.target.value)} className="h-11 w-full rounded-xl border border-border bg-background px-3" />
-            </label>
-            <label className="space-y-2 text-sm">
+              <Input
+                type="number"
+                value={draft.milkQuantityL}
+                onChange={(e) => handleDraftChange("milkQuantityL", e.target.value)}
+                className="w-full"
+              />
+            </Label>
+            <Label className="flex flex-col gap-2 text-sm">
               <span className="text-muted-foreground">Température du lait (°C)</span>
-              <input type="number" min="4" max="25" value={draft.milkTemperature} onChange={(e) => handleDraftChange("milkTemperature", Number(e.target.value))} className="h-11 w-full rounded-xl border border-border bg-background px-3" />
-            </label>
-            <label className="space-y-2 text-sm">
+              <Input
+                type="number"
+                min={4}
+                max={25}
+                value={draft.milkTemperature}
+                onChange={(e) => handleDraftChange("milkTemperature", Number(e.target.value))}
+                className="w-full"
+              />
+            </Label>
+            <Label className="flex flex-col gap-2 text-sm">
               <span className="text-muted-foreground">Origine du lait</span>
-              <select value={draft.milkOrigin} onChange={(e) => handleDraftChange("milkOrigin", e.target.value as DraftFabrication["milkOrigin"])} className="h-11 w-full rounded-xl border border-border bg-background px-3">
-                <option>traite du matin</option>
-                <option>traite du soir</option>
-                <option>mélange</option>
-              </select>
-            </label>
-            <label className="space-y-2 text-sm">
-              <span className="text-muted-foreground">Température de chauffage (°C)</span>
-              <input type="range" min="30" max="42" step="1" value={draft.temperature} onChange={(e) => handleDraftChange("temperature", Number(e.target.value))} className="w-full" />
-              <div className="text-sm font-medium text-foreground">{draft.temperature} °C</div>
-            </label>
+              <Select value={draft.milkOrigin} onValueChange={(value) => handleDraftChange("milkOrigin", value as DraftFabrication["milkOrigin"])}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Sélectionnez une origine" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="traite du matin">traite du matin</SelectItem>
+                  <SelectItem value="traite du soir">traite du soir</SelectItem>
+                  <SelectItem value="mélange">mélange</SelectItem>
+                </SelectContent>
+              </Select>
+            </Label>
+            <div className="space-y-2 text-sm">
+              <div className="flex items-center justify-between text-muted-foreground">
+                <span>Température de chauffage (°C)</span>
+                <span className="text-foreground font-medium">{draft.temperature} °C</span>
+              </div>
+              <input
+                type="range"
+                min={30}
+                max={42}
+                step={1}
+                value={draft.temperature}
+                onChange={(e) => handleDraftChange("temperature", Number(e.target.value))}
+                className="w-full accent-primary"
+              />
+            </div>
           </div>
         );
       case 2:
         return (
           <div className="grid gap-4 md:grid-cols-2">
-            <label className="space-y-2 text-sm">
-              <span className="text-muted-foreground">Temps de chauffage (min)</span>
-              <input type="range" min="20" max="90" step="1" value={draft.cookingTime} onChange={(e) => handleDraftChange("cookingTime", Number(e.target.value))} className="w-full" />
-              <div className="text-sm font-medium text-foreground">{draft.cookingTime} min</div>
-            </label>
-            <label className="space-y-2 text-sm">
+            <div className="space-y-2 text-sm">
+              <div className="flex items-center justify-between text-muted-foreground">
+                <span>Temps de chauffage (min)</span>
+                <span className="text-foreground font-medium">{draft.cookingTime} min</span>
+              </div>
+              <input
+                type="range"
+                min={20}
+                max={90}
+                step={1}
+                value={draft.cookingTime}
+                onChange={(e) => handleDraftChange("cookingTime", Number(e.target.value))}
+                className="w-full accent-primary"
+              />
+            </div>
+            <Label className="flex flex-col gap-2 text-sm">
               <span className="text-muted-foreground">Type de présure</span>
-              <input value={draft.rennetType} onChange={(e) => handleDraftChange("rennetType", e.target.value)} className="h-11 w-full rounded-xl border border-border bg-background px-3" />
-            </label>
-            <label className="space-y-2 text-sm">
+              <Input
+                value={draft.rennetType}
+                onChange={(e) => handleDraftChange("rennetType", e.target.value)}
+                className="w-full"
+              />
+            </Label>
+            <Label className="flex flex-col gap-2 text-sm">
               <span className="text-muted-foreground">Quantité de présure</span>
-              <input value={draft.rennetAmount} onChange={(e) => handleDraftChange("rennetAmount", e.target.value)} className="h-11 w-full rounded-xl border border-border bg-background px-3" placeholder="ml" />
-            </label>
-            <label className="space-y-2 text-sm">
+              <Input
+                value={draft.rennetAmount}
+                onChange={(e) => handleDraftChange("rennetAmount", e.target.value)}
+                placeholder="ml"
+                className="w-full"
+              />
+            </Label>
+            <Label className="flex flex-col gap-2 text-sm">
               <span className="text-muted-foreground">Type de ferments</span>
-              <input value={draft.cultureType} onChange={(e) => handleDraftChange("cultureType", e.target.value)} className="h-11 w-full rounded-xl border border-border bg-background px-3" />
-            </label>
-            <label className="space-y-2 text-sm">
+              <Input
+                value={draft.cultureType}
+                onChange={(e) => handleDraftChange("cultureType", e.target.value)}
+                className="w-full"
+              />
+            </Label>
+            <Label className="flex flex-col gap-2 text-sm">
               <span className="text-muted-foreground">Quantité de ferments</span>
-              <input value={draft.cultureAmount} onChange={(e) => handleDraftChange("cultureAmount", e.target.value)} className="h-11 w-full rounded-xl border border-border bg-background px-3" placeholder="g" />
-            </label>
+              <Input
+                value={draft.cultureAmount}
+                onChange={(e) => handleDraftChange("cultureAmount", e.target.value)}
+                placeholder="g"
+                className="w-full"
+              />
+            </Label>
           </div>
         );
       case 3:
         return (
           <div className="grid gap-4 md:grid-cols-2">
-            <label className="space-y-2 text-sm">
+            <Label className="flex flex-col gap-2 text-sm">
               <span className="text-muted-foreground">Type de moulage</span>
-              <select value={draft.moldingType} onChange={(e) => handleDraftChange("moldingType", e.target.value)} className="h-11 w-full rounded-xl border border-border bg-background px-3">
-                <option>Moule traditionnel</option>
-                <option>Moule perforé</option>
-                <option>Éprouvette</option>
-              </select>
-            </label>
-            <label className="space-y-2 text-sm">
+              <Select value={draft.moldingType} onValueChange={(value) => handleDraftChange("moldingType", value)}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Choisir un moulage" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Moule traditionnel">Moule traditionnel</SelectItem>
+                  <SelectItem value="Moule perforé">Moule perforé</SelectItem>
+                  <SelectItem value="Éprouvette">Éprouvette</SelectItem>
+                </SelectContent>
+              </Select>
+            </Label>
+            <Label className="flex flex-col gap-2 text-sm">
               <span className="text-muted-foreground">Température de mise en moule (°C)</span>
-              <input type="number" min="5" max="25" value={draft.moldingTemperature} onChange={(e) => handleDraftChange("moldingTemperature", Number(e.target.value))} className="h-11 w-full rounded-xl border border-border bg-background px-3" />
-            </label>
-            <label className="space-y-2 text-sm">
+              <Input
+                type="number"
+                min={5}
+                max={25}
+                value={draft.moldingTemperature}
+                onChange={(e) => handleDraftChange("moldingTemperature", Number(e.target.value))}
+                className="w-full"
+              />
+            </Label>
+            <Label className="flex flex-col gap-2 text-sm">
               <span className="text-muted-foreground">Durée d'égouttage (min)</span>
-              <input type="number" min="5" max="120" value={draft.drainageTime} onChange={(e) => handleDraftChange("drainageTime", Number(e.target.value))} className="h-11 w-full rounded-xl border border-border bg-background px-3" />
-            </label>
-            <label className="space-y-2 text-sm">
-              <span className="text-muted-foreground">Temps de coagulation (min)</span>
-              <input type="range" min="10" max="60" step="1" value={draft.coagulationTime} onChange={(e) => handleDraftChange("coagulationTime", Number(e.target.value))} className="w-full" />
-              <div className="text-sm font-medium text-foreground">{draft.coagulationTime} min</div>
-            </label>
-            <label className="space-y-2 text-sm">
+              <Input
+                type="number"
+                min={5}
+                max={120}
+                value={draft.drainageTime}
+                onChange={(e) => handleDraftChange("drainageTime", Number(e.target.value))}
+                className="w-full"
+              />
+            </Label>
+            <div className="space-y-2 text-sm">
+              <div className="flex items-center justify-between text-muted-foreground">
+                <span>Temps de coagulation (min)</span>
+                <span className="text-foreground font-medium">{draft.coagulationTime} min</span>
+              </div>
+              <input
+                type="range"
+                min={10}
+                max={60}
+                step={1}
+                value={draft.coagulationTime}
+                onChange={(e) => handleDraftChange("coagulationTime", Number(e.target.value))}
+                className="w-full accent-primary"
+              />
+            </div>
+            <Label className="flex flex-col gap-2 text-sm">
               <span className="text-muted-foreground">Coupe du caillé</span>
-              <select value={draft.curdCut} onChange={(e) => handleDraftChange("curdCut", e.target.value)} className="h-11 w-full rounded-xl border border-border bg-background px-3">
-                <option>Moyen</option>
-                <option>Fin</option>
-                <option>Grossier</option>
-              </select>
-            </label>
+              <Select value={draft.curdCut} onValueChange={(value) => handleDraftChange("curdCut", value)}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Choisir une coupe" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Moyen">Moyen</SelectItem>
+                  <SelectItem value="Fin">Fin</SelectItem>
+                  <SelectItem value="Grossier">Grossier</SelectItem>
+                </SelectContent>
+              </Select>
+            </Label>
           </div>
         );
       default:
@@ -278,24 +395,44 @@ export default function Fabrication() {
                 <div className="text-muted-foreground">Rendement estimé</div>
                 <div className="mt-1 text-2xl font-semibold text-foreground">{yieldRate ?? "--"}%</div>
               </div>
-              <label className="space-y-2 text-sm">
+              <Label className="flex flex-col gap-2 text-sm">
                 <span className="text-muted-foreground">Sel utilisé</span>
-                <button type="button" onClick={() => handleDraftChange("saltUsed", !draft.saltUsed)} className={`h-11 w-full rounded-xl border px-3 text-left ${draft.saltUsed ? "border-primary bg-primary/10 text-primary" : "border-border bg-background text-foreground"}`}>
+                <Button
+                  type="button"
+                  variant={draft.saltUsed ? "default" : "outline"}
+                  className="h-11 w-full justify-start rounded-xl px-3 text-left"
+                  onClick={() => handleDraftChange("saltUsed", !draft.saltUsed)}
+                >
                   {draft.saltUsed ? "Oui" : "Non"}
-                </button>
-              </label>
-              <label className="space-y-2 text-sm">
+                </Button>
+              </Label>
+              <Label className="flex flex-col gap-2 text-sm">
                 <span className="text-muted-foreground">Poids après moulage (kg)</span>
-                <input type="number" value={draft.cheeseWeightKg} onChange={(e) => handleDraftChange("cheeseWeightKg", e.target.value)} className="h-11 w-full rounded-xl border border-border bg-background px-3" />
-              </label>
-              <label className="space-y-2 text-sm">
+                <Input
+                  type="number"
+                  value={draft.cheeseWeightKg}
+                  onChange={(e) => handleDraftChange("cheeseWeightKg", e.target.value)}
+                  className="w-full"
+                />
+              </Label>
+              <Label className="flex flex-col gap-2 text-sm">
                 <span className="text-muted-foreground">Nombre de fromages</span>
-                <input type="number" min="1" value={draft.cheeseCount} onChange={(e) => handleDraftChange("cheeseCount", Number(e.target.value))} className="h-11 w-full rounded-xl border border-border bg-background px-3" />
-              </label>
-              <label className="space-y-2 text-sm md:col-span-2">
+                <Input
+                  type="number"
+                  min={1}
+                  value={draft.cheeseCount}
+                  onChange={(e) => handleDraftChange("cheeseCount", Number(e.target.value))}
+                  className="w-full"
+                />
+              </Label>
+              <Label className="flex flex-col gap-2 text-sm md:col-span-2">
                 <span className="text-muted-foreground">Observations</span>
-                <textarea value={draft.observations} onChange={(e) => handleDraftChange("observations", e.target.value)} className="min-h-24 w-full rounded-xl border border-border bg-background px-3 py-2" />
-              </label>
+                <Textarea
+                  value={draft.observations}
+                  onChange={(e) => handleDraftChange("observations", e.target.value)}
+                  className="min-h-24 w-full"
+                />
+              </Label>
             </div>
 
             <div className="mt-6 rounded-3xl border border-border/70 bg-background/90 p-5 shadow-sm">
@@ -481,56 +618,48 @@ export default function Fabrication() {
         </div>
       </div>
 
-      {modalOpen && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/55 p-4">
-          <div className="relative w-full max-w-3xl rounded-3xl border border-border/70 bg-background shadow-2xl">
-            <div className="border-b border-border/70 px-6 py-5">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-sm font-semibold uppercase tracking-[0.2em] text-primary">Étape {currentStep + 1} / {steps.length}</p>
-                  <h3 className="mt-2 text-xl font-semibold text-foreground">{steps[currentStep].title}</h3>
-                  <p className="mt-1 text-sm text-muted-foreground">{steps[currentStep].description}</p>
-                </div>
-                <button type="button" onClick={closeModal} className="rounded-full border border-border/70 p-2 text-muted-foreground transition hover:bg-accent">
-                  <X className="size-4" />
-                </button>
-              </div>
-              <div className="mt-4 flex flex-wrap gap-2">
-                {steps.map((step, index) => (
-                  <div key={step.key} className={`rounded-full px-3 py-1 text-xs font-medium ${index === currentStep ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>
-                    {step.title}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="max-h-[70vh] overflow-y-auto px-6 py-6">
-              {renderStep()}
-            </div>
-
-            <div className="flex flex-col gap-3 border-t border-border/70 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
-              <div className="text-sm text-muted-foreground">{lastSavedAt}</div>
-              <div className="flex flex-wrap gap-2">
-                <Button variant="outline" className="h-11 px-5" onClick={() => setCurrentStep((prev) => Math.max(prev - 1, 0))} disabled={currentStep === 0}>
-                  <ChevronLeft className="size-4" /> Précédent
+      <Modal
+        open={modalOpen}
+        onOpenChange={setModalOpen}
+        title={`Étape ${currentStep + 1} / ${steps.length} — ${steps[currentStep].title}`}
+        description={steps[currentStep].description}
+        footer={
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="text-sm text-muted-foreground">{lastSavedAt}</div>
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" className="h-11 px-5" onClick={() => setCurrentStep((prev) => Math.max(prev - 1, 0))} disabled={currentStep === 0}>
+                <ChevronLeft className="size-4" /> Précédent
+              </Button>
+              {currentStep < steps.length - 1 ? (
+                <Button className="h-11 px-5" onClick={() => setCurrentStep((prev) => Math.min(prev + 1, steps.length - 1))}>
+                  Suivant <ChevronRight className="size-4" />
                 </Button>
-                {currentStep < steps.length - 1 ? (
-                  <Button className="h-11 px-5" onClick={() => setCurrentStep((prev) => Math.min(prev + 1, steps.length - 1))}>
-                    Suivant <ChevronRight className="size-4" />
-                  </Button>
-                ) : (
-                  <Button className="h-11 px-5" onClick={() => {
-                    saveDraft();
-                    closeModal();
-                  }}>
-                    Terminer <ArrowRight className="size-4" />
-                  </Button>
-                )}
-              </div>
+              ) : (
+                <Button className="h-11 px-5" onClick={() => {
+                  saveDraft();
+                  closeModal();
+                }}>
+                  Terminer <ArrowRight className="size-4" />
+                </Button>
+              )}
             </div>
           </div>
+        }
+      >
+        <div className="mb-4 flex flex-wrap gap-2">
+          {steps.map((step, index) => (
+            <div
+              key={step.key}
+              className={`rounded-full px-3 py-1 text-xs font-medium ${index === currentStep ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>
+              {step.title}
+            </div>
+          ))}
         </div>
-      )}
+
+        <div className="space-y-6">
+          {renderStep()}
+        </div>
+      </Modal>
     </section>
   );
 }

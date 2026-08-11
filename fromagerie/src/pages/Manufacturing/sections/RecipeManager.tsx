@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "./../../../components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./../../../components/ui/card";
 import { Input } from "./../../../components/ui/input";
@@ -109,6 +109,7 @@ export function RecipeManager() {
   const [editOpen, setEditOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
+  const [activeVariantPage, setActiveVariantPage] = useState(0);
 
   const selected = useMemo(
     () => recipes.find((r) => r.id === selectedId) ?? recipes[0],
@@ -116,6 +117,17 @@ export function RecipeManager() {
   );
 
   const baseCost = computeCost(selected.ingredients);
+  const fixedPanelHeight = "min-h-[360px]";
+  const variantsPerPage = 2;
+  const totalVariantPages = Math.max(1, Math.ceil(selected.variants.length / variantsPerPage));
+  const visibleVariants = selected.variants.slice(
+    activeVariantPage * variantsPerPage,
+    (activeVariantPage + 1) * variantsPerPage,
+  );
+
+  useEffect(() => {
+    setActiveVariantPage(0);
+  }, [selectedId]);
 
   const updateRecipe = (id: string, updater: (r: Recipe) => Recipe) => {
     setRecipes((prev) => prev.map((r) => (r.id === id ? updater(r) : r)));
@@ -211,42 +223,71 @@ export function RecipeManager() {
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="base" className="mt-4 space-y-4">
-              <IngredientTable ingredients={selected.ingredients} />
-              <CostFooter label="Coût matière première (base)" amount={baseCost} />
+            <TabsContent value="base" className={`mt-4 ${fixedPanelHeight}`}>
+              <div className="space-y-4 rounded-xl border bg-card/40 p-4">
+                <IngredientTable ingredients={selected.ingredients} />
+                <CostFooter label="Coût matière première (base)" amount={baseCost} />
+              </div>
             </TabsContent>
 
-            <TabsContent value="variants" className="mt-4 space-y-4">
-              {selected.variants.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  Aucune variante définie pour cette recette.
-                </p>
-              ) : (
-                selected.variants.map((v) => {
-                  const cost = computeCost(selected.ingredients, v.extras);
-                  return (
-                    <div key={v.id} className="rounded-lg border bg-card p-4">
-                      <div className="mb-3 flex items-center justify-between">
-                        <h4 className="font-medium">{v.name}</h4>
-                        <Badge variant="outline">+{fmtEUR(cost - baseCost)}</Badge>
-                      </div>
-                      <ul className="space-y-1 text-sm text-muted-foreground">
-                        {v.extras.map((e, idx) => (
-                          <li key={idx} className="flex justify-between">
-                            <span>{e.label} — {e.quantity} {e.unit}</span>
-                            <span>{fmtEUR(e.quantity * e.pricePerUnit)}</span>
-                          </li>
-                        ))}
-                      </ul>
-                      <Separator className="my-3" />
-                      <div className="flex justify-between text-sm font-medium">
-                        <span>Coût total variante</span>
-                        <span>{fmtEUR(cost)}</span>
-                      </div>
-                    </div>
-                  );
-                })
-              )}
+            <TabsContent value="variants" className={`mt-4 ${fixedPanelHeight}`}>
+              <div className="min-h-[320px] rounded-xl border bg-card/40 p-4">
+                {selected.variants.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    Aucune variante définie pour cette recette.
+                  </p>
+                ) : (
+                  <div className="space-y-4">
+                    {visibleVariants.map((v) => {
+                      const cost = computeCost(selected.ingredients, v.extras);
+                      return (
+                        <div key={v.id} className="rounded-lg border bg-card p-4">
+                          <div className="mb-3 flex items-center justify-between">
+                            <h4 className="font-medium">{v.name}</h4>
+                            <Badge variant="outline">+{fmtEUR(cost - baseCost)}</Badge>
+                          </div>
+                          <ul className="space-y-1 text-sm text-muted-foreground">
+                            {v.extras.map((e, idx) => (
+                              <li key={idx} className="flex justify-between">
+                                <span>{e.label} — {e.quantity} {e.unit}</span>
+                                <span>{fmtEUR(e.quantity * e.pricePerUnit)}</span>
+                              </li>
+                            ))}
+                          </ul>
+                          <Separator className="my-3" />
+                          <div className="flex justify-between text-sm font-medium">
+                            <span>Coût total variante</span>
+                            <span>{fmtEUR(cost)}</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {selected.variants.length > 1 && (
+                  <div className="mt-4 flex justify-end gap-1">
+                    {Array.from({ length: totalVariantPages }, (_, idx) => {
+                      const isActive = idx === activeVariantPage;
+                      return (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => setActiveVariantPage(idx)}
+                          className={`h-8 w-8 rounded-md text-sm font-medium transition-colors ${
+                            isActive
+                              ? "bg-primary text-primary-foreground"
+                              : "bg-muted text-muted-foreground hover:bg-muted/80"
+                          }`}
+                          aria-label={`Afficher la variante ${idx + 1}`}
+                        >
+                          {idx + 1}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </TabsContent>
           </Tabs>
         </CardContent>
@@ -439,13 +480,13 @@ function EditDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
-        <DialogHeader>
+        <DialogHeader className="shrink-0">
           <DialogTitle>Modifier la recette</DialogTitle>
           <DialogDescription>
             Ajustez les quantités et gérez les variantes. Une révision sera ajoutée à l'historique.
           </DialogDescription>
         </DialogHeader>
-        <ScrollArea className="flex-1 pr-4">
+        <div className="flex-1 min-h-0 overflow-y-auto pr-4">
           <Tabs defaultValue="base">
             <TabsList>
               <TabsTrigger value="base">Ingrédients</TabsTrigger>
@@ -478,8 +519,8 @@ function EditDialog({
             <Label htmlFor="note">Note de révision</Label>
             <Textarea id="note" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Pourquoi cette modification ?" />
           </div>
-        </ScrollArea>
-        <DialogFooter>
+        </div>
+        <DialogFooter className="shrink-0">
           <Button variant="outline" onClick={() => onOpenChange(false)}>Annuler</Button>
           <Button onClick={() => onSave(ingredients, variants, note, author)}>
             <Plus className="mr-1 size-4" /> Enregistrer la révision
@@ -533,11 +574,11 @@ function CreateRecipeDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
-        <DialogHeader>
+        <DialogHeader className="shrink-0">
           <DialogTitle>Nouvelle recette</DialogTitle>
           <DialogDescription>Définissez le fromage, ses ingrédients et ses variantes.</DialogDescription>
         </DialogHeader>
-        <ScrollArea className="flex-1 pr-4">
+        <div className="flex-1 min-h-0 overflow-y-auto pr-4">
           <div className="space-y-3">
             <div className="grid gap-2">
               <Label htmlFor="rname">Nom du fromage</Label>
@@ -565,8 +606,8 @@ function CreateRecipeDialog({
             <h4 className="text-sm font-medium">Variantes</h4>
             <VariantEditor variants={variants} onChange={setVariants} />
           </div>
-        </ScrollArea>
-        <DialogFooter>
+        </div>
+        <DialogFooter className="shrink-0">
           <Button variant="outline" onClick={() => onOpenChange(false)}>Annuler</Button>
           <Button onClick={submit} disabled={!name.trim()}>
             <FilePlus className="mr-1 size-4" /> Créer la recette

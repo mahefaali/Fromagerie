@@ -1,0 +1,78 @@
+import { type Order } from '../types/orders';
+
+export const MOCK_ORDERS: Order[] = [
+  {
+    id: '1',
+    code: 'CMD-2026-287',
+    clientName: 'Epicerie A',
+    orderDate: '10 août 2026',
+    expectedDeliveryDate: '13 août 2026',
+    status: 'prepared',
+    totalAmount: 37.50,
+    items: [
+      {
+        id: 'item-1',
+        name: 'Camembert fermier',
+        quantity: 5,
+        unit: 'kg',
+        pricePerUnit: 7.50,
+        batchCode: 'CAM-2026-110',
+        location: 'Chambre froide de vente',
+      },
+    ],
+  },
+  {
+    id: '2',
+    code: 'CMD-2026-001',
+    clientName: 'Épicerie du Val',
+    orderDate: '08 août 2026',
+    expectedDeliveryDate: '13 août 2026',
+    status: 'delivered',
+    deliveryDate: '10 août 2026',
+    invoicedDate: '10 août 2026',
+    paymentMethod: 'Virement',
+    totalAmount: 76.50,
+    items: [
+      {
+        id: 'item-2-1',
+        name: 'Camembert fermier',
+        quantity: 10,
+        unit: 'u',
+        pricePerUnit: 7.50,
+        deliveredQuantity: 7,
+        gap: -3.00,
+        batchCode: 'CAM-2026-110',
+        location: 'Chambre froide de vente',
+      },
+      {
+        id: 'item-2-2',
+        name: 'Tomme de montagne',
+        quantity: 2,
+        unit: 'u',
+        pricePerUnit: 24.00,
+        deliveredQuantity: 1,
+        gap: -1.00,
+        batchCode: 'TOM-2026-042',
+        location: 'Réserve arrière',
+      },
+    ],
+  },
+  {
+    id: '3',
+    code: 'CMD-2026-423',
+    clientName: 'Epicerie B',
+    orderDate: '10 août 2026',
+    expectedDeliveryDate: '14 août 2026',
+    status: 'reserved',
+    totalAmount: 45.00,
+    items: [
+      {
+        id: 'item-3',
+        name: 'Camembert fermier',
+        quantity: 6,
+        unit: 'u',
+        pricePerUnit: 7.50,
+      },
+    ],
+  },
+];

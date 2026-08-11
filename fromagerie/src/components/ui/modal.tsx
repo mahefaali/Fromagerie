@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode } from "react";
+import type { ReactNode } from "react";
 import { X } from "lucide-react";
 
 type ModalProps = {
@@ -25,7 +25,7 @@ export function Modal({ open, onOpenChange, title, description, children, footer
         aria-label="Fermer le modal"
         onClick={() => onOpenChange(false)}
       />
-      <div className="relative z-10 w-full max-w-3xl overflow-hidden rounded-3xl border border-border/70 bg-background shadow-2xl">
+      <div className="relative z-10 flex w-full max-w-3xl max-h-[calc(100vh-4rem)] flex-col overflow-hidden rounded-3xl border border-border/70 bg-background shadow-2xl">
         <div className="flex items-start justify-between gap-4 border-b border-border/70 px-6 py-5">
           <div>
             {title ? <h2 className="text-xl font-semibold text-foreground">{title}</h2> : null}
@@ -40,7 +40,7 @@ export function Modal({ open, onOpenChange, title, description, children, footer
             <X className="size-4" />
           </button>
         </div>
-        <div className="px-6 py-6">{children}</div>
+        <div className="min-h-0 flex-1 overflow-y-auto px-6 py-6">{children}</div>
         {footer ? <div className="border-t border-border/70 px-6 py-4">{footer}</div> : null}
       </div>
     </div>
