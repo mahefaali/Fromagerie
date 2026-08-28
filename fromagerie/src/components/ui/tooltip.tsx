@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import * as TooltipPrimitive from "@radix-ui/react-tooltip"
-import { cn } from "./../../lib/utils" // Assure-toi d'avoir le helper cn() de Tailwind
+import { cn } from "../../utils/utils" // Assure-toi d'avoir le helper cn() de Tailwind
 
 const TooltipProvider = TooltipPrimitive.Provider
 

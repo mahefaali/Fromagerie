@@ -1,0 +1,62 @@
+import { useEffect, useMemo, useState } from 'react';
+import { toast } from 'sonner';
+import { orderApi, type ClientOption, type CommandeApi } from '../api/stockApi';
+import { type Order, type OrderFilterStatus, type CreateOrderPayload } from '../types/orders';
+
+const statusMap: Record<string, Order['status']> = { BROUILLON: 'draft', CONFIRMEE: 'reserved', EN_PREPARATION: 'reserved', PRETE: 'prepared', LIVREE: 'delivered', ANNULEE: 'cancelled' };
+function toOrder(o: CommandeApi): Order {
+  const deliveryLines = new Map((o.livraison?.lignes ?? []).map((line) => [line.reservationId, line]));
+  return {
+    id: String(o.id),
+    code: o.numeroCommande,
+    clientName: o.client.nom,
+    contactInfo: o.client.telephone ?? undefined,
+    status: statusMap[o.statut] ?? 'draft',
+    orderDate: o.dateCommande,
+    expectedDeliveryDate: o.dateLivraisonSouhaitee,
+    deliveryDate: o.livraison?.dateLivraison,
+    note: o.observations ?? undefined,
+    totalAmount: o.lignes.reduce((sum, line) => sum + line.quantiteCommandee * Number(line.prixUnitaire), 0),
+    items: o.lignes.flatMap((line) => line.reservations.length
+      ? line.reservations.map((reservation) => {
+          const delivered = deliveryLines.get(reservation.id);
+          return {
+            id: String(reservation.id),
+            reservationId: reservation.id,
+            lineId: String(line.id),
+            name: line.fromageNom,
+            productName: line.fromageNom,
+            quantity: reservation.quantiteReservee,
+            deliveredQuantity: delivered?.quantiteLivree,
+            gap: delivered?.ecart,
+            unit: 'u',
+            pricePerUnit: Number(line.prixUnitaire),
+            batchCode: reservation.lot,
+            location: reservation.emplacement,
+          };
+        })
+      : [{
+          id: String(line.id),
+          lineId: String(line.id),
+          name: line.fromageNom,
+          productName: line.fromageNom,
+          quantity: line.quantiteCommandee,
+          unit: 'u',
+          pricePerUnit: Number(line.prixUnitaire),
+        }]),
+  };
+}
+export const useOrders = () => {
+  const [allOrders, setAllOrders] = useState<Order[]>([]); const [clients, setClients] = useState<ClientOption[]>([]); const [fromages, setFromages] = useState<{ id: number; nom: string }[]>([]); const [activeFilter, setActiveFilter] = useState<OrderFilterStatus>('all'); const [isCreateModalOpen, setIsCreateModalOpen] = useState(false); const [loading, setLoading] = useState(true);
+  const reload = async () => { try { setAllOrders((await orderApi.findAll()).map(toOrder)); } catch (e) { toast.error(e instanceof Error ? e.message : 'Chargement des commandes impossible'); } finally { setLoading(false); } };
+  useEffect(() => { void reload(); void orderApi.findClients().then(setClients).catch(() => undefined); void orderApi.findFromages().then(setFromages).catch(() => undefined); }, []);
+  const orders = useMemo(() => activeFilter === 'all' ? allOrders : activeFilter === 'reserved' ? allOrders.filter(o => o.status === 'reserved') : allOrders.filter(o => o.status === activeFilter), [allOrders, activeFilter]);
+  const handleCreateOrder = async (p: CreateOrderPayload) => { try { const c = clients.find(x => x.nom === p.clientName); if (!c) throw new Error('Sélectionnez un client existant'); const saved = await orderApi.create({ clientId: c.id, dateLivraisonSouhaitee: p.expectedDeliveryDate, observations: p.note, lignes: p.items.map(i => ({ fromageId: Number(i.id), quantiteCommandee: i.quantity, prixUnitaire: i.pricePerUnit })) }); setAllOrders(x => [toOrder(saved), ...x]); setIsCreateModalOpen(false); toast.success(`Commande ${saved.numeroCommande} réservée`); } catch (e) { toast.error(e instanceof Error ? e.message : 'Stock insuffisant : commande non créée'); } };
+  const handleCreateClient = async (payload: { nom: string; typeClient: string; telephone?: string; adresse?: string }) => { try { const client = await orderApi.createClient({ ...payload, actif: true }); setClients(x => [...x, client].sort((a, b) => a.nom.localeCompare(b.nom))); toast.success('Client ajouté'); return client; } catch (e) { toast.error(e instanceof Error ? e.message : 'Création du client impossible'); return null; } };
+  const handleMarkAsPrepared = async (id: string) => { try { const saved = await orderApi.prepare(Number(id)); setAllOrders(x => x.map(o => o.id === id ? toOrder(saved) : o)); toast.success('Commande marquée comme prête'); } catch (e) { toast.error(e instanceof Error ? e.message : 'Préparation impossible'); } };
+  const handleConfirmOrder = async (id: string) => { try { const saved = await orderApi.confirm(Number(id)); setAllOrders(x => x.map(o => o.id === id ? toOrder(saved) : o)); toast.success('Stock réservé pour la commande'); } catch (e) { toast.error(e instanceof Error ? e.message : 'Confirmation impossible'); } };
+  const handleRegisterDelivery = async (d: { orderId: string; deliveryDate: string; deliveryNote: string; deliveredItems: { itemId: string; deliveredQuantity: number; gap: number }[] }) => { try { const saved = await orderApi.deliver(Number(d.orderId), { dateLivraison: d.deliveryDate, observations: d.deliveryNote, lignes: d.deliveredItems.map(x => ({ reservationId: Number(x.itemId), quantiteLivree: x.deliveredQuantity })) }); setAllOrders(x => x.map(o => o.id === d.orderId ? toOrder(saved) : o)); toast.success('Livraison enregistrée et stock sorti'); } catch (e) { toast.error(e instanceof Error ? e.message : 'Livraison impossible'); } };
+  const handleCreateInvoice = async (d: { orderId: string; paymentMethod: string }) => { try { await orderApi.invoice(Number(d.orderId), { modePaiement: ({ Virement: 'VIREMENT', 'Carte bancaire': 'CARTE', Espèces: 'ESPECES', Chèque: 'CHEQUE' } as Record<string, string>)[d.paymentMethod] ?? 'AUTRE' }); toast.success('Facture validée'); } catch (e) { toast.error(e instanceof Error ? e.message : 'Facturation impossible'); } };
+  const handleDeleteOrder = async (id: string) => { try { await orderApi.cancel(Number(id)); setAllOrders(x => x.map(o => o.id === id ? { ...o, status: 'cancelled' } : o)); toast.success('Commande annulée'); } catch (e) { toast.error(e instanceof Error ? e.message : 'Annulation impossible'); } };
+  return { allOrders, orders, clients, fromages, loading, activeFilter, setActiveFilter, isCreateModalOpen, handleOpenCreateModal: () => setIsCreateModalOpen(true), handleCloseCreateModal: () => setIsCreateModalOpen(false), handleCreateOrder, handleCreateClient, handleConfirmOrder, handleMarkAsPrepared, handleRegisterDelivery, handleDeleteOrder, handleCreateInvoice };
+};

@@ -1,9 +1,9 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Link } from "./../../components/common/Link";
-import UsersSection from "./sections/Users";
-import SiteSection from "./sections/Site";
-import NavigationSection from "./sections/Navigation";
-import ReportsSection from "./sections/Reports";
+import UsersSection from "../../features/configuration/components/Users";
+import SiteSection from "../../features/configuration/components/Site";
+import NavigationSection from "../../features/configuration/components/Navigation";
+import ReportsSection from "../../features/configuration/components/Reports";
 
 export default function Configuration() {
   const [active, setActive] = useState<"users" | "site" | "nav" | "reports">("users");

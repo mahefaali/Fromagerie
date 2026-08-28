@@ -5,7 +5,6 @@ import * as LabelPrimitive from "@radix-ui/react-label"
 import { Slot } from "@radix-ui/react-slot"
 import {
   Controller,
-  FormProvider,
   useFormContext,
   useFormState,
   type ControllerProps,
@@ -13,11 +12,11 @@ import {
   type FieldValues,
 } from "react-hook-form"
 
-import { cn } from "./../../lib/utils"
+import { cn } from "../../utils/utils"
 import { Label } from "./../../components/ui/label"
 
 // Form component for UI styling (NOT for form state management)
-// Use FormProvider from @/integrations/forms/FormProvider for state management
+// Use FormProvider from services/forms/FormProvider for state management
 const Form = React.forwardRef<
   HTMLFormElement,
   React.FormHTMLAttributes<HTMLFormElement>

@@ -24,15 +24,8 @@
           total: 0,
           total_pages: 0,
         }),
-        isAuthenticated: false,
-        userRole: null,
-        userName: null,
-        userEmail: null,
         getSessionId: () => 'unknown',
-        formSubmission: async (submissionData) => {
-          console.warn('wvcClient.formSubmission stub called', submissionData);
-          return { success: true };
-        },
+        formSubmission: async () => ({ success: true }),
       };
       window.__WVC_FORMS__ = window.__WVC_FORMS__ || {};
     </script>

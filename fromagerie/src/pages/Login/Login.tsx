@@ -1,5 +1,5 @@
 import "./Login.module.css"
-import Authentication from "./sections/Authentication"
+import Authentication from "../../features/authentication/components/Authentication"
 
 export default function LoginPage() {
 

@@ -1,6 +1,6 @@
 import * as React from "react"
 import { Search } from "lucide-react"
-import { cn } from "./../../lib/utils"
+import { cn } from "../../utils/utils"
 
 export interface SearchInputProps extends React.ComponentProps<"input"> {
   icon?: React.ReactNode

@@ -1,11 +1,19 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Warehouse, Sparkles } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./../../components/ui/tabs";
-import { CaveManager } from "./sections/CaveManager";
-import AffinageTracker from "./sections/AffinageTracker";
+import { CaveManager } from "../../features/affinage/components/CaveManager";
+import AffinageTracker from "../../features/affinage/components/AffinageTracker";
 
 export function AffinagePage() {
   const [activeTab, setActiveTab] = useState<string>("caves");
+  const [searchParams] = useSearchParams();
+
+  useEffect(() => {
+    if (searchParams.get("lot")) {
+      setActiveTab("suivi");
+    }
+  }, [searchParams]);
 
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6 relative pointer-events-auto">
