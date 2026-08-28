@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { toast } from 'sonner';
 import { stockApi, type EmplacementStock, type StockFromageFini } from './api/stockApi';
 import type { SelectOption } from './components/StockFilters';
 import type { StockItem } from './components/StockCard';
@@ -18,6 +19,7 @@ export function useStock() {
   const [stocks, setStocks] = useState<StockFromageFini[]>([]);
   const [emplacements, setEmplacements] = useState<EmplacementStock[]>([]);
   const [loading, setLoading] = useState(true);
+  const [declaringLossId, setDeclaringLossId] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -52,6 +54,7 @@ export function useStock() {
 
   const filteredItems = useMemo(() => {
     return stocks.filter((item) => {
+      if (item.quantitePhysique <= 0) return false;
       const code = item.numeroLotFabrication.toLowerCase();
       const name = item.fromageNom.toLowerCase();
       const query = searchQuery.toLowerCase();
@@ -77,8 +80,7 @@ export function useStock() {
       dlcDate: new Date(item.dateDurabilite).toLocaleDateString('fr-FR'),
       daysBeforeDlc: daysRemaining,
       durabilityType: item.typeDateDurabilite,
-      price: 0,
-      isExpired: item.statut === 'DISPONIBLE' && daysRemaining < 0,
+      isExpired: daysRemaining < 0,
       isExpiringSoon: item.statut === 'DISPONIBLE' && daysRemaining >= 0 && daysRemaining <= 7,
       locationValue: String(item.emplacementStockId),
     });
@@ -117,6 +119,27 @@ export function useStock() {
     [stocks],
   );
 
+  const declareExpiredLoss = async (item: StockItem) => {
+    if (!item.isExpired || item.quantity <= 0 || declaringLossId !== null) return;
+
+    setDeclaringLossId(item.id);
+    try {
+      const loss = await stockApi.createLoss(Number(item.id), {
+        quantite: item.quantity,
+        typePerte: 'DLC_DDM_DEPASSEE',
+        motif: `${item.durabilityType} dépassée`,
+      });
+      setStocks((current) => current.map((stock) => stock.id === Number(item.id)
+        ? { ...stock, quantitePhysique: 0, vendable: false, statut: 'EPUISE' }
+        : stock));
+      toast.success(`${loss.quantite} pièce(s) de ${loss.fromageNom} déclarée(s) comme perte.`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'La déclaration de perte a échoué.');
+    } finally {
+      setDeclaringLossId(null);
+    }
+  };
+
   return {
     loading,
     searchQuery,
@@ -132,5 +155,7 @@ export function useStock() {
     expiringSoonItems,
     expiredItems,
     displayItems,
+    declaringLossId,
+    declareExpiredLoss,
   };
 }

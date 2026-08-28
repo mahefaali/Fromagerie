@@ -9,6 +9,7 @@ import Configuration from './pages/Configuration/Configuration'
 import AffinagePage from './pages/Affinage/Affinage'
 import Stock from './pages/StorageSale/StockSale'
 import { ProtectedRoute } from './routes/ProtectedRoute'
+import { OwnerOnlyRoute } from './routes/OwnerOnlyRoute'
 import { PublicOnlyRoute } from './routes/PublicOnlyRoute'
 
 function App() {
@@ -29,7 +30,9 @@ function App() {
               <Route path="/fabrication" element={<Fabrication />} />
               <Route path="/affinage" element={<AffinagePage />} />
               <Route path="/stock" element={<Stock />} />
-              <Route path="/configuration" element={<Configuration />} />
+              <Route element={<OwnerOnlyRoute />}>
+                <Route path="/configuration" element={<Configuration />} />
+              </Route>
             </Route>
           </Route>
 

@@ -11,6 +11,9 @@ import org.springframework.data.repository.query.Param;
 
 public interface FromageRepository extends JpaRepository<Fromage, Long> {
 
+    @Query("select distinct r.fromage.id from LotAffinage l join l.fabrication f join f.recette r")
+    List<Long> findDistinctIdsInLots();
+
     @Query("""
                 SELECT f
                 FROM Fabrication f

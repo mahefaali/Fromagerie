@@ -111,6 +111,7 @@ public class CommandeService {
             ReservationStock reservation=all.stream().filter(item->item.getLigneCommande().getId().equals(line.getLigneCommande().getId())&&item.getStockFromageFini().getId().equals(line.getStockFromageFini().getId())).findFirst().orElseThrow();
             return new LivraisonLigneResponse(reservation.getId(),line.getQuantitePrevue(),line.getQuantiteLivree(),line.getQuantiteLivree()-line.getQuantitePrevue());
         }).toList())).orElse(null);
-        return new CommandeResponse(o.getId(),o.getNumeroCommande(),client(o.getClient()),o.getDateCommande(),o.getDateLivraisonSouhaitee(),o.getStatut(),o.getObservations(),lines,delivery);
+        FactureResponse invoice=factures.findByCommandeId(o.getId()).map(this::facture).orElse(null);
+        return new CommandeResponse(o.getId(),o.getNumeroCommande(),client(o.getClient()),o.getDateCommande(),o.getDateLivraisonSouhaitee(),o.getStatut(),o.getObservations(),lines,delivery,invoice);
     }
 }

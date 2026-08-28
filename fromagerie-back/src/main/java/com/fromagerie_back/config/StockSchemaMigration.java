@@ -55,6 +55,37 @@ public class StockSchemaMigration implements ApplicationRunner {
                     CONSTRAINT fk_mouvement_utilisateur FOREIGN KEY (utilisateur_id) REFERENCES utilisateurs(id)
                 )
                 """);
+        jdbcTemplate.execute("""
+                CREATE TABLE IF NOT EXISTS cout_production_manuel (
+                    id BIGSERIAL PRIMARY KEY,
+                    fromage_id BIGINT NOT NULL UNIQUE,
+                    cout_unitaire NUMERIC(19,4) NOT NULL,
+                    date_mise_a_jour TIMESTAMP NOT NULL,
+                    utilisateur_modification_id BIGINT,
+                    CONSTRAINT fk_cout_production_fromage FOREIGN KEY (fromage_id) REFERENCES fromage(id),
+                    CONSTRAINT fk_cout_production_utilisateur FOREIGN KEY (utilisateur_modification_id) REFERENCES utilisateurs(id)
+                )
+                """);
+        jdbcTemplate.execute("""
+                CREATE TABLE IF NOT EXISTS perte_stock (
+                    id BIGSERIAL PRIMARY KEY,
+                    stock_fromage_fini_id BIGINT NOT NULL,
+                    quantite INTEGER NOT NULL,
+                    type_perte VARCHAR(30) NOT NULL,
+                    motif VARCHAR(500) NOT NULL,
+                    date_heure TIMESTAMP NOT NULL,
+                    cout_unitaire_reference NUMERIC(19,4) NOT NULL,
+                    cout_total NUMERIC(19,4) NOT NULL,
+                    utilisateur_id BIGINT NOT NULL,
+                    reservation_stock_id BIGINT,
+                    CONSTRAINT fk_perte_stock FOREIGN KEY (stock_fromage_fini_id) REFERENCES stock_fromage_fini(id),
+                    CONSTRAINT fk_perte_reservation FOREIGN KEY (reservation_stock_id) REFERENCES reservation_stock(id),
+                    CONSTRAINT fk_perte_utilisateur FOREIGN KEY (utilisateur_id) REFERENCES utilisateurs(id)
+                )
+                """);
+        jdbcTemplate.execute("ALTER TABLE perte_stock ADD COLUMN IF NOT EXISTS reservation_stock_id BIGINT");
+        jdbcTemplate.execute("ALTER TABLE perte_stock DROP CONSTRAINT IF EXISTS fk_perte_reservation");
+        jdbcTemplate.execute("ALTER TABLE perte_stock ADD CONSTRAINT fk_perte_reservation FOREIGN KEY (reservation_stock_id) REFERENCES reservation_stock(id)");
 
         // Remove the legacy OneToOne constraint. Multiple lots can share one stock location.
         jdbcTemplate.execute("""
@@ -95,7 +126,7 @@ public class StockSchemaMigration implements ApplicationRunner {
         jdbcTemplate.execute("""
                 ALTER TABLE mouvement_stock
                 ADD CONSTRAINT mouvement_stock_type_check
-                CHECK (type IN ('ENTREE', 'SORTIE', 'AJUSTEMENT', 'VENTE'))
+                CHECK (type IN ('ENTREE', 'SORTIE', 'AJUSTEMENT', 'VENTE', 'PERTE'))
                 """);
 
     }

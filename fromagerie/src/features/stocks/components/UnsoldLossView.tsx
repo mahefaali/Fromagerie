@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import {
     TrendingDown,
     ShieldAlert,
@@ -8,6 +8,7 @@ import {
     BarChart3,
     Coins,
     CheckCircle2,
+    XCircle,
     Trash2
 } from 'lucide-react';
 import { Button } from './../../../components/ui/button';
@@ -16,6 +17,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from './../../../components/
 import { Input } from '../../../components/ui/input';
 
 import { useOrders } from './../hooks/useOrders';
+import { stockApi, type LossType, type ProductionCostApi, type StockFromageFini, type StockLossApi } from './../api/stockApi';
 import { DeclareImproperModal } from './DeclareImproperModal';
 import { RegisterReturnModal, type ReturnItemFormState } from './RegisterReturnModal';
 
@@ -37,6 +39,7 @@ export interface LossLogEntry {
     cheeseName: string;
     badgeText: string;
     dateFormatted: string;
+    dateIso: string;
     lotNumber: string;
     orderNumber: string;
     clientName: string;
@@ -53,7 +56,13 @@ export const UnsoldLossView: React.FC = () => {
     const [selectedOrderForReturn, setSelectedOrderForReturn] = useState<any | null>(null);
     const [orderReturns, setOrderReturns] = useState<Record<string, { returnCount: number; items: Record<string, number> }>>({});
     const [lossEntries, setLossEntries] = useState<LossLogEntry[]>([]);
-    const [toastMessage, setToastMessage] = useState<string | null>(null);
+    const [stockEntries, setStockEntries] = useState<StockFromageFini[]>([]);
+    const [toastState, setToastState] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+
+    const showToast = (message: string, type: 'success' | 'error') => {
+        setToastState({ message, type });
+        window.setTimeout(() => setToastState(null), 4000);
+    };
 
     const { allOrders, orders } = useOrders();
 
@@ -62,11 +71,88 @@ export const UnsoldLossView: React.FC = () => {
         return dataSource.filter((order) => order.status === 'delivered');
     }, [allOrders, orders]);
 
-    const [productionCosts, setProductionCosts] = useState<ProductionCostItem[]>([
-        { id: '1', name: "Bleu d'auvergne", unitCost: 6.8 },
-        { id: '2', name: 'Camembert fermier', unitCost: 4.2 },
-        { id: '3', name: 'Tomme de montagne', unitCost: 13.5 },
-    ]);
+    useEffect(() => {
+        if (allOrders.length === 0) return;
+        void stockApi.listLosses().then((losses: StockLossApi[]) => {
+            const returnedByStock = losses.reduce<Record<number, number>>((result, loss) => {
+                if (loss.typePerte === 'RETOUR_CLIENT') {
+                    result[loss.stockId] = (result[loss.stockId] ?? 0) + loss.quantite;
+                }
+                return result;
+            }, {});
+            const returnedByReservation = losses.reduce<Record<number, number>>((result, loss) => {
+                if (loss.typePerte === 'RETOUR_CLIENT' && loss.reservationId != null) {
+                    result[loss.reservationId] = (result[loss.reservationId] ?? 0) + loss.quantite;
+                }
+                return result;
+            }, {});
+            const returnedByLot = losses.reduce<Record<string, number>>((result, loss) => {
+                if (loss.typePerte === 'RETOUR_CLIENT' && loss.reservationId == null) {
+                    result[loss.numeroLot] = (result[loss.numeroLot] ?? 0) + loss.quantite;
+                }
+                return result;
+            }, {});
+            const remainingByStock = { ...returnedByStock };
+            const remainingByLot = { ...returnedByLot };
+            // Legacy losses have no reservation id; allocate them once in reverse API order.
+            const persistedReturns = [...allOrders].reverse().reduce<typeof orderReturns>((result, order) => {
+                const items = order.items.reduce<Record<string, number>>((itemResult, item: any) => {
+                    const delivered = Number(item.deliveredQuantity ?? item.quantity ?? 0);
+                    const available = item.stockId ? remainingByStock[item.stockId] ?? 0 : 0;
+                    const lotAvailable = item.batchCode ? remainingByLot[item.batchCode] ?? 0 : 0;
+                    const key = String(item.reservationId ?? item.id ?? item.name ?? item.productName ?? 'Fromage');
+                    const quantity = item.reservationId != null
+                        ? Math.min(delivered, returnedByReservation[item.reservationId] ?? 0)
+                        : item.batchCode && lotAvailable > 0
+                            ? Math.min(delivered, lotAvailable)
+                            : Math.min(delivered, available);
+                    if (item.reservationId == null && item.batchCode && lotAvailable > 0) {
+                        remainingByLot[item.batchCode] = lotAvailable - quantity;
+                    } else if (item.stockId && item.reservationId == null) {
+                        remainingByStock[item.stockId] = available - quantity;
+                    }
+                    if (quantity > 0) itemResult[key] = quantity;
+                    return itemResult;
+                }, {});
+                if (Object.keys(items).length > 0) {
+                    result[order.id] = { returnCount: 1, items };
+                }
+                return result;
+            }, {});
+            setOrderReturns((current) => ({ ...persistedReturns, ...current }));
+        }).catch((error) => {
+            showToast(error instanceof Error ? error.message : 'Chargement des retours impossible.', 'error');
+        });
+    }, [allOrders]);
+
+    const [productionCosts, setProductionCosts] = useState<ProductionCostItem[]>([]);
+
+    useEffect(() => {
+        void Promise.all([stockApi.listCosts(), stockApi.listLosses(), stockApi.findStocks()]).then(([costs, losses, stocks]) => {
+            setStockEntries(stocks);
+            setProductionCosts(costs.map((cost: ProductionCostApi) => ({
+                id: String(cost.fromageId),
+                name: cost.fromageNom,
+                unitCost: cost.coutUnitaire ?? '',
+            })));
+            setLossEntries(losses.map((loss) => ({
+                id: String(loss.id),
+                cheeseName: loss.fromageNom,
+                badgeText: loss.typePerte === 'RETOUR_CLIENT' ? 'Invendu retourné' : loss.typePerte,
+                dateFormatted: new Date(loss.dateHeure).toLocaleDateString('fr-FR'),
+                dateIso: loss.dateHeure,
+                lotNumber: loss.numeroLot,
+                orderNumber: 'Interne',
+                clientName: 'Stock',
+                reason: loss.motif,
+                quantity: loss.quantite,
+                unitCost: Number(loss.coutUnitaireReference),
+                totalCost: Number(loss.coutTotal),
+            })));
+        }).catch((error) => {
+            showToast(error instanceof Error ? error.message : 'Chargement des coûts et pertes impossible.', 'error');
+        });
+    }, []);
 
     // KPICalculs
     const totalLostPieces = useMemo(() => {
@@ -92,10 +178,79 @@ export const UnsoldLossView: React.FC = () => {
         { id: 'total-cost', label: 'Coût total des pertes', value: totalLossCostFormatted, icon: Euro },
     ];
 
+    const monthlyLossRates = useMemo(() => {
+        const rows = new Map<string, {
+            cheeseName: string;
+            month: string;
+            enteredQuantity: number;
+            lostQuantity: number;
+            lostCost: number;
+        }>();
+
+        stockEntries.forEach((stock) => {
+            const month = stock.dateEntreeStock?.slice(0, 7);
+            if (!month) return;
+            const key = `${stock.fromageNom.trim().toLowerCase()}::${month}`;
+            const row = rows.get(key) ?? {
+                cheeseName: stock.fromageNom,
+                month,
+                enteredQuantity: 0,
+                lostQuantity: 0,
+                lostCost: 0,
+            };
+            row.enteredQuantity += Number(stock.quantiteInitiale ?? 0);
+            rows.set(key, row);
+        });
+
+        lossEntries.forEach((loss) => {
+            const month = loss.dateIso?.slice(0, 7);
+            if (!month) return;
+            const key = `${loss.cheeseName.trim().toLowerCase()}::${month}`;
+            const row = rows.get(key) ?? {
+                cheeseName: loss.cheeseName,
+                month,
+                enteredQuantity: 0,
+                lostQuantity: 0,
+                lostCost: 0,
+            };
+            row.lostQuantity += loss.quantity;
+            row.lostCost += loss.totalCost;
+            rows.set(key, row);
+        });
+
+        return [...rows.values()]
+            .map((row) => ({
+                ...row,
+                lossRate: row.enteredQuantity > 0 ? (row.lostQuantity / row.enteredQuantity) * 100 : 0,
+                monthLabel: new Date(`${row.month}-01T00:00:00`).toLocaleDateString('fr-FR', {
+                    month: 'long',
+                    year: 'numeric',
+                }),
+            }))
+            .sort((a, b) => b.month.localeCompare(a.month) || a.cheeseName.localeCompare(b.cheeseName, 'fr'));
+    }, [lossEntries, stockEntries]);
+
     const handleCostChange = (id: string, value: string) => {
         setProductionCosts((prev) =>
             prev.map((item) => (item.id === id ? { ...item, unitCost: value } : item))
         );
+    };
+
+    const handleCostSave = async (cheese: ProductionCostItem) => {
+        const value = Number(cheese.unitCost);
+        if (!Number.isFinite(value) || value < 0) {
+            showToast('Saisissez un coût de production valide.', 'error');
+            return;
+        }
+        try {
+            const saved = await stockApi.updateCost(Number(cheese.id), { coutUnitaire: value });
+            setProductionCosts((current) => current.map((item) => item.id === cheese.id
+                ? { ...item, unitCost: saved.coutUnitaire ?? value }
+                : item));
+            showToast(`Coût paramétré pour ${saved.fromageNom}.`, 'success');
+        } catch (error) {
+            showToast(error instanceof Error ? error.message : 'Enregistrement du coût impossible.', 'error');
+        }
     };
 
     const handleDeleteLossEntry = (id: string) => {
@@ -103,88 +258,70 @@ export const UnsoldLossView: React.FC = () => {
     };
 
     // Callback 1 : Soumission Déclarer un fromage impropre
-    const handleDeclareImproperSubmit = (data: any) => {
-        // 1. Extraction rigoureuse du nom du fromage selon le payload de la modale
-        let rawCheeseName =
-            data.cheeseName ||
-            data.cheese ||
-            data.cheeseType ||
-            data.cheeseTitle ||
-            '';
-
-        // Si la modale renvoie un ID (ex: '1', '2'), on retrouve le nom dans productionCosts
-        if (data.cheeseId || (rawCheeseName && !isNaN(Number(rawCheeseName)))) {
-            const targetId = String(data.cheeseId || rawCheeseName);
-            const match = productionCosts.find((p) => String(p.id) === targetId);
-            if (match) {
-                rawCheeseName = match.name;
-            }
+    const handleDeclareImproperSubmit = async (data: any): Promise<boolean> => {
+        const stockId = Number(data.batchId);
+        const typePerte: LossType = data.cause === "Défaut d'affinage"
+            ? 'DEFAUT_AFFINAGE'
+            : data.cause === 'Péremption' ? 'DLC_DDM_DEPASSEE' : 'AUTRE';
+        const motif = [data.cause, data.defectType, data.observation].filter(Boolean).join(' - ');
+        if (!Number.isInteger(stockId) || stockId <= 0) {
+            showToast('Sélectionnez un lot disponible.', 'error');
+            return false;
         }
-
-        // Fallback propre au premier fromage de la liste si non trouvé
-        const cheeseName = rawCheeseName.trim() || productionCosts[0]?.name || 'Tomme de montagne';
-
-        const qty = Number(data.quantity || data.qty || data.count || 1);
-        const lot = data.lotNumber || data.lot || 'Lot interne';
-        const reason = data.reason || data.motive || "Défaut d'affinage";
-        const dateStr = data.date || new Date().toISOString().split('T')[0];
-
-        // 2. Recherche du coût unitaire avec comparaison insensible à la casse / espaces
-        const foundCost = productionCosts.find(
-            (p) => p.name.trim().toLowerCase() === cheeseName.trim().toLowerCase()
-        );
-        const unitCost = foundCost ? Number(foundCost.unitCost) : 13.5;
-
-        // 3. Formatage de la date
-        let formattedDate = dateStr;
         try {
-            const parts = dateStr.split('-');
-            if (parts.length === 3) {
-                const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
-                formattedDate = d.toLocaleDateString('fr-FR', {
-                    day: 'numeric',
-                    month: 'long',
-                    year: 'numeric',
-                });
-            }
-        } catch {
-            formattedDate = dateStr;
+            const saved = await stockApi.createLoss(stockId, {
+                quantite: Number(data.quantity),
+                typePerte,
+                motif,
+            });
+            setLossEntries((current) => [{
+                id: String(saved.id),
+                cheeseName: saved.fromageNom,
+                badgeText: saved.typePerte,
+                dateFormatted: new Date(saved.dateHeure).toLocaleDateString('fr-FR'),
+                dateIso: saved.dateHeure,
+                lotNumber: saved.numeroLot,
+                orderNumber: 'Interne',
+                clientName: 'Stock',
+                reason: saved.motif || motif,
+                quantity: saved.quantite,
+                unitCost: Number(saved.coutUnitaireReference),
+                totalCost: Number(saved.coutTotal),
+            }, ...current]);
+            setSubTab('journal');
+            showToast(`Déclaration enregistrée pour ${saved.fromageNom}.`, 'success');
+            return true;
+        } catch (error) {
+            showToast(error instanceof Error ? error.message : 'Déclaration impossible.', 'error');
+            return false;
         }
-
-        const newEntry: LossLogEntry = {
-            id: `loss-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-            cheeseName: cheeseName, // Nom exact harmonisé
-            badgeText: "Défaut d'affinage",
-            dateFormatted: formattedDate,
-            lotNumber: lot,
-            orderNumber: 'Interne',
-            clientName: 'Production / Cave',
-            reason: reason,
-            quantity: qty,
-            unitCost: unitCost,
-            totalCost: unitCost * qty,
-        };
-
-        setLossEntries((prev) => [newEntry, ...prev]);
-        setIsModalOpen(false);
-        setSubTab('journal');
-
-        setToastMessage(`Déclaration enregistrée pour ${cheeseName}.`);
-        setTimeout(() => setToastMessage(null), 4000);
     };
 
     // Callback 2 : Soumission Retour d'invendus
-    const handleReturnSubmit = (data: {
+    const handleReturnSubmit = async (data: {
         orderId: string;
         returnDate: string;
-        operator: string;
-        generalNote: string;
         items: ReturnItemFormState[];
-    }) => {
+    }): Promise<boolean> => {
         const { orderId, returnDate, items } = data;
         const currentOrder = selectedOrderForReturn;
         const orderNum = currentOrder?.orderNumber || currentOrder?.id || orderId;
+        const cheeseLabel = [...new Set(items.map((item) => item.cheeseName || 'Fromage'))].join(', ');
         const clientName = currentOrder?.clientName || 'Client';
+
+        try {
+            await Promise.all(items.filter((item) => item.returnedQuantity > 0).map((item) => {
+                if (!item.stockId) throw new Error(`Stock introuvable pour ${item.cheeseName}`);
+                return stockApi.createLoss(item.stockId, {
+                    quantite: item.returnedQuantity,
+                    typePerte: 'RETOUR_CLIENT',
+                    reservationId: item.reservationId,
+                });
+            }));
+        } catch (error) {
+            showToast(error instanceof Error ? error.message : 'Enregistrement du retour impossible.', 'error');
+            return false;
+        }
 
         // 1. Sauvegarde des quantités retournées globales pour la commande
         setOrderReturns((prev) => {
@@ -192,8 +329,8 @@ export const UnsoldLossView: React.FC = () => {
             const updatedItems = { ...currentReturnData.items };
 
             items.forEach((item) => {
-                const name = item.cheeseName || 'Fromage';
-                updatedItems[name] = (updatedItems[name] || 0) + Number(item.returnedQuantity || 0);
+                const key = String(item.reservationId ?? item.stockId ?? item.cheeseName ?? 'Fromage');
+                updatedItems[key] = (updatedItems[key] || 0) + Number(item.returnedQuantity || 0);
             });
 
             return {
@@ -205,13 +342,12 @@ export const UnsoldLossView: React.FC = () => {
             };
         });
 
-        // 2. Génération des entrées du journal des pertes UNIQUEMENT pour les articles 'Déclarés en perte'
+        // 2. Génération des entrées du journal des pertes après confirmation du serveur.
         const newLosses: LossLogEntry[] = [];
 
         items.forEach((item) => {
             const qty = Number(item.returnedQuantity || 0);
-            // On vérifie que la quantité > 0 ET que la destination choisie est 'loss'
-            if (qty > 0 && item.destination === 'loss') {
+            if (qty > 0) {
                 const cheeseName = item.cheeseName || 'Fromage';
                 const foundCost = productionCosts.find(
                     (p) => p.name.trim().toLowerCase() === cheeseName.trim().toLowerCase()
@@ -236,10 +372,11 @@ export const UnsoldLossView: React.FC = () => {
                     cheeseName: cheeseName,
                     badgeText: 'Invendu retourné',
                     dateFormatted: formattedDate || '20 août 2026',
+                    dateIso: returnDate,
                     lotNumber: `lot ${orderNum}-RET`,
                     orderNumber: orderNum,
                     clientName: clientName,
-                    reason: item.reason?.trim() ? item.reason : 'Invendu marché / Retour',
+                    reason: 'Retour d\'invendus',
                     quantity: qty,
                     unitCost: unitCost,
                     totalCost: unitCost * qty,
@@ -252,17 +389,17 @@ export const UnsoldLossView: React.FC = () => {
         }
 
         setSubTab('analyse'); // Bascule directement vers l'onglet Analyse pour visualiser le taux mis à jour
-        setToastMessage(`Retour enregistré pour ${orderNum}.`);
-        setTimeout(() => setToastMessage(null), 4000);
+        showToast(`Retour d'invendus enregistré pour ${cheeseLabel}.`, 'success');
         setSelectedOrderForReturn(null);
+        return true;
     };
 
     return (
         <div className="space-y-6 relative">
-            {toastMessage && (
-                <div className="fixed bottom-6 right-6 z-[10000] flex items-center gap-2.5 bg-white text-stone-900 font-semibold text-sm px-4 py-3 rounded-2xl shadow-xl border border-stone-200 animate-in fade-in slide-in-from-bottom-3 duration-200">
-                    <CheckCircle2 className="h-5 w-5 text-black fill-white" />
-                    <span>{toastMessage}</span>
+            {toastState && (
+                <div className={`fixed bottom-6 right-6 z-[10000] flex items-center gap-2.5 text-white font-semibold text-sm px-4 py-3 rounded-2xl shadow-xl border animate-in fade-in slide-in-from-bottom-3 duration-200 ${toastState.type === 'error' ? 'bg-red-600 border-red-700' : 'bg-[#2d4a27] border-[#233a1e]'}`}>
+                    {toastState.type === 'error' ? <XCircle className="h-5 w-5" /> : <CheckCircle2 className="h-5 w-5" />}
+                    <span>{toastState.message}</span>
                 </div>
             )}
 
@@ -366,9 +503,10 @@ export const UnsoldLossView: React.FC = () => {
                             const items = rawItems.map((item: any) => {
                                 const name = item.cheeseName || item.name || 'Fromage';
                                 const quantity = item.quantity || 0;
+                                const key = String(item.reservationId ?? item.id ?? item.name ?? item.productName ?? 'Fromage');
                                 const returnedQuantity =
-                                    savedReturnData?.items[name] !== undefined
-                                        ? savedReturnData.items[name]
+                                    savedReturnData?.items[key] !== undefined
+                                        ? savedReturnData.items[key]
                                         : item.returnedQuantity || 0;
 
                                 return {
@@ -379,7 +517,10 @@ export const UnsoldLossView: React.FC = () => {
                                 };
                             });
 
-                            const totalDelivered = items.reduce((sum: number, item: any) => sum + item.quantity, 0);
+                            const totalDelivered = items.reduce(
+                                (sum: number, item: any) => sum + Number(item.deliveredQuantity ?? item.quantity ?? 0),
+                                0
+                            );
                             const totalReturned = items.reduce((sum: number, item: any) => sum + item.returnedQuantity, 0);
                             const actuallySold = totalDelivered - totalReturned;
                             const returnCount = savedReturnData?.returnCount || 0;
@@ -401,7 +542,16 @@ export const UnsoldLossView: React.FC = () => {
                                         </div>
 
                                         <Button
-                                            onClick={() => setSelectedOrderForReturn(order)}
+                                            onClick={() => {
+                                                const saved = orderReturns[order.id];
+                                                setSelectedOrderForReturn({
+                                                    ...order,
+                                                    items: order.items.map((item: any) => ({
+                                                        ...item,
+                                                        returnedQuantity: saved?.items[String(item.reservationId ?? item.id ?? item.name ?? item.productName ?? 'Fromage')] ?? 0,
+                                                    })),
+                                                });
+                                            }}
                                             className="bg-[#2d4a27] hover:bg-[#233a1e] text-white rounded-xl px-4 py-2 text-sm font-medium flex items-center gap-2 shadow-sm cursor-pointer"
                                         >
                                             <RotateCcw className="h-4 w-4" />
@@ -429,7 +579,7 @@ export const UnsoldLossView: React.FC = () => {
                                             <div key={idx} className="flex items-center justify-between p-3 bg-stone-200/40 rounded-xl text-sm">
                                                 <span className="text-stone-800 font-medium">{item.name}</span>
                                                 <span className="text-stone-500 text-xs font-medium">
-                                                    livré {item.quantity} unite · retourné {item.returnedQuantity}
+                                                    livré {Number(item.deliveredQuantity ?? item.quantity ?? 0)} unite · retourné {item.returnedQuantity}
                                                 </span>
                                             </div>
                                         ))}
@@ -563,90 +713,39 @@ export const UnsoldLossView: React.FC = () => {
                             Taux de perte par fromage et par mois
                         </h2>
 
-                        <div className="space-y-3">
-                            {(() => {
-                                // 1. On rassemble TOUS les noms de fromages uniques provenant de toutes les sources
-                                const allCheeseNames = Array.from(
-                                    new Set([
-                                        ...productionCosts.map((p) => p.name.trim()),
-                                        ...lossEntries.map((l) => l.cheeseName.trim()),
-                                        ...deliveredOrders.flatMap((o) =>
-                                            (o.items || []).map((i: any) => (i.cheeseName || i.name || '').trim())
-                                        ),
-                                    ])
-                                ).filter(Boolean);
+                         <div className="space-y-3">
+                            {monthlyLossRates.length === 0 ? (
+                                <div className="w-full py-8 px-4 rounded-2xl border border-dashed border-stone-300 bg-white/40 flex items-center justify-center">
+                                    <span className="text-stone-500 text-sm font-medium">
+                                        Aucune entrée en stock ni perte enregistrée.
+                                    </span>
+                                </div>
+                            ) : monthlyLossRates.map((row) => (
+                                <div
+                                    key={`${row.cheeseName}-${row.month}`}
+                                    className="bg-[#FAF7F2]/80 border border-stone-200/90 rounded-2xl p-4 space-y-3"
+                                >
+                                    <div className="flex items-center justify-between">
+                                        <h3 className="text-stone-900 font-bold text-base">
+                                            {row.cheeseName} <span className="font-normal text-stone-500">— {row.monthLabel}</span>
+                                        </h3>
+                                        <span className="text-stone-900 font-bold text-base">
+                                            {row.lossRate.toFixed(1)} % de perte
+                                        </span>
+                                    </div>
 
-                                if (allCheeseNames.length === 0) {
-                                    return (
-                                        <div className="w-full py-8 px-4 rounded-2xl border border-dashed border-stone-300 bg-white/40 flex items-center justify-center">
-                                            <span className="text-stone-500 text-sm font-medium">
-                                                Pas encore de données de ventes ni de pertes.
-                                            </span>
-                                        </div>
-                                    );
-                                }
-
-                                return allCheeseNames.map((cheeseName) => {
-                                    const normalizedName = cheeseName.toLowerCase();
-
-                                    // 2. Calcul de la quantité et du coût perdus
-                                    const lostQty = lossEntries
-                                        .filter((l) => l.cheeseName.trim().toLowerCase() === normalizedName)
-                                        .reduce((sum, l) => sum + l.quantity, 0);
-
-                                    const lostCost = lossEntries
-                                        .filter((l) => l.cheeseName.trim().toLowerCase() === normalizedName)
-                                        .reduce((sum, l) => sum + l.totalCost, 0);
-
-                                    // 3. Calcul de la quantité vendue (Livrée - Retournée)
-                                    let soldQty = 0;
-                                    deliveredOrders.forEach((order) => {
-                                        const rawItems = order.items || [];
-                                        const savedReturnData = orderReturns[order.id];
-
-                                        rawItems.forEach((item: any) => {
-                                            const name = (item.cheeseName || item.name || '').trim();
-                                            if (name.toLowerCase() === normalizedName) {
-                                                const delivered = Number(item.quantity || 0);
-                                                const returned =
-                                                    savedReturnData?.items[name] ?? Number(item.returnedQuantity || 0);
-                                                soldQty += Math.max(0, delivered - returned);
-                                            }
-                                        });
-                                    });
-
-                                    const totalUnits = lostQty + soldQty;
-                                    const lossRate = totalUnits > 0 ? (lostQty / totalUnits) * 100 : 0;
-
-                                    return (
+                                    <div className="w-full bg-[#E2DFD8] h-3 rounded-full overflow-hidden">
                                         <div
-                                            key={cheeseName}
-                                            className="bg-[#FAF7F2]/80 border border-stone-200/90 rounded-2xl p-4 space-y-3"
-                                        >
-                                            <div className="flex items-center justify-between">
-                                                <h3 className="text-stone-900 font-bold text-base">
-                                                    {cheeseName} <span className="font-normal text-stone-500">— août 2026</span>
-                                                </h3>
-                                                <span className="text-stone-900 font-bold text-base">
-                                                    {lossRate.toFixed(1)} % de perte
-                                                </span>
-                                            </div>
+                                            className="bg-[#2d4a27] h-full transition-all duration-500 rounded-full"
+                                            style={{ width: `${Math.min(100, Math.max(0, row.lossRate))}%` }}
+                                        />
+                                    </div>
 
-                                            {/* Jauge de progression */}
-                                            <div className="w-full bg-[#E2DFD8] h-3 rounded-full overflow-hidden">
-                                                <div
-                                                    className="bg-[#2d4a27] h-full transition-all duration-500 rounded-full"
-                                                    style={{ width: `${Math.min(100, Math.max(0, lossRate))}%` }}
-                                                />
-                                            </div>
-
-                                            <p className="text-xs text-stone-500 font-medium">
-                                                {lostQty} perdu(s) · {soldQty} vendu(s) · {lostCost.toFixed(2)} € de perte
-                                            </p>
-                                        </div>
-                                    );
-                                });
-                            })()}
+                                    <p className="text-xs text-stone-500 font-medium">
+                                        {row.lostQuantity} perdu(s) · {row.enteredQuantity} entré(s) en stock · {row.lostCost.toFixed(2)} € de perte
+                                    </p>
+                                </div>
+                            ))}
                         </div>
                     </div>
                 </TabsContent>
@@ -674,6 +773,13 @@ export const UnsoldLossView: React.FC = () => {
                                         onChange={(e) => handleCostChange(cheese.id, e.target.value)}
                                         className="w-24 text-right bg-stone-100/80 border-stone-200 rounded-xl text-stone-900 font-medium h-9 focus-visible:ring-stone-400"
                                     />
+                                    <Button
+                                        type="button"
+                                        onClick={() => void handleCostSave(cheese)}
+                                        className="rounded-xl bg-[#2d4a27] px-3 py-2 text-xs text-white hover:bg-[#233a1e]"
+                                    >
+                                        Enregistrer
+                                    </Button>
                                     <span className="text-stone-600 font-medium text-sm">€</span>
                                 </div>
                             </div>

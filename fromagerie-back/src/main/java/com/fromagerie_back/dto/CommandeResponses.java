@@ -8,6 +8,6 @@ public final class CommandeResponses {
  public record LigneResponse(Long id,Long fromageId,String fromageNom,Integer quantiteCommandee,BigDecimal prixUnitaire,List<ReservationResponse> reservations) {}
  public record LivraisonLigneResponse(Long reservationId,Integer quantitePrevue,Integer quantiteLivree,Integer ecart) {}
  public record LivraisonResponse(LocalDate dateLivraison,String observations,List<LivraisonLigneResponse> lignes) {}
- public record CommandeResponse(Long id,String numeroCommande,ClientResponse client,LocalDate dateCommande,LocalDate dateLivraisonSouhaitee,StatutCommande statut,String observations,List<LigneResponse> lignes,LivraisonResponse livraison) {}
  public record FactureResponse(Long id,String numeroFacture,Long commandeId,LocalDate dateFacture,BigDecimal total,ModePaiement modePaiement) {}
+ public record CommandeResponse(Long id,String numeroCommande,ClientResponse client,LocalDate dateCommande,LocalDate dateLivraisonSouhaitee,StatutCommande statut,String observations,List<LigneResponse> lignes,LivraisonResponse livraison,FactureResponse facture) {}
 }

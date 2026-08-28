@@ -4,6 +4,7 @@ import { orderApi, type ClientOption, type CommandeApi } from '../api/stockApi';
 import { type Order, type OrderFilterStatus, type CreateOrderPayload } from '../types/orders';
 
 const statusMap: Record<string, Order['status']> = { BROUILLON: 'draft', CONFIRMEE: 'reserved', EN_PREPARATION: 'reserved', PRETE: 'prepared', LIVREE: 'delivered', ANNULEE: 'cancelled' };
+const paymentMethodMap: Record<string, string> = { VIREMENT: 'Virement', CARTE: 'Carte bancaire', ESPECES: 'Espèces', CHEQUE: 'Chèque', AUTRE: 'Autre' };
 function toOrder(o: CommandeApi): Order {
   const deliveryLines = new Map((o.livraison?.lignes ?? []).map((line) => [line.reservationId, line]));
   return {
@@ -15,6 +16,10 @@ function toOrder(o: CommandeApi): Order {
     orderDate: o.dateCommande,
     expectedDeliveryDate: o.dateLivraisonSouhaitee,
     deliveryDate: o.livraison?.dateLivraison,
+    invoicedDate: o.facture?.dateFacture,
+    invoiceNumber: o.facture?.numeroFacture,
+    invoicedTotal: o.facture ? Number(o.facture.total) : undefined,
+    paymentMethod: o.facture ? (paymentMethodMap[o.facture.modePaiement] ?? o.facture.modePaiement) : undefined,
     note: o.observations ?? undefined,
     totalAmount: o.lignes.reduce((sum, line) => sum + line.quantiteCommandee * Number(line.prixUnitaire), 0),
     items: o.lignes.flatMap((line) => line.reservations.length
@@ -31,6 +36,7 @@ function toOrder(o: CommandeApi): Order {
             gap: delivered?.ecart,
             unit: 'u',
             pricePerUnit: Number(line.prixUnitaire),
+            stockId: reservation.stockId,
             batchCode: reservation.lot,
             location: reservation.emplacement,
           };
@@ -56,7 +62,7 @@ export const useOrders = () => {
   const handleMarkAsPrepared = async (id: string) => { try { const saved = await orderApi.prepare(Number(id)); setAllOrders(x => x.map(o => o.id === id ? toOrder(saved) : o)); toast.success('Commande marquée comme prête'); } catch (e) { toast.error(e instanceof Error ? e.message : 'Préparation impossible'); } };
   const handleConfirmOrder = async (id: string) => { try { const saved = await orderApi.confirm(Number(id)); setAllOrders(x => x.map(o => o.id === id ? toOrder(saved) : o)); toast.success('Stock réservé pour la commande'); } catch (e) { toast.error(e instanceof Error ? e.message : 'Confirmation impossible'); } };
   const handleRegisterDelivery = async (d: { orderId: string; deliveryDate: string; deliveryNote: string; deliveredItems: { itemId: string; deliveredQuantity: number; gap: number }[] }) => { try { const saved = await orderApi.deliver(Number(d.orderId), { dateLivraison: d.deliveryDate, observations: d.deliveryNote, lignes: d.deliveredItems.map(x => ({ reservationId: Number(x.itemId), quantiteLivree: x.deliveredQuantity })) }); setAllOrders(x => x.map(o => o.id === d.orderId ? toOrder(saved) : o)); toast.success('Livraison enregistrée et stock sorti'); } catch (e) { toast.error(e instanceof Error ? e.message : 'Livraison impossible'); } };
-  const handleCreateInvoice = async (d: { orderId: string; paymentMethod: string }) => { try { await orderApi.invoice(Number(d.orderId), { modePaiement: ({ Virement: 'VIREMENT', 'Carte bancaire': 'CARTE', Espèces: 'ESPECES', Chèque: 'CHEQUE' } as Record<string, string>)[d.paymentMethod] ?? 'AUTRE' }); toast.success('Facture validée'); } catch (e) { toast.error(e instanceof Error ? e.message : 'Facturation impossible'); } };
+  const handleCreateInvoice = async (d: { orderId: string; paymentMethod: string }) => { try { const invoice = await orderApi.invoice(Number(d.orderId), { modePaiement: ({ Virement: 'VIREMENT', 'Carte bancaire': 'CARTE', Espèces: 'ESPECES', Chèque: 'CHEQUE' } as Record<string, string>)[d.paymentMethod] ?? 'AUTRE' }); setAllOrders(orders => orders.map(order => order.id === d.orderId ? { ...order, invoicedDate: invoice.dateFacture, invoiceNumber: invoice.numeroFacture, invoicedTotal: Number(invoice.total), paymentMethod: paymentMethodMap[invoice.modePaiement] ?? invoice.modePaiement } : order)); toast.success('Facture validée'); } catch (e) { toast.error(e instanceof Error ? e.message : 'Facturation impossible'); } };
   const handleDeleteOrder = async (id: string) => { try { await orderApi.cancel(Number(id)); setAllOrders(x => x.map(o => o.id === id ? { ...o, status: 'cancelled' } : o)); toast.success('Commande annulée'); } catch (e) { toast.error(e instanceof Error ? e.message : 'Annulation impossible'); } };
   return { allOrders, orders, clients, fromages, loading, activeFilter, setActiveFilter, isCreateModalOpen, handleOpenCreateModal: () => setIsCreateModalOpen(true), handleCloseCreateModal: () => setIsCreateModalOpen(false), handleCreateOrder, handleCreateClient, handleConfirmOrder, handleMarkAsPrepared, handleRegisterDelivery, handleDeleteOrder, handleCreateInvoice };
 };

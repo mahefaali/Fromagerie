@@ -1,12 +1,11 @@
 import React from 'react';
 import { Card } from '../../../components/ui/card';
-import { Package, Warehouse, CalendarClock, Snowflake } from 'lucide-react';
+import { Package, Warehouse, CalendarClock } from 'lucide-react';
 
 interface KpiData {
   totalPieces: number;
   totalLocations: number;
   expiringSoon: number;
-  totalValue: number;
 }
 
 export const StockKpiGrid: React.FC<{ data: KpiData }> = ({ data }) => {
@@ -26,15 +25,10 @@ export const StockKpiGrid: React.FC<{ data: KpiData }> = ({ data }) => {
       value: data.expiringSoon,
       icon: CalendarClock,
     },
-    {
-      label: 'Valeur du stock',
-      value: `${data.totalValue.toFixed(2)} €`,
-      icon: Snowflake,
-    },
   ];
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 items-stretch">
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6 items-stretch">
       {kpis.map((kpi, idx) => {
         const Icon = kpi.icon;
         return (

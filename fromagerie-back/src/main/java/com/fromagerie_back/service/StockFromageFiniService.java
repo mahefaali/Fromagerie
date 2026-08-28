@@ -200,7 +200,7 @@ public class StockFromageFiniService {
     }
 
     private void updateStatus(StockFromageFini stock, TypeMouvementStock type) {
-        if (type == TypeMouvementStock.SORTIE || type == TypeMouvementStock.VENTE) {
+        if (type == TypeMouvementStock.SORTIE || type == TypeMouvementStock.VENTE || type == TypeMouvementStock.PERTE) {
             stock.setStatut(StatutStockFromageFini.EPUISE);
         } else if (stock.getStatut() == StatutStockFromageFini.EPUISE) {
             stock.setStatut(StatutStockFromageFini.DISPONIBLE);

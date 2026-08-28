@@ -31,7 +31,6 @@ export const MOCK_STOCK_ITEMS: (StockItem & { locationValue?: string })[] = [
     dlcDate: '08 août 2026',
     daysBeforeDlc: 2,
     durabilityType: 'DLC',
-    price: 55.00,
     isExpiringSoon: true,
     locationValue: 'cold_room',
   },

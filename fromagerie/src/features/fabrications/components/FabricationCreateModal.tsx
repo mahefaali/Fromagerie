@@ -118,14 +118,73 @@ function isBackendField(value: string): value is FieldPath<FabricationFormValues
   return backendFields.has(value as FieldPath<FabricationFormValues>);
 }
 
-const positiveValidation = {
-  required: "Ce champ est obligatoire.",
-  validate: (value: string) => Number(value) > 0 || "La valeur doit être strictement positive.",
+const requiredMessage = "Ce champ est obligatoire.";
+const MAX_QUANTITE_LAIT = 10_000;
+const MIN_TEMPERATURE = -50;
+const MAX_TEMPERATURE = 200;
+const MAX_DUREE_MINUTES = 10_080;
+const MAX_QUANTITE_INGREDIENT = 100_000;
+const MAX_POIDS_FROMAGES = 10_000;
+const MAX_NOMBRE_FROMAGES = 100_000;
+
+function validatePositiveNumber(value: string, max?: number): true | string {
+  const number = Number(value);
+  if (!Number.isFinite(number) || number <= 0) return "La valeur doit être strictement positive.";
+  return max === undefined || number <= max || `La valeur ne peut pas dépasser ${max}.`;
+}
+
+function validatePositiveInteger(value: string, max?: number): true | string {
+  const number = Number(value);
+  if (!Number.isFinite(number) || !Number.isInteger(number) || number <= 0) {
+    return "Saisissez un nombre entier strictement positif.";
+  }
+  return max === undefined || number <= max || `La valeur ne peut pas dépasser ${max}.`;
+}
+
+function validateTemperature(value: string): true | string {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return "Saisissez un nombre fini valide.";
+  return (number >= MIN_TEMPERATURE && number <= MAX_TEMPERATURE)
+    || `La température doit être comprise entre ${MIN_TEMPERATURE} et ${MAX_TEMPERATURE} °C.`;
+}
+
+function isValidLocalDateTime(value: string): boolean {
+  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/.exec(value);
+  if (!match) return false;
+
+  const [, year, month, day, hour, minute] = match.map(Number);
+  const date = new Date(year, month - 1, day, hour, minute);
+  return Number.isFinite(date.getTime())
+    && date.getFullYear() === year
+    && date.getMonth() === month - 1
+    && date.getDate() === day
+    && date.getHours() === hour
+    && date.getMinutes() === minute
+    && date.getTime() <= Date.now();
+}
+
+const boundedPositiveValidation = (max: number) => ({
+  required: requiredMessage,
+  validate: (value: string) => validatePositiveNumber(value, max),
+});
+
+const temperatureValidation = {
+  required: requiredMessage,
+  validate: validateTemperature,
 };
 
-const numberValidation = {
-  required: "Ce champ est obligatoire.",
-  validate: (value: string) => Number.isFinite(Number(value)) || "Saisissez un nombre valide.",
+const boundedPositiveIntegerValidation = (max: number) => ({
+  required: requiredMessage,
+  validate: (value: string) => validatePositiveInteger(value, max),
+});
+
+const referenceTextValidation = {
+  required: requiredMessage,
+  maxLength: {
+    value: 255,
+    message: "Ce texte ne peut pas dépasser 255 caractères.",
+  },
+  validate: (value: string) => value.trim().length > 0 || requiredMessage,
 };
 
 export default function FabricationCreateModal({
@@ -259,12 +318,14 @@ export default function FabricationCreateModal({
                 type="datetime-local"
                 className="min-h-12"
                 aria-invalid={Boolean(errors.dateHeureDebut)}
-                {...register("dateHeureDebut", { required: "La date et l'heure sont obligatoires." })}
+                {...register("dateHeureDebut", {
+                  required: "La date et l'heure sont obligatoires.",
+                  validate: (value) => isValidLocalDateTime(value) || "Saisissez une date et une heure valides.",
+                })}
               />
             </Field>
 
-            <ServerField label="Numéro de lot" value="Généré automatiquement après enregistrement" />
-            <ServerField label="Opérateur" value="Déterminé depuis votre session sécurisée" />
+
           </div>
         );
 
@@ -276,14 +337,18 @@ export default function FabricationCreateModal({
               label="Quantité de lait"
               unit="L"
               error={errors.quantiteLait?.message}
-              registration={register("quantiteLait", positiveValidation)}
+              min={0}
+              max={MAX_QUANTITE_LAIT}
+              registration={register("quantiteLait", boundedPositiveValidation(MAX_QUANTITE_LAIT))}
             />
             <NumberField
               id="temperatureLait"
               label="Température du lait"
               unit="°C"
               error={errors.temperatureLait?.message}
-              registration={register("temperatureLait", numberValidation)}
+              min={MIN_TEMPERATURE}
+              max={MAX_TEMPERATURE}
+              registration={register("temperatureLait", temperatureValidation)}
             />
             <Field label="Origine du lait" error={errors.origineLait?.message} required htmlFor="origineLait">
               <Controller
@@ -317,15 +382,19 @@ export default function FabricationCreateModal({
               label="Température de chauffage"
               unit="°C"
               error={errors.temperatureChauffage?.message}
-              registration={register("temperatureChauffage", numberValidation)}
+              min={MIN_TEMPERATURE}
+              max={MAX_TEMPERATURE}
+              registration={register("temperatureChauffage", temperatureValidation)}
             />
             <NumberField
               id="dureeChauffageMinutes"
               label="Durée de chauffage"
               unit="min"
               step="1"
+              min={1}
+              max={MAX_DUREE_MINUTES}
               error={errors.dureeChauffageMinutes?.message}
-              registration={register("dureeChauffageMinutes", positiveValidation)}
+              registration={register("dureeChauffageMinutes", boundedPositiveIntegerValidation(MAX_DUREE_MINUTES))}
             />
             <Field label="Type de présure" error={errors.typePresure?.message} required htmlFor="typePresure">
               <Input
@@ -333,17 +402,17 @@ export default function FabricationCreateModal({
                 className="min-h-12"
                 placeholder="Ex. Présure animale"
                 aria-invalid={Boolean(errors.typePresure)}
-                {...register("typePresure", {
-                  required: "Le type de présure est obligatoire.",
-                  validate: (value) => value.trim().length > 0 || "Le type de présure est obligatoire.",
-                })}
+                maxLength={255}
+                {...register("typePresure", referenceTextValidation)}
               />
             </Field>
             <NumberField
               id="quantitePresure"
               label="Quantité de présure"
               error={errors.quantitePresure?.message}
-              registration={register("quantitePresure", positiveValidation)}
+              min={0}
+              max={MAX_QUANTITE_INGREDIENT}
+              registration={register("quantitePresure", boundedPositiveValidation(MAX_QUANTITE_INGREDIENT))}
             />
           </div>
         );
@@ -357,32 +426,36 @@ export default function FabricationCreateModal({
                 className="min-h-12"
                 placeholder="Ex. Ferments thermophiles"
                 aria-invalid={Boolean(errors.typeFerments)}
-                {...register("typeFerments", {
-                  required: "Le type de ferments est obligatoire.",
-                  validate: (value) => value.trim().length > 0 || "Le type de ferments est obligatoire.",
-                })}
+                maxLength={255}
+                {...register("typeFerments", referenceTextValidation)}
               />
             </Field>
             <NumberField
               id="quantiteFerments"
               label="Quantité de ferments"
               error={errors.quantiteFerments?.message}
-              registration={register("quantiteFerments", positiveValidation)}
+              min={0}
+              max={MAX_QUANTITE_INGREDIENT}
+              registration={register("quantiteFerments", boundedPositiveValidation(MAX_QUANTITE_INGREDIENT))}
             />
             <NumberField
               id="temperatureMiseEnMoule"
               label="Température de mise en moule"
               unit="°C"
               error={errors.temperatureMiseEnMoule?.message}
-              registration={register("temperatureMiseEnMoule", numberValidation)}
+              min={MIN_TEMPERATURE}
+              max={MAX_TEMPERATURE}
+              registration={register("temperatureMiseEnMoule", temperatureValidation)}
             />
             <NumberField
               id="dureeEgouttageMinutes"
               label="Durée d'égouttage"
               unit="min"
               step="1"
+              min={1}
+              max={MAX_DUREE_MINUTES}
               error={errors.dureeEgouttageMinutes?.message}
-              registration={register("dureeEgouttageMinutes", positiveValidation)}
+              registration={register("dureeEgouttageMinutes", boundedPositiveIntegerValidation(MAX_DUREE_MINUTES))}
             />
           </div>
         );
@@ -395,19 +468,27 @@ export default function FabricationCreateModal({
               label="Poids total à la sortie du moule"
               unit="kg"
               error={errors.poidsTotalFromages?.message}
-              registration={register("poidsTotalFromages", positiveValidation)}
+              min={0}
+              max={MAX_POIDS_FROMAGES}
+              registration={register("poidsTotalFromages", {
+                ...boundedPositiveValidation(MAX_POIDS_FROMAGES),
+                validate: (value: string) => {
+                  const basicValidation = validatePositiveNumber(value, MAX_POIDS_FROMAGES);
+                  if (basicValidation !== true) return basicValidation;
+                  const milk = Number(getValues("quantiteLait"));
+                  return Number(value) <= milk
+                    || "Le poids total des fromages ne peut pas dépasser la quantité de lait.";
+                },
+              })}
             />
             <NumberField
               id="nombreFromages"
               label="Nombre de fromages produits"
               step="1"
+              min={1}
+              max={MAX_NOMBRE_FROMAGES}
               error={errors.nombreFromages?.message}
-              registration={register("nombreFromages", {
-                ...positiveValidation,
-                validate: (value) =>
-                  (Number(value) > 0 && Number.isInteger(Number(value))) ||
-                  "Saisissez un nombre entier strictement positif.",
-              })}
+              registration={register("nombreFromages", boundedPositiveIntegerValidation(MAX_NOMBRE_FROMAGES))}
             />
             <Field label="Observations" error={errors.observations?.message} className="md:col-span-2" htmlFor="observations">
               <Textarea
@@ -417,11 +498,6 @@ export default function FabricationCreateModal({
                 {...register("observations")}
               />
             </Field>
-            <ServerField
-              className="md:col-span-2"
-              label="Rendement"
-              value="Calculé par le backend à partir du lait et du poids obtenus"
-            />
           </div>
         );
     }
@@ -476,13 +552,12 @@ export default function FabricationCreateModal({
           {steps.map((step, index) => (
             <span
               key={step.key}
-              className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-medium ${
-                index === currentStep
+              className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-medium ${index === currentStep
                   ? "bg-primary text-primary-foreground"
                   : index < currentStep
                     ? "bg-primary/10 text-primary"
                     : "bg-muted text-muted-foreground"
-              }`}
+                }`}
             >
               {step.title}
             </span>
@@ -532,6 +607,8 @@ function NumberField({
   label,
   unit,
   step = "any",
+  min,
+  max,
   error,
   registration,
 }: {
@@ -539,6 +616,8 @@ function NumberField({
   label: string;
   unit?: string;
   step?: string;
+  min?: number;
+  max?: number;
   error?: string;
   registration: UseFormRegisterReturn;
 }) {
@@ -549,6 +628,8 @@ function NumberField({
           id={id}
           type="number"
           step={step}
+          min={min}
+          max={max}
           inputMode="decimal"
           className="min-h-12 pr-14"
           aria-invalid={Boolean(error)}
@@ -561,22 +642,5 @@ function NumberField({
         ) : null}
       </div>
     </Field>
-  );
-}
-
-function ServerField({
-  label,
-  value,
-  className = "",
-}: {
-  label: string;
-  value: string;
-  className?: string;
-}) {
-  return (
-    <div className={`rounded-2xl border border-dashed border-primary/30 bg-primary/[0.04] p-4 ${className}`}>
-      <p className="text-xs uppercase tracking-[0.14em] text-primary">{label}</p>
-      <p className="mt-1.5 text-sm text-muted-foreground">{value}</p>
-    </div>
   );
 }

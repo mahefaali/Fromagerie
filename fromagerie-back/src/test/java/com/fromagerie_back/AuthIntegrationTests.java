@@ -25,6 +25,7 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
 
 import com.fromagerie_back.exception.InvalidCredentialException;
+import com.fromagerie_back.exception.BusinessValidationException;
 import com.fromagerie_back.model.Role;
 import com.fromagerie_back.model.Utilisateur;
 import com.fromagerie_back.repository.UtilisateurRepository;
@@ -155,11 +156,53 @@ class AuthIntegrationTests {
 
     @Test
     void inactiveUserCannotAuthenticate() throws Exception {
-        utilisateurService.createUser("inactive", "Inactive", "4321", Role.FABRICATION, false);
+        Utilisateur inactive = utilisateurService.createUser("inactive", "Inactive", "4321", Role.FABRICATION, true);
+        utilisateurService.deactivateUser(inactive.getId());
 
         login("inactive", "4321")
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.message").value("Identifiants invalides"));
+
+        assertThat(utilisateurRepository.findById(inactive.getId())).isPresent()
+                .get()
+                .extracting(Utilisateur::isActif)
+                .isEqualTo(false);
+    }
+
+    @Test
+    void deactivationKeepsUserForHistoricalReferencesAndHidesItByDefault() {
+        Long userId = fabrication.getId();
+        String credentialHash = fabrication.getCredentialHash();
+
+        utilisateurService.deactivateUser(userId);
+
+        Utilisateur persisted = utilisateurRepository.findById(userId).orElseThrow();
+        assertThat(persisted.getId()).isEqualTo(userId);
+        assertThat(persisted.getCredentialHash()).isEqualTo(credentialHash);
+        assertThat(persisted.isActif()).isFalse();
+        assertThat(utilisateurService.findAllUsers(false)).noneMatch(user -> user.getId().equals(userId));
+        assertThat(utilisateurService.findAllUsers(true)).anyMatch(user -> user.getId().equals(userId));
+    }
+
+    @Test
+    void deactivatedUserCanBeReactivated() throws Exception {
+        utilisateurService.deactivateUser(fabrication.getId());
+
+        utilisateurService.reactivateUser(fabrication.getId());
+
+        assertThat(utilisateurRepository.findById(fabrication.getId()).orElseThrow().isActif()).isTrue();
+        login("jean-hugues", "1234")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.role").value("FABRICATION"));
+    }
+
+    @Test
+    void ownerCannotBeDeactivated() {
+        assertThatThrownBy(() -> utilisateurService.deactivateUser(proprietaire.getId()))
+                .isInstanceOf(BusinessValidationException.class)
+                .hasMessage("Un compte propriétaire ne peut pas être désactivé");
+
+        assertThat(utilisateurRepository.findById(proprietaire.getId()).orElseThrow().isActif()).isTrue();
     }
 
     @Test

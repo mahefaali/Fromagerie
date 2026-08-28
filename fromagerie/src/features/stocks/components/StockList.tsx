@@ -4,9 +4,16 @@ import { StockCard, type StockItem } from './StockCard';
 interface StockListProps {
   groupedItems: Record<string, StockItem[]>;
   hasResults: boolean;
+  declaringLossId?: string | null;
+  onDeclareExpiredLoss?: (item: StockItem) => Promise<void>;
 }
 
-export const StockList: React.FC<StockListProps> = ({ groupedItems, hasResults }) => {
+export const StockList: React.FC<StockListProps> = ({
+  groupedItems,
+  hasResults,
+  declaringLossId,
+  onDeclareExpiredLoss,
+}) => {
   if (!hasResults) {
     return (
       <div className="mt-8 flex items-center justify-center rounded-2xl border border-dashed border-stone-300 p-12 text-center text-stone-500 bg-white/50">
@@ -30,7 +37,12 @@ export const StockList: React.FC<StockListProps> = ({ groupedItems, hasResults }
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {items.map((item) => (
-                <StockCard key={item.id} item={item} />
+                <StockCard
+                  key={item.id}
+                  item={item}
+                  declaringLoss={declaringLossId === item.id}
+                  onDeclareExpiredLoss={onDeclareExpiredLoss}
+                />
               ))}
             </div>
           </div>

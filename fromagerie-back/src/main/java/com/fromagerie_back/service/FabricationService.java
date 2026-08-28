@@ -235,6 +235,7 @@ public class FabricationService {
             Fabrication fabrication,
             Recette recette,
             FabricationRequest request) {
+        validatePhysicalCoherence(request);
         fabrication.setDateHeureDebut(request.getDateHeureDebut());
         fabrication.setRecette(recette);
         fabrication.setQuantiteLait(request.getQuantiteLait());
@@ -254,6 +255,15 @@ public class FabricationService {
         fabrication.setRendement(calculateRendement(
                 request.getPoidsTotalFromages(),
                 request.getQuantiteLait()));
+    }
+
+    private void validatePhysicalCoherence(FabricationRequest request) {
+        if (request.getPoidsTotalFromages() != null
+                && request.getQuantiteLait() != null
+                && request.getPoidsTotalFromages().compareTo(request.getQuantiteLait()) > 0) {
+            throw new BusinessValidationException(
+                    "Le poids total des fromages ne peut pas dépasser la quantité de lait.");
+        }
     }
 
     private BigDecimal calculateRendement(BigDecimal poidsTotalFromages, BigDecimal quantiteLait) {

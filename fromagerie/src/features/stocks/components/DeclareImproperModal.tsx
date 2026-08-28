@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     Dialog,
     DialogContent,
@@ -17,11 +17,12 @@ import {
     SelectTrigger,
     SelectValue,
 } from './../../../components/ui/select';
+import { stockApi, type StockFromageFini } from '../api/stockApi';
 
 interface DeclareImproperModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onSubmit?: (data: DeclareFormData) => void;
+    onSubmit?: (data: DeclareFormData) => void | Promise<boolean | void>;
 }
 
 export interface DeclareFormData {
@@ -30,7 +31,6 @@ export interface DeclareFormData {
     date: string;
     cause: string;
     defectType: string;
-    operator: string;
     observation: string;
 }
 
@@ -42,17 +42,43 @@ export const DeclareImproperModal: React.FC<DeclareImproperModalProps> = ({
     const [formData, setFormData] = useState<DeclareFormData>({
         batchId: '',
         quantity: 1,
-        date: '2026-08-19',
+        date: new Date().toISOString().slice(0, 10),
         cause: "Défaut d'affinage",
         defectType: 'Croûte anormale',
-        operator: '',
         observation: '',
     });
+    const [stocks, setStocks] = useState<StockFromageFini[]>([]);
+    const [loadingStocks, setLoadingStocks] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
-    const handleSubmit = (e: React.FormEvent) => {
+    useEffect(() => {
+        if (!isOpen) return;
+        setLoadingStocks(true);
+        void stockApi.findStocks()
+            .then((data) => setStocks(data.filter((stock) => stock.quantitePhysique > 0)))
+            .catch((reason) => setError(reason instanceof Error ? reason.message : 'Chargement des lots impossible.'))
+            .finally(() => setLoadingStocks(false));
+    }, [isOpen]);
+
+    const selectedStock = stocks.find((stock) => String(stock.id) === formData.batchId);
+
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (onSubmit) onSubmit(formData);
-        onClose();
+        if (!selectedStock) {
+            setError('Sélectionnez un lot disponible.');
+            return;
+        }
+        setIsSubmitting(true);
+        setError(null);
+        try {
+            const result = await onSubmit?.(formData);
+            if (result !== false) onClose();
+        } catch (reason) {
+            setError(reason instanceof Error ? reason.message : 'Déclaration impossible.');
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     return (
@@ -73,17 +99,21 @@ export const DeclareImproperModal: React.FC<DeclareImproperModalProps> = ({
                         <Label className="text-sm font-semibold text-stone-800">Lot en stock</Label>
                         <Select
                             value={formData.batchId}
-                            onValueChange={(val) => setFormData((prev) => ({ ...prev, batchId: val }))}
+                            onValueChange={(val) => setFormData((prev) => ({ ...prev, batchId: val, quantity: 1 }))}
                         >
                             <SelectTrigger className="w-full bg-white/80 border-stone-200 rounded-xl text-stone-800 focus:ring-stone-400">
                                 <SelectValue placeholder="Choisir un lot" />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="lot-001">Bleu d'Auvergne - Lot #2026-01</SelectItem>
-                                <SelectItem value="lot-002">Camembert Fermier - Lot #2026-04</SelectItem>
-                                <SelectItem value="lot-003">Tomme de Montagne - Lot #2026-12</SelectItem>
+                                {loadingStocks && <SelectItem value="loading" disabled>Chargement des lots...</SelectItem>}
+                                {stocks.map((stock) => (
+                                    <SelectItem key={stock.id} value={String(stock.id)}>
+                                        {stock.fromageNom} - Lot {stock.numeroLotFabrication} ({stock.quantitePhysique} disponible(s))
+                                    </SelectItem>
+                                ))}
                             </SelectContent>
                         </Select>
+                        {error && <p className="text-sm text-red-600">{error}</p>}
                     </div>
 
                     {/* Quantité & Date */}
@@ -95,8 +125,12 @@ export const DeclareImproperModal: React.FC<DeclareImproperModalProps> = ({
                                 min="1"
                                 value={formData.quantity}
                                 onChange={(e) =>
-                                    setFormData((prev) => ({ ...prev, quantity: Number(e.target.value) }))
+                                    setFormData((prev) => ({
+                                        ...prev,
+                                        quantity: Math.min(Number(e.target.value), selectedStock?.quantitePhysique ?? Number(e.target.value)),
+                                    }))
                                 }
+                                max={selectedStock?.quantitePhysique}
                                 className="bg-white/80 border-stone-200 rounded-xl text-stone-800 focus-visible:ring-stone-400"
                             />
                         </div>
@@ -148,18 +182,6 @@ export const DeclareImproperModal: React.FC<DeclareImproperModalProps> = ({
                         </Select>
                     </div>
 
-                    {/* Opérateur */}
-                    <div className="space-y-1.5">
-                        <Label className="text-sm font-semibold text-stone-800">Opérateur</Label>
-                        <Input
-                            type="text"
-                            placeholder="Nom du responsable"
-                            value={formData.operator}
-                            onChange={(e) => setFormData((prev) => ({ ...prev, operator: e.target.value }))}
-                            className="bg-white/80 border-stone-200 rounded-xl text-stone-800 focus-visible:ring-stone-400"
-                        />
-                    </div>
-
                     {/* Observation */}
                     <div className="space-y-1.5">
                         <Label className="text-sm font-semibold text-stone-800">Observation</Label>
@@ -183,6 +205,7 @@ export const DeclareImproperModal: React.FC<DeclareImproperModalProps> = ({
                         </Button>
                         <Button
                             type="submit"
+                            disabled={isSubmitting || loadingStocks || stocks.length === 0}
                             className="bg-[#2d4a27] hover:bg-[#233a1e] text-white rounded-xl px-5 py-2 font-medium shadow-sm"
                         >
                             Déclarer la perte

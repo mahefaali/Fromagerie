@@ -48,6 +48,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
   }, [isOpen, onClose]);
 
   if (!isOpen || !order) return null;
+  const isAlreadyInvoiced = Boolean(order.invoicedDate);
 
   // Calcul dynamique des sous-totaux basés sur les quantités réellement livrées
   const itemsWithSubtotals = order.items?.map((item) => {
@@ -63,10 +64,17 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
     };
   }) ?? [];
 
-  const totalAmount = itemsWithSubtotals.reduce((sum, i) => sum + i.subtotal, 0);
+  const calculatedTotal = itemsWithSubtotals.reduce((sum, i) => sum + i.subtotal, 0);
+  const totalAmount = isAlreadyInvoiced && order.invoicedTotal !== undefined
+    ? order.invoicedTotal
+    : calculatedTotal;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (isAlreadyInvoiced) {
+      onClose();
+      return;
+    }
     const todayISO = new Date().toISOString().split('T')[0];
     onSubmit({
       orderId: order.id,
@@ -85,11 +93,12 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
         <div className="p-6 pb-4 flex items-start justify-between border-b border-[#e2dacb]/40 shrink-0">
           <div>
             <h2 className="text-lg font-extrabold text-[#2c2825]">
-              Facture — {order.code || order.id}
+              {order.invoiceNumber ? `Facture ${order.invoiceNumber}` : `Facture — ${order.code || order.id}`}
             </h2>
             <p className="text-sm font-medium text-gray-600 mt-0.5">
               {order.clientName}
             </p>
+            {order.invoicedDate && <p className="text-xs text-gray-500 mt-1">Facturée le {order.invoicedDate}</p>}
           </div>
           <button
             type="button"
@@ -140,6 +149,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
             <select
               value={paymentMethod}
               onChange={(e) => setPaymentMethod(e.target.value)}
+              disabled={isAlreadyInvoiced}
               className="w-full bg-[#f5f2eb]/70 border border-[#e2dacb] rounded-xl px-3.5 py-2.5 text-sm text-[#2c2825] font-medium focus:outline-none focus:border-[#2d4a27] transition-all cursor-pointer"
             >
               {PAYMENT_METHODS.map((method) => (
@@ -151,7 +161,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
           </div>
 
           {/* Note */}
-          <div className="space-y-1.5">
+          {!isAlreadyInvoiced && <div className="space-y-1.5">
             <label className="block text-xs font-bold text-[#2c2825]">
               Note
             </label>
@@ -162,7 +172,7 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
               placeholder="Note..."
               className="w-full bg-[#f5f2eb]/70 border border-[#e2dacb] rounded-xl p-3 text-sm text-[#2c2825] focus:outline-none focus:border-[#2d4a27] resize-none transition-all"
             />
-          </div>
+          </div>}
 
           {/* Pied de modale / Boutons */}
           <div className="pt-2 flex items-center justify-end gap-3 shrink-0">
@@ -173,12 +183,12 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
             >
               Fermer
             </button>
-            <button
+            {!isAlreadyInvoiced && <button
               type="submit"
               className="px-6 py-2.5 rounded-xl bg-[#2d4a27] hover:bg-[#233a1e] text-white text-xs font-bold shadow-xs transition-all cursor-pointer"
             >
               Valider la facture
-            </button>
+            </button>}
           </div>
         </form>
       </div>

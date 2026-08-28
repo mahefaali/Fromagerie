@@ -4,5 +4,6 @@ public enum TypeMouvementStock {
     ENTREE,
     SORTIE,
     AJUSTEMENT,
-    VENTE
+    VENTE,
+    PERTE
 }

@@ -16,6 +16,8 @@ public interface MouvementStockRepository extends JpaRepository<MouvementStock, 
             "stockFromageFini.lotAffinage.fabrication.recette.fromage", "stockFromageFini.emplacementStock" })
     List<MouvementStock> findAllByStockFromageFiniIdOrderByDateMouvementDescIdDesc(Long stockFromageFiniId);
     boolean existsByStockFromageFiniIdAndType(Long stockFromageFiniId, TypeMouvementStock type);
+    @Query("select coalesce(sum(m.quantite),0) from MouvementStock m where m.stockFromageFini.id=:stockId and m.type=:type")
+    int quantityByType(@Param("stockId") Long stockId, @Param("type") TypeMouvementStock type);
     @Query("select coalesce(sum(case when m.type in :entrees then m.quantite else -m.quantite end),0) from MouvementStock m where m.stockFromageFini.id=:stockId")
     int quantityAvailable(@Param("stockId") Long stockId, @Param("entrees") java.util.Collection<TypeMouvementStock> entrees);
 }

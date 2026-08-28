@@ -82,7 +82,9 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:5173"));
+        configuration.setAllowedOrigins(List.of(
+                "http://localhost:5173",
+                "http://192.168.88.60:5173"));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("Content-Type", "Accept", "X-CSRF-TOKEN"));
         configuration.setAllowCredentials(true);
@@ -118,6 +120,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/api/auth/login", "/api/auth/csrf").permitAll()
                         .requestMatchers("/api/auth/me", "/api/auth/logout").authenticated()
+                        .requestMatchers("/api/utilisateurs/**").hasRole("PROPRIETAIRE")
                         .requestMatchers(HttpMethod.GET, "/api/recettes/**", "/api/matieres-premieres/**")
                         .hasAnyRole("PROPRIETAIRE", "FABRICATION")
                         .requestMatchers(HttpMethod.GET, "/api/caves/**")
@@ -133,6 +136,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/emplacements-stock/**")
                         .hasAnyRole("PROPRIETAIRE", "FABRICATION", "VENTE")
                         .requestMatchers(HttpMethod.GET, "/api/stock-fromages-finis/**")
+                        .hasAnyRole("PROPRIETAIRE", "VENTE")
+                        .requestMatchers(HttpMethod.POST, "/api/stock-fromages-finis/*/pertes")
                         .hasAnyRole("PROPRIETAIRE", "VENTE")
                         .requestMatchers("/api/emplacements-stock/**", "/api/stock-fromages-finis/**")
                         .hasRole("PROPRIETAIRE")

@@ -28,13 +28,14 @@ const StockView: React.FC = () => {
     expiredItems,
     loading,
     locationOptions,
+    declaringLossId,
+    declareExpiredLoss,
   } = useStock();
 
   const kpiData = {
     totalPieces: stocks.reduce((acc, item) => acc + item.quantitePhysique, 0),
     totalLocations: new Set(stocks.map((item) => item.emplacementStockId)).size,
     expiringSoon: expiringSoonItems.length,
-    totalValue: stocks.reduce((acc, item) => acc + item.quantitePhysique, 0),
   };
 
   return (
@@ -65,7 +66,12 @@ const StockView: React.FC = () => {
           Chargement du stock fini...
         </div>
       ) : (
-        <StockList groupedItems={groupedItems} hasResults={hasResults} />
+        <StockList
+          groupedItems={groupedItems}
+          hasResults={hasResults}
+          declaringLossId={declaringLossId}
+          onDeclareExpiredLoss={declareExpiredLoss}
+        />
       )}
     </>
   );

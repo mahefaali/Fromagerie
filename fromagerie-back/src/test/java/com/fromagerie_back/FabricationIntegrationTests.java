@@ -191,6 +191,35 @@ class FabricationIntegrationTests {
     }
 
     @Test
+    void absurdTemperatureReturnsBadRequest() throws Exception {
+        MockHttpSession session = authenticatedSession("gilles", OWNER_PASSWORD);
+
+        mockMvc.perform(post("/api/fabrications")
+                        .session(session)
+                        .with(csrf().asHeader())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(validRequest(
+                                recette.getId(), "2026-08-25T09:00:00", 300, 30, 24,
+                                ",\"temperatureLait\":999")))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors.temperatureLait").exists());
+    }
+
+    @Test
+    void cheeseWeightCannotExceedMilkQuantity() throws Exception {
+        MockHttpSession session = authenticatedSession("gilles", OWNER_PASSWORD);
+
+        mockMvc.perform(post("/api/fabrications")
+                        .session(session)
+                        .with(csrf().asHeader())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(validRequest(recette.getId(), "2026-08-25T09:00:00", 300, 301, 24, "")))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message")
+                        .value("Le poids total des fromages ne peut pas dépasser la quantité de lait."));
+    }
+
+    @Test
     void generatedLotsArePresentAndSequentiallyUniqueForSameDay() throws Exception {
         MockHttpSession session = authenticatedSession("gilles", OWNER_PASSWORD);
 

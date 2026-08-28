@@ -17,6 +17,7 @@ export interface OrderItem {
   gap?: number;
   batchCode?: string;
   location?: string;
+  stockId?: number;
   reservationId?: number;
   lineId?: string;
 }
@@ -34,6 +35,8 @@ export interface Order {
   expectedDeliveryDate: string;
   deliveryDate?: string;
   invoicedDate?: string;
+  invoiceNumber?: string;
+  invoicedTotal?: number;
   
   // Paiement & Notes
   paymentMethod?: string;

@@ -18,7 +18,7 @@ export function FabricationDetails({ fabrication }: { fabrication: FabricationDe
         <Detail label="Fromage" value={fabrication.fromageNom} />
         <Detail label="Recette" value={fabrication.recetteNom} />
         <Detail label="Opérateur" value={fabrication.operateurNom} />
-        <Detail label="Rendement backend" value={`${formatNumber(fabrication.rendement)} %`} />
+        <Detail label="Rendement" value={`${formatNumber(fabrication.rendement)} %`} />
       </section>
 
       <div className="grid gap-4 md:grid-cols-2">
