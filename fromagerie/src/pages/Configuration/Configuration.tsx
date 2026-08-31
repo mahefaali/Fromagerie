@@ -1,12 +1,10 @@
 import { useState } from "react";
 import { Link } from "./../../components/common/Link";
 import UsersSection from "../../features/configuration/components/Users";
-import SiteSection from "../../features/configuration/components/Site";
-import NavigationSection from "../../features/configuration/components/Navigation";
-import ReportsSection from "../../features/configuration/components/Reports";
+import CostsSection from "../../features/configuration/components/Costs";
 
 export default function Configuration() {
-  const [active, setActive] = useState<"users" | "site" | "nav" | "reports">("users");
+  const [active, setActive] = useState<"users" | "site" | "nav" | "reports" | "costs">("users");
 
   return (
     <div className="pb-24">
@@ -50,9 +48,7 @@ export default function Configuration() {
                     <div className="space-y-3">
                         {[
                         { id: "users", title: "Gestion des utilisateurs", desc: "Ajoutez, modifiez ou suspendez les comptes autorisés à accéder au système." },
-                        { id: "site", title: "Paramètres du site", desc: "Contrôlez les informations globales, l’identité visuelle et les options du site." },
-                        { id: "nav", title: "Navigation et menu", desc: "Organisez les pages, les liens de navigation et l’ordre des sections principales." },
-                        { id: "reports", title: "Rapports et alertes", desc: "Suivez les indicateurs clés et définissez des notifications pour l’équipe." },
+                        { id: "costs", title: "Coûts de production", desc: "Paramétrez le lait, les emballages, l’énergie, la main-d’œuvre et les amortissements." },
                         ].map((item) => (
                         <button
                             key={item.id}
@@ -69,9 +65,7 @@ export default function Configuration() {
 
                     <div className="rounded-3xl border border-border bg-card p-6 shadow-sm">
                     {active === "users" && <UsersSection />}
-                    {active === "site" && <SiteSection />}
-                    {active === "nav" && <NavigationSection />}
-                    {active === "reports" && <ReportsSection />}
+                    {active === "costs" && <CostsSection />}
                     </div>
                 </div>
                 </div>

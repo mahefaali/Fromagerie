@@ -155,6 +155,24 @@ class AuthIntegrationTests {
     }
 
     @Test
+    void ownerSessionCanAccessConfigurationApis() throws Exception {
+        MockHttpSession session = authenticatedSession("gilles", "mot-de-passe-solide");
+
+        mockMvc.perform(get("/api/utilisateurs").session(session))
+                .andExpect(status().isOk());
+        mockMvc.perform(get("/api/configuration/couts/lait").session(session))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void missingAuthenticatedApiIsNotReportedAsAccessDenied() throws Exception {
+        MockHttpSession session = authenticatedSession("gilles", "mot-de-passe-solide");
+
+        mockMvc.perform(get("/api/route-inexistante").session(session))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
     void inactiveUserCannotAuthenticate() throws Exception {
         Utilisateur inactive = utilisateurService.createUser("inactive", "Inactive", "4321", Role.FABRICATION, true);
         utilisateurService.deactivateUser(inactive.getId());
