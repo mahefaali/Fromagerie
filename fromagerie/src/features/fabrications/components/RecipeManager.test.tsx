@@ -50,6 +50,7 @@ const herbs: RecetteListItem = {
 const detail: RecetteDetail = {
   ...classic,
   dateCreation: "2026-08-25T10:00:00",
+  quantiteLaitReference: 100,
   ingredients: [
     {
       id: 100,
@@ -254,6 +255,7 @@ describe("gestion des recettes", () => {
     await user.click(screen.getByRole("button", { name: /Enregistrer la révision/ }));
     await waitFor(() => expect(mocks.createVersion).toHaveBeenCalledWith(10, {
       nom: "Classique",
+      quantiteLaitReference: 100,
       ingredients: [
         { matierePremiereId: 1, quantite: 110, unite: "L" },
         { matierePremiereId: 2, quantite: 2, unite: "KG" },
@@ -276,6 +278,7 @@ describe("gestion des recettes", () => {
 
     await waitFor(() => expect(mocks.createVersion).toHaveBeenCalledWith(11, {
       nom: "Aux herbes",
+      quantiteLaitReference: 100,
       ingredients: [
         { matierePremiereId: 3, quantite: 0.5, unite: "KG" },
       ],
@@ -296,6 +299,7 @@ describe("gestion des recettes", () => {
       nom: "Au poivre",
       fromageId: 2,
       recetteDeBase: false,
+      quantiteLaitReference: 100,
       ingredients: [{ matierePremiereId: 1, quantite: 90, unite: "L" }],
     }));
   });
@@ -322,6 +326,7 @@ describe("gestion des recettes", () => {
       nom: "Recette fermière",
       fromageId: 7,
       recetteDeBase: true,
+      quantiteLaitReference: 100,
       ingredients: [{ matierePremiereId: 1, quantite: 80, unite: "L" }],
     }));
   });

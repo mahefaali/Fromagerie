@@ -29,6 +29,7 @@ public class RecetteSchemaMigration implements ApplicationRunner {
         addColumnIfMissing("active", "BOOLEAN");
         addColumnIfMissing("date_creation", "TIMESTAMP");
         addColumnIfMissing("cout_matiere_estime", "NUMERIC(19,2)");
+        addColumnIfMissing("quantite_lait_reference", "NUMERIC(19,4)");
         addColumnIfMissing("frequence_retournement_jours", "INTEGER");
 
         int migrated = jdbcTemplate.update("""
@@ -38,12 +39,14 @@ public class RecetteSchemaMigration implements ApplicationRunner {
                     active = COALESCE(active, TRUE),
                     date_creation = COALESCE(date_creation, CURRENT_TIMESTAMP),
                     cout_matiere_estime = COALESCE(cout_matiere_estime, 0),
+                    quantite_lait_reference = COALESCE(quantite_lait_reference, 100.0000),
                     frequence_retournement_jours = NULLIF(frequence_retournement_jours, 0)
                 WHERE variante_key IS NULL
                    OR numero_version IS NULL
                    OR active IS NULL
                    OR date_creation IS NULL
                    OR cout_matiere_estime IS NULL
+                   OR quantite_lait_reference IS NULL
                 """);
 
         int familiesClassified = jdbcTemplate.update("""
@@ -87,6 +90,7 @@ public class RecetteSchemaMigration implements ApplicationRunner {
         jdbcTemplate.execute("ALTER TABLE recette ALTER COLUMN active SET NOT NULL");
         jdbcTemplate.execute("ALTER TABLE recette ALTER COLUMN date_creation SET NOT NULL");
         jdbcTemplate.execute("ALTER TABLE recette ALTER COLUMN cout_matiere_estime SET NOT NULL");
+        jdbcTemplate.execute("ALTER TABLE recette ALTER COLUMN quantite_lait_reference SET NOT NULL");
         jdbcTemplate.execute("""
                 UPDATE recette
                 SET frequence_retournement_jours = NULL

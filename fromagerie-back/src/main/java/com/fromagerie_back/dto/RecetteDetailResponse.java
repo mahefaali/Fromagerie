@@ -14,6 +14,7 @@ public record RecetteDetailResponse(
         Long fromageId,
         String fromageNom,
         Integer frequenceRetournementJours,
+        BigDecimal quantiteLaitReference,
         BigDecimal coutMatiereEstime,
         List<RecetteIngredientResponse> ingredients) {
 }

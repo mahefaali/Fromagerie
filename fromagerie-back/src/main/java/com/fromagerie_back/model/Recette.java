@@ -26,6 +26,8 @@ import jakarta.persistence.UniqueConstraint;
         columnNames = { "variante_key", "numero_version" }))
 public class Recette {
 
+    private static final BigDecimal DEFAULT_MILK_REFERENCE_QUANTITY = new BigDecimal("100.0000");
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -49,6 +51,9 @@ public class Recette {
 
     @Column(name = "cout_matiere_estime", precision = 19, scale = 2)
     private BigDecimal coutMatiereEstime;
+
+    @Column(name = "quantite_lait_reference", precision = 19, scale = 4)
+    private BigDecimal quantiteLaitReference = DEFAULT_MILK_REFERENCE_QUANTITY;
 
     @Column(name = "frequence_retournement_jours")
     private Integer frequenceRetournementJours;
@@ -82,6 +87,9 @@ public class Recette {
         }
         if (coutMatiereEstime == null) {
             coutMatiereEstime = BigDecimal.ZERO.setScale(2);
+        }
+        if (quantiteLaitReference == null || quantiteLaitReference.signum() <= 0) {
+            quantiteLaitReference = DEFAULT_MILK_REFERENCE_QUANTITY;
         }
         if (frequenceRetournementJours != null && frequenceRetournementJours <= 0) {
             frequenceRetournementJours = null;
@@ -132,6 +140,10 @@ public class Recette {
         return coutMatiereEstime == null ? BigDecimal.ZERO.setScale(2) : coutMatiereEstime;
     }
 
+    public BigDecimal getQuantiteLaitReference() {
+        return quantiteLaitReference == null ? DEFAULT_MILK_REFERENCE_QUANTITY : quantiteLaitReference;
+    }
+
     public Integer getFrequenceRetournementJours() {
         return frequenceRetournementJours;
     }
@@ -163,6 +175,10 @@ public class Recette {
 
     public void setCoutMatiereEstime(BigDecimal coutMatiereEstime) {
         this.coutMatiereEstime = coutMatiereEstime;
+    }
+
+    public void setQuantiteLaitReference(BigDecimal quantiteLaitReference) {
+        this.quantiteLaitReference = quantiteLaitReference;
     }
 
     public void setFrequenceRetournementJours(Integer frequenceRetournementJours) {

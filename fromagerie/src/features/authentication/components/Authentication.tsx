@@ -1,6 +1,7 @@
 "use client";
 
 import { useNavigate } from "react-router-dom";
+import { useRef } from "react";
 import { Loader } from "lucide-react";
 import { Button } from "./../../../components/ui/button";
 import {
@@ -12,6 +13,13 @@ import {
   FormMessage,
 } from "./../../../components/ui/form";
 import { Input } from "./../../../components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "./../../../components/ui/select";
 import { useRevealOnScroll } from "./../../../hooks/useRevealOnScroll";
 import { FormProvider, useForm, useWatch } from "react-hook-form";
 import { cn } from "./../../../utils/utils";
@@ -45,7 +53,7 @@ const demoAccounts: readonly DemoAccount[] = import.meta.env.DEV
         credentialLabel: "Mot de passe",
       },
       {
-        label: "Employé démo",
+        label: "Fabrication démo",
         accessMode: "Employé",
         username: "jean.demo",
         credential: "1234",
@@ -85,6 +93,7 @@ export function InnerCircleForm() {
     clearErrors,
     formState: { errors, isSubmitting },
   } = methods;
+  const submitButtonRef = useRef<HTMLButtonElement>(null);
 
   const selectedAccessMode = useWatch({
     control,
@@ -111,11 +120,64 @@ export function InnerCircleForm() {
     setValue("username", account.username, { shouldDirty: true, shouldValidate: true });
     setValue("password", account.credential, { shouldDirty: true, shouldValidate: true });
     clearErrors("root");
+
+    window.requestAnimationFrame(() => {
+      if (typeof submitButtonRef.current?.scrollIntoView === "function") {
+        submitButtonRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    });
   };
 
   return (
     <FormProvider {...methods}>
       <Form onSubmit={handleSubmit(submitLogin)} className="space-y-10" noValidate>
+        {demoAccounts.length > 0 && (
+          <aside className="rounded-2xl border border-[#D8C3A5] bg-[#FFFDF9]/70 p-5 shadow-[0_10px_30px_rgba(63,74,79,0.06)]" aria-labelledby="demo-accounts-title">
+            <div className="mb-3 flex items-center justify-between gap-4">
+              <div>
+                <p
+                  id="demo-accounts-title"
+                  className="font-mono text-[0.6875rem] uppercase tracking-[0.2em] text-[#C96A4A]"
+                >
+                  Compte démo
+                </p>
+                <p className="mt-1 text-sm text-[#7E9A9A]">
+                  Préremplir un accès de démonstration
+                </p>
+              </div>
+              <span className="hidden rounded-full bg-[#C96A4A]/[0.08] px-3 py-1 font-mono text-[0.6rem] uppercase tracking-[0.14em] text-[#C96A4A] sm:inline-flex">
+                Accès rapide
+              </span>
+            </div>
+
+            <Select onValueChange={(username) => {
+              const account = demoAccounts.find((demoAccount) => demoAccount.username === username);
+              if (account) selectDemoAccount(account);
+            }}>
+              <SelectTrigger aria-label="Choisir un compte de démonstration" className="h-auto rounded-xl border-[#D8C3A5] bg-[#F7F3EC]/70 py-3 text-[#3F4A4F]">
+                <SelectValue placeholder="Choisir un compte" />
+              </SelectTrigger>
+              <SelectContent>
+                {demoAccounts.map((account) => (
+                  <SelectItem key={account.username} value={account.username} className="py-3">
+                    <span className="flex w-full items-center justify-between gap-8">
+                      <span>
+                        <span className="block font-medium">{account.label}</span>
+                        <span className="mt-1 block font-mono text-[0.625rem] text-[#7E9A9A]">
+                          {account.username}
+                        </span>
+                      </span>
+                      <span className="shrink-0 rounded-full border border-[#C96A4A]/30 bg-[#C96A4A]/[0.08] px-2.5 py-1 font-mono text-[0.6rem] uppercase tracking-[0.12em] text-[#C96A4A]">
+                        {account.accessMode}
+                      </span>
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </aside>
+        )}
+
         <div className="grid grid-cols-1 gap-x-10 gap-y-10">
         <FormField
           control={control}
@@ -134,7 +196,7 @@ export function InnerCircleForm() {
                       data-index={i}
                       onClick={() => field.onChange(level.value)}
                       className={cn(
-                        "cursor-pointer p-6 border transition-all duration-300 rounded-md",
+                        "cursor-pointer p-6 border transition-all duration-300 rounded-2xl",
                         field.value === level.value
                           ? "border-[#C96A4A] bg-[#C96A4A]/[0.08]"
                           : "border-[#D8C3A5] bg-transparent hover:border-[#C96A4A]/50"
@@ -170,7 +232,7 @@ export function InnerCircleForm() {
                   autoComplete="username"
                   placeholder="Votre identifiant"
                   {...field}
-                  className="h-auto border-0 border-b border-[#3F4A4F] bg-transparent px-0 pb-3 pt-1 text-base text-foreground placeholder:text-[#7E9A9A] placeholder:font-mono placeholder:uppercase placeholder:tracking-[0.18em] placeholder:text-xs focus-visible:ring-0 focus-visible:border-[#C96A4A]"
+                  className="h-auto rounded-2xl border border-[#D8C3A5] bg-[#FFFDF9]/80 px-4 py-3 text-base text-foreground placeholder:text-[#7E9A9A] placeholder:font-mono placeholder:uppercase placeholder:tracking-[0.18em] placeholder:text-xs focus-visible:ring-2 focus-visible:ring-[#C96A4A]/30 focus-visible:border-[#C96A4A]"
                 />
               </FormControl>
               <FormMessage className="font-mono uppercase text-[0.6875rem] tracking-[0.18em] mt-2" />
@@ -202,7 +264,7 @@ export function InnerCircleForm() {
                   inputMode={selectedAccessMode === "Employé" ? "numeric" : "text"}
                   placeholder={selectedAccessMode === "Propriétaire" ? "••••••••" : "0000"}
                   {...field}
-                  className="h-auto border-0 border-b border-[#3F4A4F] bg-transparent px-0 pb-3 pt-1 text-base text-foreground placeholder:text-[#7E9A9A] placeholder:font-mono placeholder:uppercase placeholder:tracking-[0.18em] placeholder:text-xs focus-visible:ring-0 focus-visible:border-[#C96A4A]"
+                  className="h-auto rounded-2xl border border-[#D8C3A5] bg-[#FFFDF9]/80 px-4 py-3 text-base text-foreground placeholder:text-[#7E9A9A] placeholder:font-mono placeholder:uppercase placeholder:tracking-[0.18em] placeholder:text-xs focus-visible:ring-2 focus-visible:ring-[#C96A4A]/30 focus-visible:border-[#C96A4A]"
                 />
               </FormControl>
               <FormMessage className="font-mono uppercase text-[0.6875rem] tracking-[0.18em] mt-2" />
@@ -221,9 +283,10 @@ export function InnerCircleForm() {
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-6 pt-4">
           <Button
+            ref={submitButtonRef}
             type="submit"
             disabled={isSubmitting}
-            className="group relative w-full sm:w-auto rounded-md bg-[#C96A4A] text-[#F7F3EC] border border-[#C96A4A] hover:bg-[#3F4A4F] hover:border-[#3F4A4F] font-mono uppercase text-xs tracking-[0.2em] px-10 py-6 h-auto"
+            className="group relative w-full sm:w-auto rounded-full bg-[#C96A4A] text-[#F7F3EC] border border-[#C96A4A] hover:bg-[#3F4A4F] hover:border-[#3F4A4F] font-mono uppercase text-xs tracking-[0.2em] px-10 py-6 h-auto"
           >
             {isSubmitting ? (
               <>
@@ -236,36 +299,6 @@ export function InnerCircleForm() {
           </Button>
         </div>
 
-        {demoAccounts.length > 0 && (
-          <aside className="border-t border-[#D8C3A5] pt-8" aria-labelledby="demo-accounts-title">
-            <p
-              id="demo-accounts-title"
-              className="text-center font-mono text-[0.6875rem] uppercase tracking-[0.2em] text-[#7E9A9A]"
-            >
-              Comptes de démonstration
-            </p>
-            <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              {demoAccounts.map((account) => (
-                <button
-                  key={account.username}
-                  type="button"
-                  onClick={() => selectDemoAccount(account)}
-                  className="rounded-md border border-[#D8C3A5] bg-[#FFFDF9]/70 p-4 text-left transition-colors hover:border-[#C96A4A] hover:bg-[#C96A4A]/[0.05] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C96A4A]"
-                >
-                  <span className="block font-default font-medium text-[#3F4A4F]">
-                    {account.label}
-                  </span>
-                  <span className="mt-2 block font-mono text-[0.625rem] text-[#7E9A9A]">
-                    Identifiant : {account.username}
-                  </span>
-                  <span className="mt-1 block font-mono text-[0.625rem] text-[#7E9A9A]">
-                    {account.credentialLabel} : {account.credential}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </aside>
-        )}
       </Form>
     </FormProvider>
   );
@@ -278,7 +311,7 @@ export default function Authentification() {
   return (
     <section data-section-id="1806"
       id="authentification"
-      className="relative bg-[#F7F3EC] text-[#3F4A4F] overflow-hidden py-32 md:py-44 px-6 md:px-16"
+      className="relative bg-[#F7F3EC] text-[#3F4A4F] overflow-hidden px-6 pb-32 pt-20 md:px-16 md:pb-44 md:pt-24"
     >
       <div
         className="pointer-events-none absolute inset-0"

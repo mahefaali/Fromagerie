@@ -96,5 +96,36 @@ public class CoutProductionSchemaMigration implements ApplicationRunner {
                     CONSTRAINT fk_regle_amortissement_equipement FOREIGN KEY (equipement_id) REFERENCES equipement(id)
                 )
                 """);
+        jdbcTemplate.execute("""
+                CREATE TABLE IF NOT EXISTS configuration_emballage (
+                    id BIGSERIAL PRIMARY KEY,
+                    fromage_id BIGINT NOT NULL,
+                    emballage_id BIGINT NOT NULL,
+                    quantite_par_unite NUMERIC(19,4) NOT NULL,
+                    actif BOOLEAN NOT NULL DEFAULT TRUE,
+                    CONSTRAINT fk_configuration_emballage_fromage FOREIGN KEY (fromage_id) REFERENCES fromage(id),
+                    CONSTRAINT fk_configuration_emballage_emballage FOREIGN KEY (emballage_id) REFERENCES emballage(id),
+                    CONSTRAINT uk_configuration_emballage_fromage_emballage UNIQUE (fromage_id, emballage_id),
+                    CONSTRAINT ck_configuration_emballage_quantite_positive CHECK (quantite_par_unite > 0)
+                )
+                """);
+        jdbcTemplate.execute("""
+                CREATE TABLE IF NOT EXISTS cout_production_lot (
+                    id BIGSERIAL PRIMARY KEY,
+                    fabrication_id BIGINT NOT NULL UNIQUE,
+                    cout_lait NUMERIC(19,4) NOT NULL,
+                    cout_matieres NUMERIC(19,4) NOT NULL,
+                    cout_emballage NUMERIC(19,4) NOT NULL,
+                    cout_energie NUMERIC(19,4) NOT NULL,
+                    cout_main_oeuvre NUMERIC(19,4) NOT NULL,
+                    cout_amortissement NUMERIC(19,4) NOT NULL,
+                    cout_total NUMERIC(19,4) NOT NULL,
+                    cout_par_kg NUMERIC(19,4) NOT NULL,
+                    cout_par_unite NUMERIC(19,4) NOT NULL,
+                    nombre_unites_finales INTEGER NOT NULL,
+                    date_calcul TIMESTAMP NOT NULL,
+                    CONSTRAINT fk_cout_production_lot_fabrication FOREIGN KEY (fabrication_id) REFERENCES fabrication(id)
+                )
+                """);
     }
 }

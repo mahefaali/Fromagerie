@@ -31,6 +31,7 @@ export interface RecetteDetail {
   fromageId: number;
   fromageNom: string;
   coutMatiereEstime: number;
+  quantiteLaitReference: number;
   frequenceRetournementJours?: number | null;
   ingredients: RecetteIngredient[];
 }
@@ -54,12 +55,14 @@ export interface CreateRecetteRequest {
   nom: string;
   fromageId: number;
   recetteDeBase: boolean;
+  quantiteLaitReference: number;
   frequenceRetournementJours?: number | null;
   ingredients: RecetteIngredientRequest[];
 }
 
 export interface CreateRecetteVersionRequest {
   nom: string;
+  quantiteLaitReference: number;
   frequenceRetournementJours?: number | null;
   ingredients: RecetteIngredientRequest[];
 }

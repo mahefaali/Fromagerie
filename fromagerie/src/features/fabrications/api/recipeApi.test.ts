@@ -33,6 +33,7 @@ describe("recipeApi", () => {
       nom: "Classique",
       fromageId: 2,
       recetteDeBase: true,
+      quantiteLaitReference: 100,
       ingredients: [{ matierePremiereId: 1, quantite: 100, unite: "L" }],
     };
     const fetchMock = vi.fn()

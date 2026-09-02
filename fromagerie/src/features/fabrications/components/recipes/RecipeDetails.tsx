@@ -8,6 +8,13 @@ export function RecipeDetails({ recipe }: { recipe: RecetteDetail }) {
     <div className="space-y-4 rounded-xl border bg-card/40 p-4">
       <div className="flex items-center justify-between gap-4 rounded-lg bg-muted/40 px-4 py-3">
         <div>
+          <p className="text-sm font-medium">Base de la formule</p>
+          <p className="text-xs text-muted-foreground">Toutes les quantités d’ingrédients sont définies pour ce volume.</p>
+        </div>
+        <span className="text-sm font-semibold">{formatNumber(recipe.quantiteLaitReference)} L de lait</span>
+      </div>
+      <div className="flex items-center justify-between gap-4 rounded-lg bg-muted/40 px-4 py-3">
+        <div>
           <p className="text-sm font-medium">Fréquence de retournement</p>
           <p className="text-xs text-muted-foreground">Utilisée pour planifier les actions d’affinage.</p>
         </div>
@@ -18,7 +25,7 @@ export function RecipeDetails({ recipe }: { recipe: RecetteDetail }) {
         </span>
       </div>
       <IngredientTable ingredients={recipe.ingredients} />
-      <CostFooter amount={recipe.coutMatiereEstime} />
+      <CostFooter amount={recipe.coutMatiereEstime} milkReferenceQuantity={recipe.quantiteLaitReference} />
     </div>
   );
 }
@@ -47,6 +54,6 @@ export function IngredientTable({ ingredients }: { ingredients: RecetteDetail["i
   );
 }
 
-export function CostFooter({ amount }: { amount: number }) {
-  return <div className="flex items-center justify-between rounded-lg bg-muted/40 px-4 py-3"><div className="flex items-center gap-2 text-sm font-medium"><Calculator className="size-4 text-primary" />Coût matière première estimé</div><span className="text-lg font-semibold">{formatCurrency(amount)}</span></div>;
+export function CostFooter({ amount, milkReferenceQuantity }: { amount: number; milkReferenceQuantity: number }) {
+  return <div className="flex items-center justify-between rounded-lg bg-muted/40 px-4 py-3"><div className="flex items-center gap-2 text-sm font-medium"><Calculator className="size-4 text-primary" />Coût estimé pour {formatNumber(milkReferenceQuantity)} L de lait</div><span className="text-lg font-semibold">{formatCurrency(amount)}</span></div>;
 }

@@ -8,6 +8,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.fromagerie_back.dto.EmballageRequest;
 import com.fromagerie_back.dto.EmballageResponse;
+import com.fromagerie_back.dto.ConfigurationEmballageRequest;
+import com.fromagerie_back.dto.ConfigurationEmballageResponse;
 import com.fromagerie_back.dto.EquipementRequest;
 import com.fromagerie_back.dto.EquipementResponse;
 import com.fromagerie_back.dto.RegleAmortissementRequest;
@@ -21,12 +23,16 @@ import com.fromagerie_back.dto.TarifLaitResponse;
 import com.fromagerie_back.exception.BusinessConflictException;
 import com.fromagerie_back.exception.ResourceNotFoundException;
 import com.fromagerie_back.model.Emballage;
+import com.fromagerie_back.model.ConfigurationEmballage;
+import com.fromagerie_back.model.Fromage;
 import com.fromagerie_back.model.Equipement;
 import com.fromagerie_back.model.RegleAmortissement;
 import com.fromagerie_back.model.RegleCoutEnergie;
 import com.fromagerie_back.model.RegleMainOeuvre;
 import com.fromagerie_back.model.TarifLait;
 import com.fromagerie_back.repository.EmballageRepository;
+import com.fromagerie_back.repository.ConfigurationEmballageRepository;
+import com.fromagerie_back.repository.FromageRepository;
 import com.fromagerie_back.repository.EquipementRepository;
 import com.fromagerie_back.repository.RegleAmortissementRepository;
 import com.fromagerie_back.repository.RegleCoutEnergieRepository;
@@ -41,21 +47,32 @@ public class CoutProductionService {
     private final RegleMainOeuvreRepository regleMainOeuvreRepository;
     private final EquipementRepository equipementRepository;
     private final RegleAmortissementRepository regleAmortissementRepository;
+    private final ConfigurationEmballageRepository configurationEmballageRepository;
+    private final FromageRepository fromageRepository;
 
     public CoutProductionService(TarifLaitRepository tarifLaitRepository, EmballageRepository emballageRepository,
             RegleCoutEnergieRepository regleCoutEnergieRepository,
             RegleMainOeuvreRepository regleMainOeuvreRepository, EquipementRepository equipementRepository,
-            RegleAmortissementRepository regleAmortissementRepository) {
+            RegleAmortissementRepository regleAmortissementRepository,
+            ConfigurationEmballageRepository configurationEmballageRepository,
+            FromageRepository fromageRepository) {
         this.tarifLaitRepository = tarifLaitRepository;
         this.emballageRepository = emballageRepository;
         this.regleCoutEnergieRepository = regleCoutEnergieRepository;
         this.regleMainOeuvreRepository = regleMainOeuvreRepository;
         this.equipementRepository = equipementRepository;
         this.regleAmortissementRepository = regleAmortissementRepository;
+        this.configurationEmballageRepository = configurationEmballageRepository;
+        this.fromageRepository = fromageRepository;
     }
 
     public List<TarifLaitResponse> findTarifsLait() { return tarifLaitRepository.findAllByOrderBySaisonAscDateDebutValiditeDesc().stream().map(this::toResponse).toList(); }
     public List<EmballageResponse> findEmballages() { return emballageRepository.findAllByOrderByNomAsc().stream().map(this::toResponse).toList(); }
+    @Transactional(readOnly = true)
+    public List<ConfigurationEmballageResponse> findConfigurationsEmballages() {
+        return configurationEmballageRepository.findAllByOrderByFromageNomAscEmballageNomAsc().stream()
+                .map(this::toResponse).toList();
+    }
     public List<RegleCoutEnergieResponse> findReglesEnergie() { return regleCoutEnergieRepository.findAllByOrderByTypeOperationAscDateDebutValiditeDesc().stream().map(this::toResponse).toList(); }
     public List<RegleMainOeuvreResponse> findReglesMainOeuvre() { return regleMainOeuvreRepository.findAllByOrderByTypeOperationAscDateDebutValiditeDesc().stream().map(this::toResponse).toList(); }
     public List<EquipementResponse> findEquipements() { return equipementRepository.findAllByOrderByNomAsc().stream().map(this::toResponse).toList(); }
@@ -70,6 +87,17 @@ public class CoutProductionService {
     public EmballageResponse createEmballage(EmballageRequest request) { return toResponse(saveEmballage(new Emballage(), request)); }
     @Transactional
     public EmballageResponse updateEmballage(Long id, EmballageRequest request) { return toResponse(saveEmballage(findEmballage(id), request)); }
+    @Transactional
+    public ConfigurationEmballageResponse createConfigurationEmballage(ConfigurationEmballageRequest request) {
+        return toResponse(saveConfigurationEmballage(new ConfigurationEmballage(), request));
+    }
+    @Transactional
+    public ConfigurationEmballageResponse updateConfigurationEmballage(Long id,
+            ConfigurationEmballageRequest request) {
+        ConfigurationEmballage configuration = configurationEmballageRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Configuration d'emballage introuvable : " + id));
+        return toResponse(saveConfigurationEmballage(configuration, request));
+    }
     @Transactional
     public RegleCoutEnergieResponse createRegleEnergie(RegleCoutEnergieRequest request) { return toResponse(saveRegle(new RegleCoutEnergie(), request)); }
     @Transactional
@@ -112,6 +140,24 @@ public class CoutProductionService {
         emballage.setUnite(request.unite().trim());
         emballage.setActif(request.actif() == null || request.actif());
         return emballageRepository.saveAndFlush(emballage);
+    }
+
+    private ConfigurationEmballage saveConfigurationEmballage(ConfigurationEmballage configuration,
+            ConfigurationEmballageRequest request) {
+        boolean duplicate = configuration.getId() == null
+                ? configurationEmballageRepository.existsByFromageIdAndEmballageId(request.fromageId(), request.emballageId())
+                : configurationEmballageRepository.existsByFromageIdAndEmballageIdAndIdNot(
+                        request.fromageId(), request.emballageId(), configuration.getId());
+        if (duplicate) {
+            throw new BusinessConflictException("Cet emballage est déjà configuré pour ce fromage");
+        }
+        Fromage fromage = fromageRepository.findById(request.fromageId())
+                .orElseThrow(() -> new ResourceNotFoundException("Fromage introuvable : " + request.fromageId()));
+        configuration.setFromage(fromage);
+        configuration.setEmballage(findEmballage(request.emballageId()));
+        configuration.setQuantiteParUnite(request.quantiteParUnite());
+        configuration.setActif(request.actif() == null || request.actif());
+        return configurationEmballageRepository.saveAndFlush(configuration);
     }
 
     private RegleCoutEnergie saveRegle(RegleCoutEnergie regle, RegleCoutEnergieRequest request) {
@@ -196,13 +242,17 @@ public class CoutProductionService {
     }
 
     private void validateEnergieOverlap(Long currentId, RegleCoutEnergieRequest request) {
+        if (Boolean.FALSE.equals(request.actif())) {
+            return;
+        }
         boolean overlaps = regleCoutEnergieRepository
-                .findByTypeOperationAndUniteCalcul(request.typeOperation(), request.uniteCalcul()).stream()
+                .findByTypeOperation(request.typeOperation()).stream()
                 .filter(existing -> currentId == null || !currentId.equals(existing.getId()))
+                .filter(RegleCoutEnergie::isActif)
                 .anyMatch(existing -> overlaps(request.dateDebutValidite(), request.dateFinValidite(),
                         existing.getDateDebutValidite(), existing.getDateFinValidite()));
         if (overlaps) {
-            throw new BusinessConflictException("La règle énergie chevauche une période existante pour ce type et cette unité");
+            throw new BusinessConflictException("La règle énergie chevauche une période existante pour ce type d'opération");
         }
     }
 
@@ -228,6 +278,10 @@ public class CoutProductionService {
 
     private TarifLaitResponse toResponse(TarifLait t) { return new TarifLaitResponse(t.getId(), t.getSaison(), t.getPrixParLitre(), t.getDateDebutValidite(), t.getDateFinValidite(), t.isActif()); }
     private EmballageResponse toResponse(Emballage e) { return new EmballageResponse(e.getId(), e.getNom(), e.getCoutUnitaire(), e.getUnite(), e.isActif()); }
+    private ConfigurationEmballageResponse toResponse(ConfigurationEmballage c) {
+        return new ConfigurationEmballageResponse(c.getId(), c.getFromage().getId(), c.getFromage().getNom(),
+                c.getEmballage().getId(), c.getEmballage().getNom(), c.getQuantiteParUnite(), c.isActif());
+    }
     private RegleCoutEnergieResponse toResponse(RegleCoutEnergie r) { return new RegleCoutEnergieResponse(r.getId(), r.getTypeOperation(), r.getCoutStandard(), r.getUniteCalcul(), r.getDateDebutValidite(), r.getDateFinValidite(), r.isActif()); }
     private RegleMainOeuvreResponse toResponse(RegleMainOeuvre r) { return new RegleMainOeuvreResponse(r.getId(), r.getTypeOperation(), r.getDureeStandardMinutes(), r.getCoutHoraire(), r.getDateDebutValidite(), r.getDateFinValidite(), r.isActif()); }
     private EquipementResponse toResponse(Equipement e) { return new EquipementResponse(e.getId(), e.getNom(), e.getDescription(), e.isActif()); }

@@ -5,10 +5,12 @@ import { Button } from "../../../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../../../components/ui/card";
 import { Input } from "../../../components/ui/input";
 import { Label } from "../../../components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../../components/ui/tabs";
 import {
   costsApi,
   type Emballage,
+  type ConfigurationEmballage,
   type Equipement,
   type RegleAmortissement,
   type RegleCoutEnergie,
@@ -19,6 +21,7 @@ import {
 
 const emptyTarif = { saison: "SECHE" as const, prixParLitre: "", dateDebutValidite: "", dateFinValidite: "", actif: true };
 const emptyEmballage = { nom: "", coutUnitaire: "", unite: "", actif: true };
+const emptyConfigurationEmballage = { fromageId: "", emballageId: "", quantiteParUnite: "" };
 const emptyEnergie = { typeOperation: "CHAUFFE" as const, coutStandard: "", uniteCalcul: "PAR_HEURE" as const, dateDebutValidite: "", dateFinValidite: "", actif: true };
 const emptyMainOeuvre = { typeOperation: "FABRICATION" as TypeOperationMainOeuvre, dureeStandardMinutes: "", coutHoraire: "", dateDebutValidite: "", dateFinValidite: "", actif: true };
 const emptyEquipement = { nom: "", description: "", actif: true };
@@ -38,6 +41,8 @@ function Money({ value }: { value: number }) {
 export default function CostsSection() {
   const [tarifs, setTarifs] = useState<TarifLait[]>([]);
   const [emballages, setEmballages] = useState<Emballage[]>([]);
+  const [configurationsEmballages, setConfigurationsEmballages] = useState<ConfigurationEmballage[]>([]);
+  const [fromages, setFromages] = useState<{ id: number; nom: string }[]>([]);
   const [energie, setEnergie] = useState<RegleCoutEnergie[]>([]);
   const [mainOeuvre, setMainOeuvre] = useState<RegleMainOeuvre[]>([]);
   const [equipements, setEquipements] = useState<Equipement[]>([]);
@@ -45,6 +50,7 @@ export default function CostsSection() {
 
   const [tarifForm, setTarifForm] = useState(emptyTarif);
   const [emballageForm, setEmballageForm] = useState(emptyEmballage);
+  const [configurationEmballageForm, setConfigurationEmballageForm] = useState(emptyConfigurationEmballage);
   const [energieForm, setEnergieForm] = useState(emptyEnergie);
   const [mainOeuvreForm, setMainOeuvreForm] = useState(emptyMainOeuvre);
   const [equipementForm, setEquipementForm] = useState(emptyEquipement);
@@ -55,9 +61,11 @@ export default function CostsSection() {
 
   const load = async () => {
     try {
-      const [lait, pack, regles, labor, equipment, depreciation] = await Promise.all([
+      const [lait, pack, packagingConfigurations, cheeses, regles, labor, equipment, depreciation] = await Promise.all([
         costsApi.listTarifsLait(),
         costsApi.listEmballages(),
+        costsApi.listConfigurationsEmballages(),
+        costsApi.listFromages(),
         costsApi.listEnergie(),
         costsApi.listMainOeuvre(),
         costsApi.listEquipements(),
@@ -65,6 +73,8 @@ export default function CostsSection() {
       ]);
       setTarifs(lait);
       setEmballages(pack);
+      setConfigurationsEmballages(packagingConfigurations);
+      setFromages(cheeses);
       setEnergie(regles);
       setMainOeuvre(labor);
       setEquipements(equipment);
@@ -75,6 +85,14 @@ export default function CostsSection() {
   };
 
   useEffect(() => { void load(); }, []);
+
+  const runSubmission = async (submission: () => Promise<void>) => {
+    try {
+      await submission();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Enregistrement impossible");
+    }
+  };
 
   const submitTarif = async () => {
     await costsApi.createTarifLait({
@@ -98,6 +116,18 @@ export default function CostsSection() {
     });
     toast.success("Emballage ajouté");
     setEmballageForm(emptyEmballage);
+    await load();
+  };
+
+  const submitConfigurationEmballage = async () => {
+    await costsApi.createConfigurationEmballage({
+      fromageId: Number(configurationEmballageForm.fromageId),
+      emballageId: Number(configurationEmballageForm.emballageId),
+      quantiteParUnite: Number(configurationEmballageForm.quantiteParUnite),
+      actif: true,
+    });
+    toast.success("Emballage associé au fromage");
+    setConfigurationEmballageForm(emptyConfigurationEmballage);
     await load();
   };
 
@@ -191,7 +221,7 @@ export default function CostsSection() {
                 <Label htmlFor="tarif-lait-date-fin">Fin de validité (optionnelle)</Label>
                 <Input id="tarif-lait-date-fin" type="date" min={tarifForm.dateDebutValidite || undefined} value={tarifForm.dateFinValidite} onChange={(e) => setTarifForm({ ...tarifForm, dateFinValidite: e.target.value })} />
               </div>
-              <Button className="rounded-xl" onClick={() => void submitTarif()}>Ajouter</Button>
+              <Button className="rounded-xl" onClick={() => void runSubmission(submitTarif)}>Ajouter</Button>
             </CardContent>
           </Card>
           <div className="grid gap-3">
@@ -216,9 +246,53 @@ export default function CostsSection() {
               <Input placeholder="Nom" value={emballageForm.nom} onChange={(e) => setEmballageForm({ ...emballageForm, nom: e.target.value })} />
               <Input placeholder="Unité" value={emballageForm.unite} onChange={(e) => setEmballageForm({ ...emballageForm, unite: e.target.value })} />
               <Input type="number" step="0.0001" min="0" placeholder="Coût unitaire" value={emballageForm.coutUnitaire} onChange={(e) => setEmballageForm({ ...emballageForm, coutUnitaire: e.target.value })} />
-              <Button className="rounded-xl" onClick={() => void submitEmballage()}>Ajouter</Button>
+              <Button className="rounded-xl" onClick={() => void runSubmission(submitEmballage)}>Ajouter</Button>
             </CardContent>
           </Card>
+          <Card>
+            <CardHeader><CardTitle>Emballages par unité de fromage</CardTitle></CardHeader>
+            <CardContent className="grid min-w-0 gap-4 sm:grid-cols-2 2xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_minmax(190px,0.9fr)_minmax(140px,0.65fr)]">
+              <div className="grid min-w-0 gap-2">
+                <Label id="configuration-emballage-fromage-label">Fromage</Label>
+                <Select value={configurationEmballageForm.fromageId} onValueChange={(value) => setConfigurationEmballageForm({ ...configurationEmballageForm, fromageId: value })}>
+                  <SelectTrigger aria-labelledby="configuration-emballage-fromage-label" className="min-w-0 rounded-xl bg-background">
+                    <SelectValue placeholder="Sélectionner un fromage" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {fromages.map((fromage) => <SelectItem key={fromage.id} value={String(fromage.id)}>{fromage.nom}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid min-w-0 gap-2">
+                <Label id="configuration-emballage-type-label">Emballage</Label>
+                <Select value={configurationEmballageForm.emballageId} onValueChange={(value) => setConfigurationEmballageForm({ ...configurationEmballageForm, emballageId: value })}>
+                  <SelectTrigger aria-labelledby="configuration-emballage-type-label" className="min-w-0 rounded-xl bg-background">
+                    <SelectValue placeholder="Sélectionner un emballage" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {emballages.filter((item) => item.actif).map((item) => <SelectItem key={item.id} value={String(item.id)}>{item.nom}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid min-w-0 gap-2">
+                <Label htmlFor="configuration-emballage-quantite">Quantité par fromage</Label>
+                <Input id="configuration-emballage-quantite" type="number" min="0.0001" step="0.0001" placeholder="Ex. 0,10" value={configurationEmballageForm.quantiteParUnite} onChange={(e) => setConfigurationEmballageForm({ ...configurationEmballageForm, quantiteParUnite: e.target.value })} />
+              </div>
+              <div className="flex min-w-0 items-end">
+                <Button className="w-full rounded-xl" disabled={!configurationEmballageForm.fromageId || !configurationEmballageForm.emballageId || !configurationEmballageForm.quantiteParUnite} onClick={() => void runSubmission(submitConfigurationEmballage)}>Associer</Button>
+              </div>
+            </CardContent>
+          </Card>
+          <div className="grid gap-3 md:grid-cols-2">
+            {configurationsEmballages.map((item) => (
+              <Card key={item.id}>
+                <CardContent className="flex items-center justify-between py-4">
+                  <div><div className="font-semibold">{item.fromageNom}</div><div className="text-sm text-muted-foreground">{item.emballageNom}</div></div>
+                  <Badge variant="outline">{item.quantiteParUnite} / fromage</Badge>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
           <div className="grid gap-3">
             {emballages.map((item) => (
               <Card key={item.id}>
@@ -257,7 +331,7 @@ export default function CostsSection() {
                 <Label htmlFor="energie-date-fin">Fin de validité (optionnelle)</Label>
                 <Input id="energie-date-fin" type="date" min={energieForm.dateDebutValidite || undefined} value={energieForm.dateFinValidite} onChange={(e) => setEnergieForm({ ...energieForm, dateFinValidite: e.target.value })} />
               </div>
-              <Button className="rounded-xl" onClick={() => void submitEnergie()}>Ajouter</Button>
+              <Button className="rounded-xl" onClick={() => void runSubmission(submitEnergie)}>Ajouter</Button>
             </CardContent>
           </Card>
           <div className="grid gap-3">
@@ -308,7 +382,7 @@ export default function CostsSection() {
                 Règle active
               </Label>
               <div className="flex gap-2 md:col-span-2">
-                <Button className="rounded-xl" disabled={!mainOeuvreForm.dureeStandardMinutes || !mainOeuvreForm.coutHoraire || !mainOeuvreForm.dateDebutValidite} onClick={() => void submitMainOeuvre()}>{editingMainOeuvreId === null ? "Ajouter" : "Enregistrer"}</Button>
+                <Button className="rounded-xl" disabled={!mainOeuvreForm.dureeStandardMinutes || !mainOeuvreForm.coutHoraire || !mainOeuvreForm.dateDebutValidite} onClick={() => void runSubmission(submitMainOeuvre)}>{editingMainOeuvreId === null ? "Ajouter" : "Enregistrer"}</Button>
                 {editingMainOeuvreId !== null && <Button className="rounded-xl" variant="outline" onClick={() => { setEditingMainOeuvreId(null); setMainOeuvreForm(emptyMainOeuvre); }}>Annuler</Button>}
               </div>
             </CardContent>
@@ -351,7 +425,7 @@ export default function CostsSection() {
                 Équipement actif
               </Label>
               <div className="flex gap-2 md:justify-end">
-                <Button className="rounded-xl" disabled={!equipementForm.nom.trim()} onClick={() => void submitEquipement()}>{editingEquipementId === null ? "Ajouter" : "Enregistrer"}</Button>
+                <Button className="rounded-xl" disabled={!equipementForm.nom.trim()} onClick={() => void runSubmission(submitEquipement)}>{editingEquipementId === null ? "Ajouter" : "Enregistrer"}</Button>
                 {editingEquipementId !== null && <Button className="rounded-xl" variant="outline" onClick={() => { setEditingEquipementId(null); setEquipementForm(emptyEquipement); }}>Annuler</Button>}
               </div>
             </CardContent>
@@ -401,7 +475,7 @@ export default function CostsSection() {
                 Règle active
               </Label>
               <div className="flex gap-2 md:justify-end">
-                <Button className="rounded-xl" disabled={!amortissementForm.equipementId || !amortissementForm.coutParFabrication || !amortissementForm.dateDebutValidite} onClick={() => void submitAmortissement()}>{editingAmortissementId === null ? "Ajouter" : "Enregistrer"}</Button>
+                <Button className="rounded-xl" disabled={!amortissementForm.equipementId || !amortissementForm.coutParFabrication || !amortissementForm.dateDebutValidite} onClick={() => void runSubmission(submitAmortissement)}>{editingAmortissementId === null ? "Ajouter" : "Enregistrer"}</Button>
                 {editingAmortissementId !== null && <Button className="rounded-xl" variant="outline" onClick={() => { setEditingAmortissementId(null); setAmortissementForm(emptyAmortissement); }}>Annuler</Button>}
               </div>
             </CardContent>

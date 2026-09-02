@@ -32,6 +32,7 @@ const recipe: RecetteListItem = {
 const detail: RecetteDetail = {
   ...recipe,
   dateCreation: "2026-08-25T10:00:00",
+  quantiteLaitReference: 100,
   ingredients: [],
 };
 

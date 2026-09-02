@@ -31,17 +31,16 @@ describe("comptes de démonstration", () => {
   it("affiche les comptes uniquement dans l'environnement de développement des tests", () => {
     renderForm();
 
-    expect(screen.getByText("Comptes de démonstration")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Propriétaire démo/ })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Employé démo/ })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Vente démo/ })).toBeInTheDocument();
+    expect(screen.getByText("Compte démo")).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "Choisir un compte de démonstration" })).toBeInTheDocument();
   });
 
   it("préremplit le propriétaire sans lancer la connexion", async () => {
     const user = userEvent.setup();
     renderForm();
 
-    await user.click(screen.getByRole("button", { name: /Propriétaire démo/ }));
+    await user.click(screen.getByRole("combobox", { name: "Choisir un compte de démonstration" }));
+    await user.click(screen.getByRole("option", { name: /Propriétaire démo/ }));
 
     expect(screen.getByLabelText("Nom d'utilisateur")).toHaveValue("gilles.demo");
     expect(screen.getByLabelText("Mot de passe")).toHaveValue("DemoFromagerie2026!");
@@ -61,7 +60,8 @@ describe("comptes de démonstration", () => {
     const user = userEvent.setup();
     renderForm();
 
-    await user.click(screen.getByRole("button", { name: /Employé démo/ }));
+    await user.click(screen.getByRole("combobox", { name: "Choisir un compte de démonstration" }));
+    await user.click(screen.getByRole("option", { name: /Employé démo/ }));
 
     expect(screen.getByLabelText("Nom d'utilisateur")).toHaveValue("jean.demo");
     expect(screen.getByLabelText("Code PIN")).toHaveValue("1234");
@@ -78,7 +78,8 @@ describe("comptes de démonstration", () => {
     const user = userEvent.setup();
     renderForm();
 
-    await user.click(screen.getByRole("button", { name: /Vente démo/ }));
+    await user.click(screen.getByRole("combobox", { name: "Choisir un compte de démonstration" }));
+    await user.click(screen.getByRole("option", { name: /Vente démo/ }));
 
     expect(screen.getByLabelText("Nom d'utilisateur")).toHaveValue("nathalie.demo");
     expect(screen.getByLabelText("Code PIN")).toHaveValue("5678");

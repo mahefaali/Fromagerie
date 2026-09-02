@@ -7,9 +7,9 @@ export default function Configuration() {
   const [active, setActive] = useState<"users" | "site" | "nav" | "reports" | "costs">("users");
 
   return (
-    <div className="pb-24">
-        <section className="min-h-screen bg-background text-foreground px-6 py-14 md:px-10 lg:px-16">
-            <div className="mx-auto max-w-6xl">
+    <div className="w-full pb-32">
+        <section className="min-h-[calc(100vh-8rem)] w-full bg-background py-8 text-foreground md:py-12">
+            <div className="w-full">
                 <header className="mb-10 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                 <div>
                     <p className="font-mono uppercase tracking-[0.22em] text-sm text-secondary">
@@ -34,8 +34,8 @@ export default function Configuration() {
                 </div>
                 </header>
 
-                <div className="mb-10 grid gap-6 lg:grid-cols-[1fr_2fr]">
-                    <div className="rounded-3xl border border-border bg-card p-6 shadow-sm">
+                <div className="mb-10 grid min-w-0 gap-6 lg:grid-cols-[280px_minmax(0,1fr)] xl:grid-cols-[310px_minmax(0,1fr)]">
+                    <div className="h-fit rounded-3xl border border-border bg-card p-5 shadow-sm xl:p-6">
                     <div className="mb-6">
                         <p className="font-mono text-xs uppercase tracking-[0.22em] text-secondary">
                         Zones de configuration
@@ -63,7 +63,7 @@ export default function Configuration() {
                     </div>
                     </div>
 
-                    <div className="rounded-3xl border border-border bg-card p-6 shadow-sm">
+                    <div className="min-w-0 rounded-3xl border border-border bg-card p-4 shadow-sm sm:p-6 xl:p-8">
                     {active === "users" && <UsersSection />}
                     {active === "costs" && <CostsSection />}
                     </div>

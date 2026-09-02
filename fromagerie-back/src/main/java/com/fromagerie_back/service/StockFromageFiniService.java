@@ -42,6 +42,7 @@ public class StockFromageFiniService {
     private final MouvementStockRepository mouvementRepository;
     private final UtilisateurRepository utilisateurRepository;
     private final PlacementAffinageRepository placementRepository;
+    private final CoutProductionCalculService coutProductionCalculService;
 
     public StockFromageFiniService(
             EmplacementStockRepository emplacementStockRepository,
@@ -49,13 +50,15 @@ public class StockFromageFiniService {
             LotAffinageRepository lotAffinageRepository,
             MouvementStockRepository mouvementRepository,
             UtilisateurRepository utilisateurRepository,
-            PlacementAffinageRepository placementRepository) {
+            PlacementAffinageRepository placementRepository,
+            CoutProductionCalculService coutProductionCalculService) {
         this.emplacementStockRepository = emplacementStockRepository;
         this.stockRepository = stockRepository;
         this.lotAffinageRepository = lotAffinageRepository;
         this.mouvementRepository = mouvementRepository;
         this.utilisateurRepository = utilisateurRepository;
         this.placementRepository = placementRepository;
+        this.coutProductionCalculService = coutProductionCalculService;
     }
 
     @Transactional(readOnly = true)
@@ -120,6 +123,11 @@ public class StockFromageFiniService {
         if (stockRepository.existsByLotAffinageId(lot.getId())) {
             throw new BusinessConflictException("Ce lot d'affinage possède déjà un stock fini");
         }
+        if (lot.getStatut() == com.fromagerie_back.model.StatutLotAffinage.TERMINE
+                || request.dateEntreeStock().isBefore(lot.getDateSortiePrevue())) {
+            throw new BusinessConflictException("Ce lot n'est pas prêt à entrer en stock fini");
+        }
+        coutProductionCalculService.calculerPourSortie(lot, request.quantiteInitiale(), request.dateEntreeStock());
         StockFromageFini stock = new StockFromageFini();
         stock.setLotAffinage(lot);
         stock.setEmplacementStock(findEmplacement(request.emplacementStockId()));
@@ -142,6 +150,9 @@ public class StockFromageFiniService {
         if (lot.getDateSortiePrevue().isAfter(LocalDate.now())) {
             throw new BusinessConflictException("La date de sortie prévue de ce lot n'est pas encore atteinte");
         }
+        if (request.dateEntreeStock().isBefore(lot.getDateSortiePrevue())) {
+            throw new BusinessConflictException("La date réelle de sortie ne peut pas précéder la date prévue");
+        }
         if (request.dateDurabilite().isBefore(request.dateEntreeStock())) {
             throw new BusinessConflictException("La date de durabilité doit être postérieure à l'entrée en stock");
         }
@@ -149,6 +160,9 @@ public class StockFromageFiniService {
         if (quantite != lot.getQuantiteInitiale()) {
             throw new BusinessConflictException("Le lot doit être entièrement placé avant sa sortie");
         }
+
+        // Le coût définitif doit exister avant que le lot devienne commercialisable.
+        coutProductionCalculService.calculerPourSortie(lot, quantite, request.dateEntreeStock());
 
         StockFromageFini stock = new StockFromageFini();
         stock.setLotAffinage(lot);

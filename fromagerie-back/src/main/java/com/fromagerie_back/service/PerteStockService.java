@@ -25,6 +25,7 @@ import com.fromagerie_back.model.TypeMouvementStock;
 import com.fromagerie_back.model.TypePerteStock;
 import com.fromagerie_back.model.Utilisateur;
 import com.fromagerie_back.repository.CoutProductionManuelRepository;
+import com.fromagerie_back.repository.CoutProductionLotRepository;
 import com.fromagerie_back.repository.MouvementStockRepository;
 import com.fromagerie_back.repository.PerteStockRepository;
 import com.fromagerie_back.repository.StockFromageFiniRepository;
@@ -42,9 +43,10 @@ public class PerteStockService {
     private final UtilisateurRepository utilisateurs;
     private final FromageRepository fromages;
     private final ReservationStockRepository reservations;
+    private final CoutProductionLotRepository coutsLots;
 
-    public PerteStockService(PerteStockRepository pertes, CoutProductionManuelRepository couts, StockFromageFiniRepository stocks, MouvementStockRepository mouvements, UtilisateurRepository utilisateurs, FromageRepository fromages, ReservationStockRepository reservations) {
-        this.pertes = pertes; this.couts = couts; this.stocks = stocks; this.mouvements = mouvements; this.utilisateurs = utilisateurs; this.fromages = fromages; this.reservations = reservations;
+    public PerteStockService(PerteStockRepository pertes, CoutProductionManuelRepository couts, StockFromageFiniRepository stocks, MouvementStockRepository mouvements, UtilisateurRepository utilisateurs, FromageRepository fromages, ReservationStockRepository reservations, CoutProductionLotRepository coutsLots) {
+        this.pertes = pertes; this.couts = couts; this.stocks = stocks; this.mouvements = mouvements; this.utilisateurs = utilisateurs; this.fromages = fromages; this.reservations = reservations; this.coutsLots = coutsLots;
     }
 
     @Transactional(readOnly = true)
@@ -106,9 +108,13 @@ public class PerteStockService {
         } else if (request.quantite() > physical(stockId, stock.getQuantiteInitiale())) {
             throw new BusinessConflictException("La quantité perdue dépasse le stock physique disponible");
         }
-        BigDecimal coutUnitaire = couts.findByFromageId(stock.getLotAffinage().getFabrication().getRecette().getFromage().getId())
-                .map(CoutProductionManuel::getCoutUnitaire)
-                .orElseThrow(() -> new BusinessConflictException("Le coût de production manuel doit d'abord être configuré"));
+        BigDecimal coutUnitaire = coutsLots.findByFabricationId(stock.getLotAffinage().getFabrication().getId())
+                .map(com.fromagerie_back.model.CoutProductionLot::getCoutParUnite)
+                .orElseGet(() -> couts.findByFromageId(
+                        stock.getLotAffinage().getFabrication().getRecette().getFromage().getId())
+                        .map(CoutProductionManuel::getCoutUnitaire)
+                        .orElseThrow(() -> new BusinessConflictException(
+                                "Aucun coût définitif ou coût manuel n'est disponible pour ce lot")));
         Utilisateur utilisateur = user(auth);
         BigDecimal coutTotal = coutUnitaire.multiply(BigDecimal.valueOf(request.quantite()));
         String motif = request.motif() == null || request.motif().isBlank()

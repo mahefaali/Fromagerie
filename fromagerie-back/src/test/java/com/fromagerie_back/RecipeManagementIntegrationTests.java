@@ -127,6 +127,7 @@ class RecipeManagementIntegrationTests {
                 .andExpect(jsonPath("$.fromageId").value(cheese.getId()))
                 .andExpect(jsonPath("$.version").value(1))
                 .andExpect(jsonPath("$.active").value(true))
+                .andExpect(jsonPath("$.quantiteLaitReference").value(100))
                 .andExpect(jsonPath("$.ingredients.length()").value(2))
                 .andExpect(jsonPath("$.ingredients[0].coutUnitaireReference").value(0.7))
                 .andExpect(jsonPath("$.coutMatiereEstime").value(73));
@@ -175,6 +176,7 @@ class RecipeManagementIntegrationTests {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.version").value(2))
                 .andExpect(jsonPath("$.active").value(true))
+                .andExpect(jsonPath("$.quantiteLaitReference").value(100))
                 .andExpect(jsonPath("$.coutMatiereEstime").value(20));
 
         mockMvc.perform(get("/api/recettes/{id}", versionOne.getId())

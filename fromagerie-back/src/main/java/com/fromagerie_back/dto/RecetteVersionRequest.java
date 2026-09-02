@@ -1,5 +1,6 @@
 package com.fromagerie_back.dto;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -19,6 +20,8 @@ public class RecetteVersionRequest {
 
     private Integer frequenceRetournementJours;
 
+    private BigDecimal quantiteLaitReference;
+
     public String getNom() {
         return nom;
     }
@@ -31,6 +34,10 @@ public class RecetteVersionRequest {
         return frequenceRetournementJours;
     }
 
+    public BigDecimal getQuantiteLaitReference() {
+        return quantiteLaitReference;
+    }
+
     public void setNom(String nom) {
         this.nom = nom;
     }
@@ -41,5 +48,9 @@ public class RecetteVersionRequest {
 
     public void setFrequenceRetournementJours(Integer frequenceRetournementJours) {
         this.frequenceRetournementJours = frequenceRetournementJours;
+    }
+
+    public void setQuantiteLaitReference(BigDecimal quantiteLaitReference) {
+        this.quantiteLaitReference = quantiteLaitReference;
     }
 }

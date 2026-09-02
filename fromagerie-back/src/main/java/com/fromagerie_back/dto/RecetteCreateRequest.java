@@ -1,5 +1,6 @@
 package com.fromagerie_back.dto;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -21,6 +22,8 @@ public class RecetteCreateRequest {
     private boolean recetteDeBase;
 
     private Integer frequenceRetournementJours;
+
+    private BigDecimal quantiteLaitReference;
 
     @NotEmpty(message = "La recette doit contenir au moins un ingrédient")
     private List<@Valid RecetteIngredientRequest> ingredients = new ArrayList<>();
@@ -45,6 +48,10 @@ public class RecetteCreateRequest {
         return frequenceRetournementJours;
     }
 
+    public BigDecimal getQuantiteLaitReference() {
+        return quantiteLaitReference;
+    }
+
     public void setNom(String nom) {
         this.nom = nom;
     }
@@ -59,6 +66,10 @@ public class RecetteCreateRequest {
 
     public void setFrequenceRetournementJours(Integer frequenceRetournementJours) {
         this.frequenceRetournementJours = frequenceRetournementJours;
+    }
+
+    public void setQuantiteLaitReference(BigDecimal quantiteLaitReference) {
+        this.quantiteLaitReference = quantiteLaitReference;
     }
 
     public void setIngredients(List<RecetteIngredientRequest> ingredients) {

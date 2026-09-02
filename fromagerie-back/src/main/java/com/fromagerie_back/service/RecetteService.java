@@ -38,6 +38,7 @@ public class RecetteService {
 
     private static final int MONEY_SCALE = 2;
     private static final String BASE_RECIPE_PREFIX = "legacy-";
+    private static final BigDecimal DEFAULT_MILK_REFERENCE_QUANTITY = new BigDecimal("100.0000");
 
     private final RecetteRepository recetteRepository;
     private final FromageRepository fromageRepository;
@@ -82,6 +83,8 @@ public class RecetteService {
         recette.setActive(true);
         recette.setDateCreation(LocalDateTime.now());
         recette.setFrequenceRetournementJours(normalizeFrequency(request.getFrequenceRetournementJours()));
+        recette.setQuantiteLaitReference(normalizeMilkReference(request.getQuantiteLaitReference(),
+                DEFAULT_MILK_REFERENCE_QUANTITY));
         recette.setCoutMatiereEstime(addIngredients(recette, request.getIngredients()));
         return save(recette, "Une recette portant cette version existe déjà");
     }
@@ -103,6 +106,8 @@ public class RecetteService {
         next.setActive(true);
         next.setDateCreation(LocalDateTime.now());
         next.setFrequenceRetournementJours(normalizeFrequency(request.getFrequenceRetournementJours()));
+        next.setQuantiteLaitReference(normalizeMilkReference(request.getQuantiteLaitReference(),
+                source.getQuantiteLaitReference()));
         next.setCoutMatiereEstime(addIngredients(next, request.getIngredients()));
 
         recetteRepository.save(source);
@@ -205,7 +210,8 @@ public class RecetteService {
         return new RecetteDetailResponse(
                 recette.getId(), recette.getNom(), recette.getVarianteKey(), version(recette), recette.isActive(),
                 recette.getDateCreation(), recette.getFromage().getId(), recette.getFromage().getNom(),
-                recette.getFrequenceRetournementJours(), recette.getCoutMatiereEstime(), ingredients);
+                recette.getFrequenceRetournementJours(), recette.getQuantiteLaitReference(),
+                recette.getCoutMatiereEstime(), ingredients);
     }
 
     private BigDecimal ingredientCost(RecetteIngredient ingredient) {
@@ -223,5 +229,13 @@ public class RecetteService {
             return null;
         }
         return value;
+    }
+
+    private BigDecimal normalizeMilkReference(BigDecimal value, BigDecimal fallback) {
+        BigDecimal normalized = value == null ? fallback : value;
+        if (normalized == null || normalized.signum() <= 0) {
+            throw new BusinessValidationException("La quantité de lait de référence doit être strictement positive");
+        }
+        return normalized.setScale(4, RoundingMode.HALF_UP);
     }
 }

@@ -14,6 +14,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.fromagerie_back.dto.EmballageRequest;
 import com.fromagerie_back.dto.EmballageResponse;
+import com.fromagerie_back.dto.ConfigurationEmballageRequest;
+import com.fromagerie_back.dto.ConfigurationEmballageResponse;
 import com.fromagerie_back.dto.EquipementRequest;
 import com.fromagerie_back.dto.EquipementResponse;
 import com.fromagerie_back.dto.RegleAmortissementRequest;
@@ -56,6 +58,23 @@ public class CoutProductionController {
     @PutMapping("/emballages/{id}")
     public EmballageResponse updateEmballage(@PathVariable Long id, @Valid @RequestBody EmballageRequest request) {
         return service.updateEmballage(id, request);
+    }
+
+    @GetMapping("/configurations-emballages")
+    public List<ConfigurationEmballageResponse> configurationsEmballages() {
+        return service.findConfigurationsEmballages();
+    }
+    @PostMapping("/configurations-emballages")
+    public ResponseEntity<ConfigurationEmballageResponse> createConfigurationEmballage(
+            @Valid @RequestBody ConfigurationEmballageRequest request) {
+        ConfigurationEmballageResponse response = service.createConfigurationEmballage(request);
+        return ResponseEntity.created(URI.create("/api/configuration/couts/configurations-emballages/" + response.id()))
+                .body(response);
+    }
+    @PutMapping("/configurations-emballages/{id}")
+    public ConfigurationEmballageResponse updateConfigurationEmballage(@PathVariable Long id,
+            @Valid @RequestBody ConfigurationEmballageRequest request) {
+        return service.updateConfigurationEmballage(id, request);
     }
 
     @GetMapping("/energie")

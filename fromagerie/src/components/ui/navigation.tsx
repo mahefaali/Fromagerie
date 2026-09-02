@@ -1,21 +1,7 @@
-import { Home, Factory, Settings, Beef, Archive } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "../../features/authentication/hooks/useAuth";
-import type { UserRole } from "../../features/authentication/types/auth.types";
 import UserMenu from "../../layouts/components/UserMenu";
-
-const navItems = [
-  { to: "/home", label: "Accueil", icon: Home, roles: ["PROPRIETAIRE", "FABRICATION", "VENTE"] },
-  { to: "/fabrication", label: "Fabrication", icon: Factory, roles: ["PROPRIETAIRE", "FABRICATION"] },
-  { to: "/affinage", label: "Affinage", icon: Beef, roles: ["PROPRIETAIRE", "FABRICATION"] },
-  { to: "/stock", label: "Stockage & Vente", icon: Archive, roles: ["PROPRIETAIRE", "VENTE"] },
-  { to: "/configuration", label: "Configuration", icon: Settings, roles: ["PROPRIETAIRE"] },
-] satisfies ReadonlyArray<{
-  to: string;
-  label: string;
-  icon: typeof Home;
-  roles: readonly UserRole[];
-}>;
+import { navItems } from "./navigationItems";
 
 export default function BottomNavigation() {
   const location = useLocation();

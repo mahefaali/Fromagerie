@@ -6,6 +6,7 @@ import HomePage from './pages/Home/Home'
 import LoginPage from './pages/Login/Login'
 import Fabrication from './pages/Manufacturing/Manufacturing'
 import Configuration from './pages/Configuration/Configuration'
+import ProfitabilityPage from './pages/Profitability/Profitability'
 import AffinagePage from './pages/Affinage/Affinage'
 import Stock from './pages/StorageSale/StockSale'
 import { ProtectedRoute } from './routes/ProtectedRoute'
@@ -32,6 +33,7 @@ function App() {
               <Route path="/stock" element={<Stock />} />
               <Route element={<OwnerOnlyRoute />}>
                 <Route path="/configuration" element={<Configuration />} />
+                <Route path="/rentabilite" element={<ProfitabilityPage />} />
               </Route>
             </Route>
           </Route>

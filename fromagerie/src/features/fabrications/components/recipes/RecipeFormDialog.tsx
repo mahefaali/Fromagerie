@@ -63,6 +63,9 @@ export function RecipeFormDialog(props: RecipeFormDialogProps) {
   const [turningFrequency, setTurningFrequency] = useState(
     initialRecipe?.frequenceRetournementJours == null ? "" : String(initialRecipe.frequenceRetournementJours),
   );
+  const [milkReferenceQuantity, setMilkReferenceQuantity] = useState(
+    String(initialRecipe?.quantiteLaitReference ?? 100),
+  );
   const [cheeseId, setCheeseId] = useState<number | null>(
     props.mode === "create" ? props.initialCheeseId ?? null : initialRecipe?.fromageId ?? null,
   );
@@ -82,6 +85,7 @@ export function RecipeFormDialog(props: RecipeFormDialogProps) {
     if (!initialRecipe) return;
     setName(initialRecipe.nom);
     setTurningFrequency(initialRecipe.frequenceRetournementJours == null ? "" : String(initialRecipe.frequenceRetournementJours));
+    setMilkReferenceQuantity(String(initialRecipe.quantiteLaitReference));
     setCheeseId(initialRecipe.fromageId);
     setIngredients(initialRecipe.ingredients.map((ingredient) =>
       newIngredientDraft(ingredient.matierePremiereId, String(ingredient.quantite))));
@@ -171,6 +175,11 @@ export function RecipeFormDialog(props: RecipeFormDialogProps) {
       setFormError("Le fromage est obligatoire.");
       return;
     }
+    const parsedMilkReferenceQuantity = Number(milkReferenceQuantity);
+    if (!Number.isFinite(parsedMilkReferenceQuantity) || parsedMilkReferenceQuantity <= 0) {
+      setFormError("La quantité de lait de référence doit être strictement positive.");
+      return;
+    }
     const parsedTurningFrequency = turningFrequency.trim() === "" ? null : Number(turningFrequency);
     if (parsedTurningFrequency !== null && (!Number.isInteger(parsedTurningFrequency) || parsedTurningFrequency < 1 || parsedTurningFrequency > 365)) {
       setFormError("La fréquence de retournement doit être un nombre entier compris entre 1 et 365 jours.");
@@ -188,12 +197,14 @@ export function RecipeFormDialog(props: RecipeFormDialogProps) {
           nom: name.trim(),
           fromageId: cheeseId!,
           recetteDeBase: props.recetteDeBase,
+          quantiteLaitReference: parsedMilkReferenceQuantity,
           ...turningFrequencyPayload,
           ingredients: requestIngredients,
         });
       } else {
         await props.onCreateVersion({
           nom: name.trim(),
+          quantiteLaitReference: parsedMilkReferenceQuantity,
           ...turningFrequencyPayload,
           ingredients: requestIngredients,
         });
@@ -334,6 +345,21 @@ export function RecipeFormDialog(props: RecipeFormDialogProps) {
                 )}
               </div>
             )}
+            <div className="grid gap-2">
+              <Label htmlFor="recipe-milk-reference">Quantité de lait de référence (L)</Label>
+              <Input
+                id="recipe-milk-reference"
+                type="number"
+                min={0.0001}
+                step="any"
+                value={milkReferenceQuantity}
+                onChange={(event) => setMilkReferenceQuantity(event.target.value)}
+                aria-describedby="recipe-milk-reference-help"
+              />
+              <p id="recipe-milk-reference-help" className="text-xs text-muted-foreground">
+                Les quantités d’ingrédients ci-dessous sont prévues pour ce volume de lait. La référence recommandée est 100 L.
+              </p>
+            </div>
             <div className="grid gap-2">
               <Label htmlFor="recipe-turning-frequency">Fréquence de retournement (jours)</Label>
               <Input

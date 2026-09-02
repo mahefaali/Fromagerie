@@ -38,6 +38,23 @@ export interface EmballageRequest {
   actif?: boolean;
 }
 
+export interface ConfigurationEmballage {
+  id: number;
+  fromageId: number;
+  fromageNom: string;
+  emballageId: number;
+  emballageNom: string;
+  quantiteParUnite: number;
+  actif: boolean;
+}
+
+export interface ConfigurationEmballageRequest {
+  fromageId: number;
+  emballageId: number;
+  quantiteParUnite: number;
+  actif?: boolean;
+}
+
 export interface RegleCoutEnergie {
   id: number;
   typeOperation: TypeOperationEnergie;
@@ -119,6 +136,11 @@ export const costsApi = {
     apiRequest<Emballage>("/api/configuration/couts/emballages", { method: "POST", json: request }),
   updateEmballage: (id: number, request: EmballageRequest) =>
     apiRequest<Emballage>(`/api/configuration/couts/emballages/${id}`, { method: "PUT", json: request }),
+  listConfigurationsEmballages: () =>
+    apiRequest<ConfigurationEmballage[]>("/api/configuration/couts/configurations-emballages"),
+  createConfigurationEmballage: (request: ConfigurationEmballageRequest) =>
+    apiRequest<ConfigurationEmballage>("/api/configuration/couts/configurations-emballages", { method: "POST", json: request }),
+  listFromages: () => apiRequest<{ id: number; nom: string }[]>("/api/fromages"),
 
   listEnergie: () => apiRequest<RegleCoutEnergie[]>("/api/configuration/couts/energie"),
   createEnergie: (request: RegleCoutEnergieRequest) =>
