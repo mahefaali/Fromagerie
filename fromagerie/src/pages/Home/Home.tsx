@@ -14,6 +14,7 @@ import type {
   AffinageDashboard,
   CaveCapacityPlanning,
 } from "../../features/affinage/types/affinage.types";
+import OwnerPerformanceDashboard from "../../features/performance/components/OwnerPerformanceDashboard";
 
 function AlertList({ title, icon: Icon, items, emptyLabel }: {
   title: string;
@@ -237,7 +238,7 @@ export default function HomePage() {
   const [salesError, setSalesError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (user?.role === "VENTE") {
+    if (user?.role !== "FABRICATION") {
       setLoading(false);
       setPlanningLoading(false);
       return;
@@ -253,7 +254,7 @@ export default function HomePage() {
   }, [user?.role]);
 
   useEffect(() => {
-    if (user?.role === "VENTE") return;
+    if (user?.role !== "FABRICATION") return;
     let active = true;
     affinageApi.planification()
       .then((data) => active && setPlanning(data))
@@ -281,6 +282,10 @@ export default function HomePage() {
     (dashboard?.sortiesProches.length ?? 0) +
     (dashboard?.lotsPretsASortir.length ?? 0) +
     (dashboard?.changementsCaveRecommandes.length ?? 0);
+
+  if (user?.role === "PROPRIETAIRE") {
+    return <OwnerPerformanceDashboard />;
+  }
 
   return (
     <main className="min-h-screen bg-[#f7f4ef] px-4 py-6 text-[#3d312a] sm:px-6 lg:px-8">
@@ -325,7 +330,7 @@ export default function HomePage() {
 
       {user?.role === "VENTE" ? (
         <SalesHome stocks={salesStocks} loading={salesLoading} error={salesError} />
-      ) : user?.role === "FABRICATION" || user?.role === "PROPRIETAIRE" ? (
+      ) : user?.role === "FABRICATION" ? (
           <>
             {error ? (
               <Card className="border-[#f4c7b8] bg-[#fff7f4]">

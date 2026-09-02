@@ -3,6 +3,7 @@ package com.fromagerie_back.service;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,6 +39,27 @@ public class RentabiliteService {
         if (dateDebut.isAfter(dateFin)) {
             throw new BusinessConflictException("La date de début doit précéder la date de fin");
         }
+        List<Valeur> valeurs = valeurs(dateDebut, dateFin, fromageId, clientId);
+        Accumulateur synthese = new Accumulateur();
+        valeurs.forEach(synthese::add);
+        return new RentabiliteAnalyseResponse(dateDebut, dateFin, synthese.toSynthese(),
+                grouperFromages(valeurs),
+                grouper(valeurs, Valeur::clientId, Valeur::clientNom),
+                croiser(valeurs));
+    }
+
+    @Transactional(readOnly = true)
+    public List<RentabiliteMensuelle> evolutionMensuelle(LocalDate dateDebut, LocalDate dateFin, Long fromageId) {
+        Map<YearMonth, Accumulateur> groupes = new LinkedHashMap<>();
+        valeurs(dateDebut, dateFin, fromageId, null).forEach(valeur ->
+                groupes.computeIfAbsent(YearMonth.from(valeur.dateLivraison()), ignored -> new Accumulateur())
+                        .add(valeur));
+        return groupes.entrySet().stream()
+                .map(entry -> new RentabiliteMensuelle(entry.getKey(), entry.getValue().toSynthese()))
+                .toList();
+    }
+
+    private List<Valeur> valeurs(LocalDate dateDebut, LocalDate dateFin, Long fromageId, Long clientId) {
         List<LigneLivraison> livraisons = ligneLivraisonRepository.findLivreesPourRentabilite(
                 dateDebut, dateFin, fromageId, clientId);
         Map<Long, CoutProductionLot> couts = new LinkedHashMap<>();
@@ -45,13 +67,7 @@ public class RentabiliteService {
                 .map(l -> l.getStockFromageFini().getLotAffinage().getFabrication().getId()).distinct().toList())
                 .forEach(c -> couts.put(c.getFabrication().getId(), c));
 
-        List<Valeur> valeurs = livraisons.stream().map(l -> toValeur(l, couts)).toList();
-        Accumulateur synthese = new Accumulateur();
-        valeurs.forEach(synthese::add);
-        return new RentabiliteAnalyseResponse(dateDebut, dateFin, synthese.toSynthese(),
-                grouperFromages(valeurs),
-                grouper(valeurs, Valeur::clientId, Valeur::clientNom),
-                croiser(valeurs));
+        return livraisons.stream().map(l -> toValeur(l, couts)).toList();
     }
 
     private Valeur toValeur(LigneLivraison ligne, Map<Long, CoutProductionLot> couts) {
@@ -68,6 +84,7 @@ public class RentabiliteService {
                 .divide(BigDecimal.valueOf(cout.getNombreUnitesFinales()), 8, RoundingMode.HALF_UP);
         BigDecimal poidsAttribue = poidsUnitaire.multiply(BigDecimal.valueOf(quantite));
         return new Valeur(
+                ligne.getLivraison().getDateLivraison(),
                 ligne.getLigneCommande().getFromage().getId(), ligne.getLigneCommande().getFromage().getNom(),
                 ligne.getLivraison().getCommande().getClient().getId(),
                 ligne.getLivraison().getCommande().getClient().getNom(), quantite, chiffreAffaires, coutAttribue,
@@ -109,7 +126,10 @@ public class RentabiliteService {
         }).toList();
     }
 
-    private record Valeur(Long fromageId, String fromageNom, Long clientId, String clientNom,
+    public record RentabiliteMensuelle(YearMonth mois, RentabiliteSyntheseResponse synthese) {
+    }
+
+    private record Valeur(LocalDate dateLivraison, Long fromageId, String fromageNom, Long clientId, String clientNom,
             int quantite, BigDecimal chiffreAffaires, BigDecimal coutAttribue, BigDecimal poidsAttribue) {
     }
 

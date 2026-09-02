@@ -118,7 +118,7 @@ public class StockFromageFiniService {
     }
 
     @Transactional
-    public StockFromageFiniResponse createStock(StockFromageFiniRequest request) {
+    public StockFromageFiniResponse createStock(StockFromageFiniRequest request, Authentication authentication) {
         LotAffinage lot = findLot(request.lotAffinageId());
         if (stockRepository.existsByLotAffinageId(lot.getId())) {
             throw new BusinessConflictException("Ce lot d'affinage possède déjà un stock fini");
@@ -136,7 +136,10 @@ public class StockFromageFiniService {
         stock.setTypeDateDurabilite(request.typeDateDurabilite());
         stock.setDateDurabilite(request.dateDurabilite());
         stock.setStatut(StatutStockFromageFini.DISPONIBLE);
-        return toResponse(stockRepository.save(stock));
+        stock = stockRepository.save(stock);
+        enregistrerEntree(stock, request.quantiteInitiale(), findUtilisateur(authentication),
+                request.dateEntreeStock(), "Entrée initiale du stock fini");
+        return toResponse(stock);
     }
 
     @Transactional
@@ -174,14 +177,8 @@ public class StockFromageFiniService {
         stock.setStatut(StatutStockFromageFini.DISPONIBLE);
         stock = stockRepository.save(stock);
 
-        MouvementStock mouvement = new MouvementStock();
-        mouvement.setStockFromageFini(stock);
-        mouvement.setType(TypeMouvementStock.ENTREE);
-        mouvement.setQuantite(quantite);
-        mouvement.setUtilisateur(findUtilisateur(authentication));
-        mouvement.setDateMouvement(LocalDateTime.now());
-        mouvement.setCommentaire(request.commentaire());
-        mouvementRepository.save(mouvement);
+        enregistrerEntree(stock, quantite, findUtilisateur(authentication), request.dateEntreeStock(),
+                request.commentaire());
 
         LocalDateTime maintenant = LocalDateTime.now();
         placementRepository.findActiveByLotIdWithLocation(lotId).forEach(p -> p.setDateFin(maintenant));
@@ -220,6 +217,18 @@ public class StockFromageFiniService {
             stock.setStatut(StatutStockFromageFini.DISPONIBLE);
         }
         stockRepository.save(stock);
+    }
+
+    private void enregistrerEntree(StockFromageFini stock, int quantite, Utilisateur utilisateur,
+            LocalDate dateEntree, String commentaire) {
+        MouvementStock mouvement = new MouvementStock();
+        mouvement.setStockFromageFini(stock);
+        mouvement.setType(TypeMouvementStock.ENTREE);
+        mouvement.setQuantite(quantite);
+        mouvement.setUtilisateur(utilisateur);
+        mouvement.setDateMouvement(dateEntree.atStartOfDay());
+        mouvement.setCommentaire(commentaire);
+        mouvementRepository.save(mouvement);
     }
 
     private LotAffinage findLot(Long id) {

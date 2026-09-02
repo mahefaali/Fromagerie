@@ -1,6 +1,7 @@
 package com.fromagerie_back.repository;
 
 import java.time.LocalDateTime;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -15,6 +16,33 @@ import com.fromagerie_back.model.Fabrication;
 @Repository
 public interface FabricationRepository
                 extends JpaRepository<Fabrication, Long> {
+
+        interface PerformanceProjection {
+                Long getFromageId();
+                String getFromageNom();
+                BigDecimal getPoidsTotal();
+                BigDecimal getQuantiteLait();
+                Long getNombreFromages();
+        }
+
+        @Query("""
+                        SELECT fromage.id AS fromageId, fromage.nom AS fromageNom,
+                               SUM(f.poidsTotalFromages) AS poidsTotal,
+                               SUM(f.quantiteLait) AS quantiteLait,
+                               SUM(f.nombreFromages) AS nombreFromages
+                        FROM Fabrication f
+                        JOIN f.recette recette
+                        JOIN recette.fromage fromage
+                        WHERE f.dateHeureDebut >= :dateDebut
+                          AND f.dateHeureDebut < :dateFinExclusive
+                          AND (:fromageId IS NULL OR fromage.id = :fromageId)
+                        GROUP BY fromage.id, fromage.nom
+                        ORDER BY fromage.nom
+                        """)
+        List<PerformanceProjection> findPerformanceAggregates(
+                        @Param("dateDebut") LocalDateTime dateDebut,
+                        @Param("dateFinExclusive") LocalDateTime dateFinExclusive,
+                        @Param("fromageId") Long fromageId);
 
         long countByDateHeureDebutGreaterThanEqualAndDateHeureDebutLessThan(
                         LocalDateTime debut,

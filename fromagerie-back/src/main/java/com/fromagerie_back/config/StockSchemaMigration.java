@@ -1,5 +1,7 @@
 package com.fromagerie_back.config;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -11,6 +13,8 @@ import org.springframework.stereotype.Component;
 @Order(4)
 @ConditionalOnProperty(name = "app.schema-migration.enabled", havingValue = "true")
 public class StockSchemaMigration implements ApplicationRunner {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(StockSchemaMigration.class);
 
     private final JdbcTemplate jdbcTemplate;
 
@@ -128,6 +132,37 @@ public class StockSchemaMigration implements ApplicationRunner {
                 ADD CONSTRAINT mouvement_stock_type_check
                 CHECK (type IN ('ENTREE', 'SORTIE', 'AJUSTEMENT', 'VENTE', 'PERTE'))
                 """);
+
+        int entreesRegularisees = jdbcTemplate.update("""
+                INSERT INTO mouvement_stock (
+                    stock_fromage_fini_id, type, quantite, utilisateur_id, date_mouvement, commentaire
+                )
+                SELECT stock.id,
+                       'ENTREE',
+                       stock.quantite_initiale,
+                       COALESCE(fabrication.operateur_id,
+                           (SELECT u.id FROM utilisateurs u
+                            ORDER BY CASE WHEN u.role = 'PROPRIETAIRE' THEN 0 ELSE 1 END, u.id
+                            LIMIT 1)),
+                       stock.date_entree_stock::timestamp,
+                       'Entrée initiale régularisée depuis le stock historique'
+                FROM stock_fromage_fini stock
+                JOIN lot_affinage lot ON lot.id = stock.lot_affinage_id
+                JOIN fabrication fabrication ON fabrication.id = lot.fabrication_id
+                WHERE NOT EXISTS (
+                    SELECT 1
+                    FROM mouvement_stock mouvement
+                    WHERE mouvement.stock_fromage_fini_id = stock.id
+                      AND mouvement.type = 'ENTREE'
+                )
+                  AND COALESCE(fabrication.operateur_id,
+                      (SELECT u.id FROM utilisateurs u
+                       ORDER BY CASE WHEN u.role = 'PROPRIETAIRE' THEN 0 ELSE 1 END, u.id
+                       LIMIT 1)) IS NOT NULL
+                """);
+        if (entreesRegularisees > 0) {
+            LOGGER.info("Migration: {} entrée(s) de stock historique régularisée(s)", entreesRegularisees);
+        }
 
     }
 }

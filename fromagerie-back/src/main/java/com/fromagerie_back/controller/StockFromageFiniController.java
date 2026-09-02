@@ -71,8 +71,10 @@ public class StockFromageFiniController {
     }
 
     @PostMapping("/stock-fromages-finis")
-    public ResponseEntity<StockFromageFiniResponse> createStock(@Valid @RequestBody StockFromageFiniRequest request) {
-        StockFromageFiniResponse response = stockService.createStock(request);
+    public ResponseEntity<StockFromageFiniResponse> createStock(
+            @Valid @RequestBody StockFromageFiniRequest request,
+            Authentication authentication) {
+        StockFromageFiniResponse response = stockService.createStock(request, authentication);
         return ResponseEntity.created(URI.create("/api/stock-fromages-finis/" + response.id())).body(response);
     }
 
