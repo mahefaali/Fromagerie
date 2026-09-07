@@ -1,9 +1,15 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { Warehouse, Sparkles } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./../../components/ui/tabs";
-import { CaveManager } from "../../features/affinage/components/CaveManager";
-import AffinageTracker from "../../features/affinage/components/AffinageTracker";
+import { LazyContentFallback } from "../../components/common/LazyContentFallback";
+
+const CaveManager = lazy(() =>
+  import("../../features/affinage/components/CaveManager").then((module) => ({
+    default: module.CaveManager,
+  })),
+);
+const AffinageTracker = lazy(() => import("../../features/affinage/components/AffinageTracker"));
 
 export function AffinagePage() {
   const [activeTab, setActiveTab] = useState<string>("caves");
@@ -49,12 +55,16 @@ export function AffinagePage() {
 
         {/* Vue 1: Gestion physique des caves et plans */}
         <TabsContent value="caves" className="m-0 space-y-4">
-          <CaveManager />
+          <Suspense fallback={<LazyContentFallback />}>
+            <CaveManager />
+          </Suspense>
         </TabsContent>
 
         {/* Vue 2: Suivi opérationnel des lots de fromages */}
         <TabsContent value="suivi" className="m-0 space-y-4">
-          <AffinageTracker />
+          <Suspense fallback={<LazyContentFallback />}>
+            <AffinageTracker />
+          </Suspense>
         </TabsContent>
       </Tabs>
     </div>

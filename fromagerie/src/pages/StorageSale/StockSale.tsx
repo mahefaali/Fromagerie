@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { lazy, Suspense, useState } from 'react';
 import { Archive, ClipboardList, TriangleAlert } from 'lucide-react';
 import { StockHeader } from '../../features/stocks/components/StockHeader';
 import { StockAlertBanner } from '../../features/stocks/components/StockAlertBanner';
@@ -7,9 +7,15 @@ import { StockFilters } from '../../features/stocks/components/StockFilters';
 import { StockList } from '../../features/stocks/components/StockList';
 import { useStock } from '../../features/stocks/useStock';
 import { GROUP_BY_OPTIONS } from '../../features/stocks/stock.constants';
-import { OrdersView } from '../../features/stocks/components/OrdersView';
-import { UnsoldLossView } from '../../features/stocks/components/UnsoldLossView';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
+import { LazyContentFallback } from '../../components/common/LazyContentFallback';
+
+const OrdersView = lazy(() =>
+  import('../../features/stocks/components/OrdersView').then((module) => ({ default: module.OrdersView })),
+);
+const UnsoldLossView = lazy(() =>
+  import('../../features/stocks/components/UnsoldLossView').then((module) => ({ default: module.UnsoldLossView })),
+);
 
 export type ActiveTab = 'stock' | 'orders' | 'unsold_loss';
 
@@ -107,10 +113,14 @@ export const StockSale: React.FC = () => {
             <StockView />
           </TabsContent>
           <TabsContent value="orders" className="m-0">
-            <OrdersView />
+            <Suspense fallback={<LazyContentFallback />}>
+              <OrdersView />
+            </Suspense>
           </TabsContent>
           <TabsContent value="unsold_loss" className="m-0">
-            <UnsoldLossView />
+            <Suspense fallback={<LazyContentFallback />}>
+              <UnsoldLossView />
+            </Suspense>
           </TabsContent>
         </Tabs>
       </div>

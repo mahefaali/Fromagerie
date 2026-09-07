@@ -25,7 +25,7 @@ describe("fabricationApi", () => {
     });
 
     expect(fetchMock).toHaveBeenCalledWith(
-      "http://localhost:8080/api/fabrications",
+      "/api/fabrications",
       expect.objectContaining({ credentials: "include", method: "GET" }),
     );
     expect(unauthorizedListener).toHaveBeenCalledOnce();
@@ -49,7 +49,7 @@ describe("fabricationApi", () => {
     });
 
     expect(fetchMock).toHaveBeenCalledWith(
-      "http://localhost:8080/api/fabrications/analytics/temperatures?fromageId=3&recetteId=8&dateDebut=2026-01-01&dateFin=2026-12-31",
+      "/api/fabrications/analytics/temperatures?fromageId=3&recetteId=8&dateDebut=2026-01-01&dateFin=2026-12-31",
       expect.objectContaining({ credentials: "include", method: "GET" }),
     );
   });
@@ -71,7 +71,7 @@ describe("fabricationApi", () => {
     await fabricationApi.findSeasonalYieldComparison(3, { recetteId: 8 });
 
     expect(fetchMock).toHaveBeenCalledWith(
-      "http://localhost:8080/api/fabrications/analytics/rendements/saisons?fromageId=3&recetteId=8",
+      "/api/fabrications/analytics/rendements/saisons?fromageId=3&recetteId=8",
       expect.objectContaining({ credentials: "include", method: "GET" }),
     );
   });
@@ -92,7 +92,7 @@ describe("fabricationApi", () => {
     await fabricationApi.findAnomalies({ fromageId: 3 }, "TEMPERATURE_CHAUFFAGE");
 
     expect(fetchMock).toHaveBeenCalledWith(
-      "http://localhost:8080/api/fabrications/analytics/anomalies?fromageId=3&parametre=TEMPERATURE_CHAUFFAGE",
+      "/api/fabrications/analytics/anomalies?fromageId=3&parametre=TEMPERATURE_CHAUFFAGE",
       expect.objectContaining({ credentials: "include", method: "GET" }),
     );
   });

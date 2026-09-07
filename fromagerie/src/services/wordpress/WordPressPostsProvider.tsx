@@ -1,6 +1,6 @@
 import React, {
     createContext,
-    useContext,
+    useCallback,
     useEffect,
     useMemo,
     useRef,
@@ -184,18 +184,7 @@ const normalizePost = (raw: any, postTypeHint?: string): Post => {
     };
 };
 
-export const convertWPResponseToPosts = (input: any, postType?: string): Post[] => {
-    if (!Array.isArray(input)) return [];
-    return input.map((item: any) => normalizePost(item, postType));
-};
-
 const PostsContext = createContext<PostsContextType | null>(null);
-
-const usePosts = () => {
-    const ctx = useContext(PostsContext);
-    if (!ctx) throw new Error("usePosts must be used within a WordPressPostsProvider");
-    return ctx;
-};
 
 type WordPressPostsProviderProps = {
     children: React.ReactNode;
@@ -274,18 +263,12 @@ const WordPressPostsProvider = ({
         }
     }, [wp_query_prop_hash, wp_query_prop, postType]);
 
-    const handleError = (e?: unknown) => {
+    const handleError = useCallback((e?: unknown) => {
         const msg = (e as any)?.message ?? String(e);
         setError(msg);
-    };
+    }, []);
 
-    const effectiveDeps = [
-        wp_query?.getHash() || JSON.stringify(query),
-        JSON.stringify(embedsState),
-        JSON.stringify(fieldsState),
-    ];
-
-    const fetch = (opts?: {
+    const fetch = useCallback((opts?: {
         wp_query?: WP_Query | Partial<QueryParams>;
         embeds?: string[];
         fields?: string[];
@@ -293,8 +276,6 @@ const WordPressPostsProvider = ({
         refresh?: boolean;
     }): Promise<void> => {
         const isRefresh = Boolean(opts?.refresh);
-        if (isRefresh && isRefetching) return Promise.resolve();
-
         setError(null);
         if (isRefresh) setIsRefetching(true);
         else setLoading(true);
@@ -366,13 +347,21 @@ const WordPressPostsProvider = ({
             if (isRefresh) setIsRefetching(false);
             else setLoading(false);
         });
-    };
+    }, [embedsState, fieldsState, handleError, postType, wp_query]);
 
     // Initial + reactive fetch when query knobs change
     useEffect(() => {
         fetch();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, effectiveDeps);
+    }, [fetch]);
+
+    const refetch = useCallback((): Promise<void> => {
+        // Create new AbortController for refetch
+        if (abortControllerRef.current) {
+            abortControllerRef.current.abort();
+        }
+        abortControllerRef.current = new AbortController();
+        return fetch({ refresh: true });
+    }, [fetch]);
 
     // Setup event listener for external refresh events (mount/unmount only)
     useEffect(() => {
@@ -390,19 +379,10 @@ const WordPressPostsProvider = ({
             }
             window.removeEventListener("WVC_POSTS_REFRESH", handlePostsRefresh);
         };
-    }, []);
-
-    const refetch = (): Promise<void> => {
-        // Create new AbortController for refetch
-        if (abortControllerRef.current) {
-            abortControllerRef.current.abort();
-        }
-        abortControllerRef.current = new AbortController();
-        return fetch({ refresh: true });
-    };
+    }, [refetch]);
 
     // Expose convenient setters to children
-    const setWPQuery: PostsContextType["setWPQuery"] = (next) => {
+    const setWPQuery: PostsContextType["setWPQuery"] = useCallback((next) => {
         setWPQueryState(prev => {
             if (typeof next === "function") {
                 return (next as any)(prev);
@@ -410,9 +390,9 @@ const WordPressPostsProvider = ({
                 return next;
             }
         });
-    };
+    }, []);
 
-    const setQuery: PostsContextType["setQuery"] = (next) => {
+    const setQuery: PostsContextType["setQuery"] = useCallback((next) => {
         setWPQueryState(prev => {
             const currentQuery = prev || new WP_Query({});
             const updatedVars = typeof next === "function"
@@ -420,22 +400,22 @@ const WordPressPostsProvider = ({
                 : { ...currentQuery.query_vars, ...next };
             return new WP_Query(updatedVars);
         });
-    };
+    }, []);
 
-    const setEmbeds: PostsContextType["setEmbeds"] = (next) => {
+    const setEmbeds: PostsContextType["setEmbeds"] = useCallback((next) => {
         setEmbedsState(prev => (typeof next === "function" ? (next as any)(prev) : next));
-    };
+    }, []);
 
-    const setFields: PostsContextType["setFields"] = (next) => {
+    const setFields: PostsContextType["setFields"] = useCallback((next) => {
         setFieldsState(prev => (typeof next === "function" ? (next as any)(prev) : next));
-    };
+    }, []);
 
     // Pagination helpers derived from current query & totals
     const currentPage = Number(query?.paged ?? query?.page ?? 1) || 1;
     const hasNext = currentPage < (totalPages || 0);
     const hasPrev = currentPage > 1;
 
-    const setPage = (page: number) => {
+    const setPage = useCallback((page: number) => {
         const pageNum = Math.max(1, Math.floor(page || 1));
         setWPQueryState(prev => {
             const vars = { ...(prev?.query_vars ?? {}), paged: pageNum };
@@ -451,12 +431,16 @@ const WordPressPostsProvider = ({
             }
             return newQuery;
         });
-    };
-    const nextPage = () => hasNext && setPage(currentPage + 1);
-    const prevPage = () => hasPrev && setPage(currentPage - 1);
+    }, [postType]);
+    const nextPage = useCallback(() => {
+        if (hasNext) setPage(currentPage + 1);
+    }, [currentPage, hasNext, setPage]);
+    const prevPage = useCallback(() => {
+        if (hasPrev) setPage(currentPage - 1);
+    }, [currentPage, hasPrev, setPage]);
 
     // Load more: fetches next page and appends to existing posts
-    const loadMore = async (): Promise<void> => {
+    const loadMore = useCallback(async (): Promise<void> => {
         if (!hasNext) return;
         const nextPageNum = currentPage + 1;
         // Fetch with append=true to add to existing posts, without triggering setPage
@@ -479,7 +463,7 @@ const WordPressPostsProvider = ({
             }
             return newQuery;
         });
-    };
+    }, [currentPage, fetch, hasNext, postType]);
 
     const value: PostsContextType = useMemo(() => ({
         // data
@@ -530,6 +514,16 @@ const WordPressPostsProvider = ({
         hasNext,
         hasPrev,
         currentPage,
+        setWPQuery,
+        setQuery,
+        setEmbeds,
+        setFields,
+        setPage,
+        nextPage,
+        prevPage,
+        loadMore,
+        refetch,
+        fetch,
     ]);
 
     // Extract post_type from wp_query for data attributes
@@ -555,5 +549,4 @@ const WordPressPostsProvider = ({
 };
 
 export const PostsProvider = WordPressPostsProvider;
-export { WordPressPostsProvider, usePosts };
-
+export { WordPressPostsProvider };

@@ -36,9 +36,7 @@ type FormFieldContextValue<
   name: TName
 }
 
-const FormFieldContext = React.createContext<FormFieldContextValue>(
-  {} as FormFieldContextValue
-)
+const FormFieldContext = React.createContext<FormFieldContextValue | null>(null)
 
 const FormField = <
   TFieldValues extends FieldValues = FieldValues,
@@ -56,6 +54,8 @@ const FormField = <
 const useFormField = () => {
   const fieldContext = React.useContext(FormFieldContext)
   const itemContext = React.useContext(FormItemContext)
+  const { getFieldState } = useFormContext()
+  const formState = useFormState({ name: fieldContext?.name })
 
   if (!fieldContext) {
     throw new Error("useFormField should be used within <FormField>")
@@ -66,22 +66,7 @@ const useFormField = () => {
   }
 
   const { id } = itemContext
-
-  // Try to get form context, but don't require it for basic functionality
-  let fieldState: any = {}
-  try {
-    const { getFieldState } = useFormContext()
-    const formState = useFormState({ name: fieldContext.name })
-    fieldState = getFieldState(fieldContext.name, formState)
-  } catch (error) {
-    // If no form context is available, provide default values
-    fieldState = {
-      invalid: false,
-      isTouched: false,
-      isDirty: false,
-      error: undefined,
-    }
-  }
+  const fieldState = getFieldState(fieldContext.name, formState)
 
   return {
     id,
@@ -97,9 +82,7 @@ type FormItemContextValue = {
   id: string
 }
 
-const FormItemContext = React.createContext<FormItemContextValue>(
-  {} as FormItemContextValue
-)
+const FormItemContext = React.createContext<FormItemContextValue | null>(null)
 
 function FormItem({ className, ...props }: React.ComponentProps<"div">) {
   const id = React.useId()
@@ -191,7 +174,6 @@ function FormMessage({ className, ...props }: React.ComponentProps<"p">) {
 }
 
 export {
-  useFormField,
   Form, // UI component for form styling (NOT FormProvider)
   FormItem,
   FormLabel,

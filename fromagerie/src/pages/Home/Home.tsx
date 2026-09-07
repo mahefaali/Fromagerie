@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { ArrowRight, AlertTriangle, CalendarClock, MoveRight, PackageCheck, RefreshCw, Warehouse } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 
 import { Badge } from "./../../components/ui/badge";
 import { Button } from "./../../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./../../components/ui/card";
+import { LazyContentFallback } from "../../components/common/LazyContentFallback";
 import { useAuth } from "../../features/authentication/hooks/useAuth";
 import { affinageApi } from "../../features/affinage/api/affinageApi";
 import { stockApi, type StockFromageFini } from "../../features/stocks/api/stockApi";
@@ -14,7 +15,10 @@ import type {
   AffinageDashboard,
   CaveCapacityPlanning,
 } from "../../features/affinage/types/affinage.types";
-import OwnerPerformanceDashboard from "../../features/performance/components/OwnerPerformanceDashboard";
+
+const OwnerPerformanceDashboard = lazy(() =>
+  import("../../features/performance/components/OwnerPerformanceDashboard"),
+);
 
 function AlertList({ title, icon: Icon, items, emptyLabel }: {
   title: string;
@@ -284,7 +288,11 @@ export default function HomePage() {
     (dashboard?.changementsCaveRecommandes.length ?? 0);
 
   if (user?.role === "PROPRIETAIRE") {
-    return <OwnerPerformanceDashboard />;
+    return (
+      <Suspense fallback={<LazyContentFallback />}>
+        <OwnerPerformanceDashboard />
+      </Suspense>
+    );
   }
 
   return (

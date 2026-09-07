@@ -8,6 +8,7 @@ public record RentabiliteFromageResponse(
         int quantiteLivree,
         BigDecimal chiffreAffaires,
         BigDecimal coutAttribue,
+        BigDecimal poidsLivreKg,
         BigDecimal coutProductionParKg,
         BigDecimal margeBrute,
         BigDecimal tauxRentabilite) {

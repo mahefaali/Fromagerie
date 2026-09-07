@@ -93,7 +93,7 @@ export default function Monitoring() {
           <Button
             type="button"
             variant="outline"
-            className="min-h-11 w-full bg-background/70 lg:w-auto"
+            className="min-h-11 w-full rounded-full bg-background/70 lg:w-auto"
             onClick={analytics.retry}
             disabled={analytics.isLoading}
           >

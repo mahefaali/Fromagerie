@@ -6,7 +6,7 @@ interface MainNavigationTabsProps {
   onTabChange: (tab: MainTab) => void;
 }
 
-export const MAIN_TABS: { id: MainTab; label: string }[] = [
+const MAIN_TABS: { id: MainTab; label: string }[] = [
   { id: 'stock', label: 'Stock' },
   { id: 'orders', label: 'Commande' },
   { id: 'unsold', label: 'Invendu' },

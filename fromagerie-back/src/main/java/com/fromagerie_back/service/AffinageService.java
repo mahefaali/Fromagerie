@@ -208,7 +208,12 @@ public class AffinageService {
         Utilisateur utilisateur = utilisateurRepository.findByUsername(authentication.getName())
                 .orElseThrow(() -> new ResourceNotFoundException("Utilisateur authentifié introuvable"));
         LocalDateTime dateHeure = request.dateHeure() == null ? LocalDateTime.now() : request.dateHeure();
-        if (dateHeure.isAfter(LocalDateTime.now().plusMinutes(1))) {
+        LocalDate dateSoin = dateHeure.toLocalDate();
+        if (dateSoin.isBefore(lot.getDateMiseEnCave())) {
+            throw new BusinessValidationException(
+                    "La date du soin ne peut pas être antérieure à la mise en affinage");
+        }
+        if (dateSoin.isAfter(LocalDate.now())) {
             throw new BusinessValidationException("La date du soin ne peut pas être dans le futur");
         }
 

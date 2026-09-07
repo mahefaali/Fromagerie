@@ -222,13 +222,33 @@ class AffinageIntegrationTests {
         var authentication = new UsernamePasswordAuthenticationToken("employee", "ignored");
 
         var soin = affinageService.addSoin(lot.id(), new SoinAffinageRequest(
-                TypeSoinAffinage.RETOURNEMENT, LocalDateTime.now().minusHours(1),
+                TypeSoinAffinage.RETOURNEMENT, LocalDate.now().atTime(12, 0),
                 "Retournement régulier", "Croûte sèche"), authentication);
 
         assertThat(soin.utilisateurId()).isEqualTo(employe.getId());
         assertThat(soin.utilisateurNom()).isEqualTo("Employé affinage");
         assertThat(affinageService.findById(lot.id()).etatCroute()).isEqualTo("Croûte sèche");
         assertThat(affinageService.findSoins(lot.id())).hasSize(1);
+    }
+
+    @Test
+    void rejectsCareBeforeAffinageAndAfterToday() {
+        var lot = createLot(fabrication(6), LocalDate.now().plusDays(10));
+        var authentication = new UsernamePasswordAuthenticationToken("employee", "ignored");
+
+        assertThatThrownBy(() -> affinageService.addSoin(lot.id(), new SoinAffinageRequest(
+                TypeSoinAffinage.LAVAGE, LocalDate.now().minusDays(1).atTime(12, 0),
+                null, null), authentication))
+                .isInstanceOf(BusinessValidationException.class)
+                .hasMessage("La date du soin ne peut pas être antérieure à la mise en affinage");
+
+        assertThatThrownBy(() -> affinageService.addSoin(lot.id(), new SoinAffinageRequest(
+                TypeSoinAffinage.LAVAGE, LocalDate.now().plusDays(1).atTime(12, 0),
+                null, null), authentication))
+                .isInstanceOf(BusinessValidationException.class)
+                .hasMessage("La date du soin ne peut pas être dans le futur");
+
+        assertThat(soinRepository.count()).isZero();
     }
 
     @Test

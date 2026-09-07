@@ -159,7 +159,7 @@ public class RentabiliteService {
 
         RentabiliteFromageResponse toFromage(Long id, String nom) {
             return new RentabiliteFromageResponse(id, nom, quantite, scale(ca), scale(cout),
-                    coutProductionParKg(), scale(marge()), taux(marge(), cout));
+                    scale(poids), coutProductionParKg(), scale(marge()), taux(marge(), cout));
         }
 
         BigDecimal prixVenteMoyen() {

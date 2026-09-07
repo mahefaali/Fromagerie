@@ -153,7 +153,7 @@ export function RecipeManager() {
               </SelectContent>
             </Select>
           </div>
-          {isOwner && <Button disabled={catalogUnavailable} onClick={() => openCreateDialog()}><FilePlus className="mr-1 size-4" /> Nouvelle recette</Button>}
+          {isOwner && <Button className="rounded-full" disabled={catalogUnavailable} onClick={() => openCreateDialog()}><FilePlus className="mr-1 size-4" /> Nouvelle recette</Button>}
         </div>
       </header>
 
@@ -161,7 +161,7 @@ export function RecipeManager() {
         <div role="alert" className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4">
           <p className="font-medium">Les recettes restent consultables, mais le formulaire est indisponible.</p>
           <p className="mt-1 text-sm text-muted-foreground">{catalogError}</p>
-          <Button variant="outline" size="sm" className="mt-3" onClick={() => void loadReferenceData()}>
+          <Button variant="outline" size="sm" className="mt-3 rounded-full" onClick={() => void loadReferenceData()}>
             <RefreshCw className="size-4" /> Recharger les référentiels
           </Button>
         </div>
@@ -175,7 +175,7 @@ export function RecipeManager() {
         <div className="rounded-xl border border-dashed p-10 text-center">
           <Beaker className="mx-auto size-9 text-primary" />
           <p className="mt-4 font-medium">Aucune recette disponible.</p>
-          {isOwner && <Button className="mt-4" disabled={catalogUnavailable} onClick={() => openCreateDialog()}><FilePlus className="size-4" /> Créer la première recette</Button>}
+          {isOwner && <Button className="mt-4 rounded-full" disabled={catalogUnavailable} onClick={() => openCreateDialog()}><FilePlus className="size-4" /> Créer la première recette</Button>}
         </div>
       ) : isLoadingDetail ? (
         <StatusPanel message="Chargement du détail de la recette..." />
@@ -192,8 +192,8 @@ export function RecipeManager() {
               </CardDescription>
             </div>
             <div className="flex flex-wrap justify-end gap-2">
-              <Button variant="outline" size="sm" onClick={() => setHistoryOpen(true)}><History className="mr-1 size-4" /> Historique</Button>
-              {isOwner && selectedRecipe.active && <Button size="sm" onClick={openEditDialog}><Pencil className="mr-1 size-4" /> Modifier</Button>}
+              <Button variant="outline" size="sm" className="rounded-full" onClick={() => setHistoryOpen(true)}><History className="mr-1 size-4" /> Historique</Button>
+              {isOwner && selectedRecipe.active && <Button size="sm" className="rounded-full" onClick={openEditDialog}><Pencil className="mr-1 size-4" /> Modifier</Button>}
             </div>
           </CardHeader>
           <CardContent>
@@ -223,7 +223,7 @@ export function RecipeManager() {
           <Beaker className="mx-auto size-9 text-primary" />
           <p className="mt-4 font-medium">Aucune recette de base disponible.</p>
           <p className="mt-1 text-sm text-muted-foreground">Les variantes ne peuvent pas remplacer la recette de base.</p>
-          {isOwner && <Button className="mt-4" disabled={catalogUnavailable} onClick={() => openCreateDialog()}><FilePlus className="size-4" /> Créer une recette de base</Button>}
+          {isOwner && <Button className="mt-4 rounded-full" disabled={catalogUnavailable} onClick={() => openCreateDialog()}><FilePlus className="size-4" /> Créer une recette de base</Button>}
         </div>
       )}
 
@@ -280,7 +280,7 @@ function ErrorPanel({ title, message, onRetry }: { title: string; message: strin
   return (
     <div role="alert" className="rounded-xl border border-destructive/30 bg-destructive/5 p-6">
       <p className="font-medium">{title}</p><p className="mt-1 text-sm text-muted-foreground">{message}</p>
-      <Button variant="outline" className="mt-4" onClick={() => void onRetry()}><RefreshCw className="size-4" /> Réessayer</Button>
+      <Button variant="outline" className="mt-4 rounded-full" onClick={() => void onRetry()}><RefreshCw className="size-4" /> Réessayer</Button>
     </div>
   );
 }

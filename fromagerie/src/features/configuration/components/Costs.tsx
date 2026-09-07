@@ -312,16 +312,32 @@ export default function CostsSection() {
           <Card>
             <CardHeader><CardTitle>Nouvelle règle énergie</CardTitle></CardHeader>
             <CardContent className="grid gap-3 md:grid-cols-2">
-              <select className="h-10 rounded-xl border px-3" value={energieForm.typeOperation} onChange={(e) => setEnergieForm({ ...energieForm, typeOperation: e.target.value as any })}>
-                <option value="CHAUFFE">CHAUFFE</option>
-                <option value="AFFINAGE_CAVE">AFFINAGE_CAVE</option>
-                <option value="CHAMBRE_FROIDE">CHAMBRE_FROIDE</option>
-              </select>
-              <select className="h-10 rounded-xl border px-3" value={energieForm.uniteCalcul} onChange={(e) => setEnergieForm({ ...energieForm, uniteCalcul: e.target.value as any })}>
-                <option value="PAR_HEURE">PAR_HEURE</option>
-                <option value="PAR_FROMAGE_PAR_JOUR">PAR_FROMAGE_PAR_JOUR</option>
-                <option value="PAR_FABRICATION">PAR_FABRICATION</option>
-              </select>
+              <div className="grid gap-2">
+                <Label htmlFor="energie-operation">Opération</Label>
+                <select
+                  id="energie-operation"
+                  className="h-11 rounded-lg border border-input bg-background px-3 text-sm text-foreground shadow-sm outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20"
+                  value={energieForm.typeOperation}
+                  onChange={(e) => setEnergieForm({ ...energieForm, typeOperation: e.target.value as any })}
+                >
+                  <option value="CHAUFFE">Chauffe</option>
+                  <option value="AFFINAGE_CAVE">Affinage en cave</option>
+                  <option value="CHAMBRE_FROIDE">Chambre froide</option>
+                </select>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="energie-unite">Unité de calcul</Label>
+                <select
+                  id="energie-unite"
+                  className="h-11 rounded-lg border border-input bg-background px-3 text-sm text-foreground shadow-sm outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20"
+                  value={energieForm.uniteCalcul}
+                  onChange={(e) => setEnergieForm({ ...energieForm, uniteCalcul: e.target.value as any })}
+                >
+                  <option value="PAR_HEURE">Par heure</option>
+                  <option value="PAR_FROMAGE_PAR_JOUR">Par fromage et par jour</option>
+                  <option value="PAR_FABRICATION">Par fabrication</option>
+                </select>
+              </div>
               <Input type="number" step="0.0001" min="0" placeholder="Coût standard" value={energieForm.coutStandard} onChange={(e) => setEnergieForm({ ...energieForm, coutStandard: e.target.value })} />
               <div className="grid gap-2">
                 <Label htmlFor="energie-date-debut">Début de validité</Label>

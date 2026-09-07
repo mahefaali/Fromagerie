@@ -22,18 +22,28 @@ import {
 export interface CareData {
   type: string;
   notes: string;
-  date?: string;
+  date: string;
   rindState?: string;
 }
 
 export interface AddCareDialogProps {
   open: boolean;
+  minimumDate: string;
   onOpenChange: (open: boolean) => void;
   onSubmitCare: (careData: CareData) => Promise<void>;
 }
 
+function localDateToday(): string {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 export function AddCareDialog({
   open,
+  minimumDate,
   onOpenChange,
   onSubmitCare,
 }: AddCareDialogProps) {
@@ -42,16 +52,18 @@ export function AddCareDialog({
   const [etatCroute, setEtatCroute] = useState("");
   const [observations, setObservations] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [dateError, setDateError] = useState<string | null>(null);
+  const maximumDate = localDateToday();
 
   // Réinitialisation des champs à l'ouverture
   useEffect(() => {
     if (open) {
-      const today = new Date().toISOString().split("T")[0];
-      setDate(today);
+      setDate(localDateToday());
       setTypeSoin("Retournement");
       setEtatCroute("");
       setObservations("");
       setIsSubmitting(false);
+      setDateError(null);
     }
   }, [open]);
 
@@ -59,6 +71,16 @@ export function AddCareDialog({
     e.preventDefault();
     e.stopPropagation();
 
+    if (date < minimumDate) {
+      setDateError("La date du soin ne peut pas être antérieure à la mise en affinage.");
+      return;
+    }
+    if (date > maximumDate) {
+      setDateError("La date du soin ne peut pas être postérieure à aujourd’hui.");
+      return;
+    }
+
+    setDateError(null);
     setIsSubmitting(true);
     try {
       await onSubmitCare({
@@ -113,10 +135,22 @@ export function AddCareDialog({
                 id="care-date"
                 type="date"
                 value={date}
-                onChange={(e) => setDate(e.target.value)}
+                min={minimumDate}
+                max={maximumDate}
+                aria-invalid={dateError !== null}
+                aria-describedby={dateError ? "care-date-error" : undefined}
+                onChange={(e) => {
+                  setDate(e.target.value);
+                  setDateError(null);
+                }}
                 className="h-11 rounded-xl border-border bg-white/60 pr-8"
                 required
               />
+              {dateError && (
+                <p id="care-date-error" role="alert" className="text-sm text-destructive">
+                  {dateError}
+                </p>
+              )}
             </div>
 
           </div>

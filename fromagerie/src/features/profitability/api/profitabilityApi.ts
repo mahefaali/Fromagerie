@@ -11,6 +11,7 @@ export interface ProfitabilitySummary {
 export interface ProfitabilityGroup extends ProfitabilitySummary {
   id: number;
   nom: string;
+  poidsLivreKg?: number;
   coutProductionParKg?: number;
 }
 

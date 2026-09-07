@@ -57,7 +57,7 @@ export default function FabricationManager() {
           type="button"
           size="lg"
           onClick={() => setCreateOpen(true)}
-          className="min-h-12 w-full px-5 sm:w-auto"
+          className="min-h-12 w-full rounded-full px-5 sm:w-auto"
         >
           <Plus className="size-5" /> Nouvelle fabrication
         </Button>

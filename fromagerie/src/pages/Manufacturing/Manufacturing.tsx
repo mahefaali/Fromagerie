@@ -1,8 +1,11 @@
+import { lazy, Suspense } from "react"
 import styles from "./Manufacturing.module.css"
-import FabricationManager from "../../features/fabrications/components/FabricationManager"
-import Monitoring from "../../features/fabrications/components/Monitoring"
-import RecipeManager from "../../features/fabrications/components/RecipeManager"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./../../components/ui/tabs"
+import { LazyContentFallback } from "../../components/common/LazyContentFallback"
+
+const FabricationManager = lazy(() => import("../../features/fabrications/components/FabricationManager"))
+const Monitoring = lazy(() => import("../../features/fabrications/components/Monitoring"))
+const RecipeManager = lazy(() => import("../../features/fabrications/components/RecipeManager"))
 
 const sections = [
   { id: "fabrications", title: "Registre des fabrications", Component: FabricationManager },
@@ -32,7 +35,9 @@ function ManufacturingTabs() {
         <div className="space-y-8 sm:space-y-10">
           {sections.map(({ id, Component }) => (
             <TabsContent key={id} value={id} className="outline-none">
-              <Component />
+              <Suspense fallback={<LazyContentFallback />}>
+                <Component />
+              </Suspense>
             </TabsContent>
           ))}
         </div>

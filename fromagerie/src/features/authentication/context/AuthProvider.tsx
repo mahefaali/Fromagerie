@@ -1,6 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
 
-import { HttpError } from "../../../services/http/apiClient";
 import { onUnauthorized } from "../../../services/http/sessionEvents";
 import { authApi } from "../api/authApi";
 import { AuthContext } from "./AuthContext";
@@ -19,15 +18,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     const restoreSession = async () => {
       try {
-        await authApi.initializeCsrf();
         const authenticatedUser = await authApi.me();
 
         if (active) {
           setUser(authenticatedUser);
           setStatus("authenticated");
         }
-      } catch (error: unknown) {
-        if (active && error instanceof HttpError && error.status === 401) {
+      } catch {
+        if (active) {
           setUser(null);
           setStatus("anonymous");
         }

@@ -23,7 +23,7 @@ describe("recipeApi", () => {
     await recipeApi.findAll({ fromageId: 2, active: false, nom: " aux herbes " });
 
     expect(fetchMock).toHaveBeenCalledWith(
-      "http://localhost:8080/api/recettes?fromageId=2&active=false&nom=aux+herbes",
+      "/api/recettes?fromageId=2&active=false&nom=aux+herbes",
       expect.objectContaining({ credentials: "include", method: "GET" }),
     );
   });
@@ -51,7 +51,7 @@ describe("recipeApi", () => {
     await recipeApi.create(request);
 
     expect(fetchMock).toHaveBeenLastCalledWith(
-      "http://localhost:8080/api/recettes",
+      "/api/recettes",
       expect.objectContaining({
         credentials: "include",
         method: "POST",
@@ -80,7 +80,7 @@ describe("recipeApi", () => {
     await recipeApi.createCheese(request);
 
     expect(fetchMock).toHaveBeenLastCalledWith(
-      "http://localhost:8080/api/fromages",
+      "/api/fromages",
       expect.objectContaining({
         credentials: "include",
         method: "POST",
@@ -109,7 +109,7 @@ describe("recipeApi", () => {
     await recipeApi.createMaterial(request);
 
     expect(fetchMock).toHaveBeenLastCalledWith(
-      "http://localhost:8080/api/matieres-premieres",
+      "/api/matieres-premieres",
       expect.objectContaining({
         credentials: "include",
         method: "POST",
@@ -132,10 +132,10 @@ describe("recipeApi", () => {
     await recipeApi.findCheeses();
 
     expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([
-      "http://localhost:8080/api/recettes/4",
-      "http://localhost:8080/api/recettes/4/historique",
-      "http://localhost:8080/api/matieres-premieres",
-      "http://localhost:8080/api/fromages",
+      "/api/recettes/4",
+      "/api/recettes/4/historique",
+      "/api/matieres-premieres",
+      "/api/fromages",
     ]);
   });
 

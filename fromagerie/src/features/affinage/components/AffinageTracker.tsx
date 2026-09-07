@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { CheckCircle2, Warehouse } from "lucide-react";
 import { toast, Toaster } from "sonner";
@@ -136,7 +136,7 @@ export default function AffinageTracker() {
     }
   }, [searchParams]);
 
-  const loadCatalog = async (preferredId?: number): Promise<number | null> => {
+  const loadCatalog = useCallback(async (preferredId?: number): Promise<number | null> => {
     setLoadError(null);
     try {
       const [nextLots, nextFabrications, nextCaves, nextStockLocations] = await Promise.all([
@@ -149,8 +149,8 @@ export default function AffinageTracker() {
       setFabrications(nextFabrications);
       setCaves(nextCaves);
       setStockLocations(nextStockLocations);
-      const nextSelectedId = nextLots.some((lot) => lot.id === (preferredId ?? selectedId))
-        ? (preferredId ?? selectedId)
+      const nextSelectedId = nextLots.some((lot) => lot.id === preferredId)
+        ? preferredId ?? null
         : nextLots[0]?.id ?? null;
       setSelectedId(() => {
         return nextSelectedId;
@@ -158,15 +158,15 @@ export default function AffinageTracker() {
       return nextSelectedId;
     } catch (error) {
       setLoadError(error instanceof Error ? error.message : "Chargement du suivi impossible.");
+      return null;
     } finally {
       setIsLoading(false);
-      return null;
     }
-  };
+  }, []);
 
   useEffect(() => {
     void loadCatalog();
-  }, []);
+  }, [loadCatalog]);
 
   useEffect(() => {
     if (selectedId === null) {
@@ -324,7 +324,7 @@ export default function AffinageTracker() {
       {loadError && (
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
           <span>{loadError}</span>
-          <Button variant="outline" size="sm" onClick={() => void loadCatalog()}>Réessayer</Button>
+          <Button variant="outline" size="sm" className="rounded-lg" onClick={() => void loadCatalog(selectedId ?? undefined)}>Réessayer</Button>
         </div>
       )}
 
@@ -365,17 +365,20 @@ export default function AffinageTracker() {
               <p className="mt-1 max-w-md text-sm text-muted-foreground">
                 Commencez par mettre une fabrication en cave afin de suivre ses placements et ses soins.
               </p>
-              <Button className="mt-5" onClick={() => setPlacementMode("create")}>Mettre un lot en affinage</Button>
+              <Button className="mt-5 rounded-lg" onClick={() => setPlacementMode("create")}>Mettre un lot en affinage</Button>
             </div>
           )}
         </div>
       </div>
 
-      <AddCareDialog
-        open={careOpen}
-        onOpenChange={setCareOpen}
-        onSubmitCare={handleAddCare}
-      />
+      {detail && (
+        <AddCareDialog
+          open={careOpen}
+          minimumDate={detail.dateMiseEnCave}
+          onOpenChange={setCareOpen}
+          onSubmitCare={handleAddCare}
+        />
+      )}
       <AffinagePlacementDialog
         open={placementMode !== null}
         mode={placementMode ?? "create"}

@@ -1,6 +1,7 @@
 "use client";
 
-import { FormProvider, useWvcForm } from "./../../../services/forms/FormProvider";
+import { FormProvider } from "./../../../services/forms/FormProvider";
+import { useWvcForm } from "./../../../services/forms/WvcFormContext";
 import { Button } from "./../../../components/ui/button";
 import { Input } from "./../../../components/ui/input";
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage, FormDescription } from "./../../../components/ui/form";
@@ -270,7 +271,6 @@ export default function SupportTechnique() {
                     email: { required: true, pattern: "email" },
                     zip_code: { required: false },
                   }}
-                  submitText="Envoyer la demande"
                   successMessage="Votre demande a bien été transmise. Un expert vous répondra sous peu."
                   errorMessage="Une erreur est survenue. Veuillez réessayer."
                 >

@@ -21,7 +21,7 @@ describe("affinageApi", () => {
     await affinageApi.findAll();
 
     expect(fetchMock).toHaveBeenCalledOnce();
-    expect(fetchMock.mock.calls[0][0]).toBe("http://localhost:8080/api/affinages");
+    expect(fetchMock.mock.calls[0][0]).toBe("/api/affinages");
     expect(fetchMock.mock.calls[0][1]).toMatchObject({ credentials: "include" });
   });
 
@@ -51,7 +51,7 @@ describe("affinageApi", () => {
     });
 
     const options = fetchMock.mock.calls[1][1] as RequestInit;
-    expect(fetchMock.mock.calls[1][0]).toBe("http://localhost:8080/api/affinages/12/deplacement");
+    expect(fetchMock.mock.calls[1][0]).toBe("/api/affinages/12/deplacement");
     expect(options.method).toBe("POST");
     expect((options.headers as Headers).get("X-CSRF-TOKEN")).toBe("csrf-token");
     expect(JSON.parse(options.body as string)).toEqual({

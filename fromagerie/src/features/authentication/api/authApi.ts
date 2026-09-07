@@ -1,6 +1,5 @@
 import {
   apiRequest,
-  ensureCsrfToken,
   invalidateCsrfToken,
   refreshCsrfToken,
 } from "../../../services/http/apiClient";
@@ -17,8 +16,6 @@ async function renewCsrfAfterSessionChange(): Promise<void> {
 }
 
 export const authApi = {
-  initializeCsrf: ensureCsrfToken,
-
   login: async (credentials: LoginRequest): Promise<AuthUser> => {
     const user = await apiRequest<AuthUser>("/api/auth/login", {
       method: "POST",

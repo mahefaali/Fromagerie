@@ -244,13 +244,22 @@ export function InnerCircleForm() {
           control={control}
           name="password"
           rules={{
-            required: "Identifiant requis",
-            minLength: {
-              value: selectedAccessMode === "Propriétaire" ? 8 : 4,
-              message: selectedAccessMode === "Propriétaire" ? "Min 8 caractères" : "Le PIN contient 4 chiffres",
+            validate: (value, formValues) => {
+              if (!value) {
+                return formValues.accessMode === "Employé"
+                  ? "Code PIN requis"
+                  : "Mot de passe requis";
+              }
+              if (formValues.accessMode === "Employé") {
+                return /^\d{4}$/.test(value)
+                  || "Le code PIN doit contenir exactement 4 chiffres";
+              }
+              if (formValues.accessMode === "Propriétaire") {
+                return value.length >= 8
+                  || "Le mot de passe doit contenir au moins 8 caractères";
+              }
+              return true;
             },
-            validate: (value) =>
-              selectedAccessMode !== "Employé" || /^\d{4}$/.test(value) || "Le PIN contient exactement 4 chiffres",
           }}
           render={({ field }) => (
             <FormItem>
@@ -347,13 +356,12 @@ export default function Authentification() {
             <div className="rounded-[1.75rem] border border-[#D8C3A5]/80 bg-[#FFFDF9]/95 px-6 py-4 shadow-[0_18px_45px_rgba(63,74,79,0.12)] backdrop-blur-sm sm:px-8 sm:py-5">
               <div className="flex items-center gap-4">
                 <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full border border-[#C96A4A]/20 bg-[#F7F3EC] text-[#C96A4A] shadow-inner">
-                  <WvcLogo className="h-8 w-auto sm:h-9" />
+                  <WvcLogo className="size-12" />
                 </div>
 
                 <div className="text-left">
                   <p
-                    className="text-[1.15rem] font-semibold leading-none tracking-[0.08em] text-[#3F4A4F] sm:text-[1.35rem]"
-                    style={{ fontFamily: "'Playfair Display', serif" }}
+                    className="text-[1.15rem] font-serif font-semibold leading-none tracking-[0.08em] text-[#3F4A4F] sm:text-[1.35rem]"
                   >
                     Fromagerie
                   </p>

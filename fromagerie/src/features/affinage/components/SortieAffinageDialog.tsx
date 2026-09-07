@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Plus } from "lucide-react";
 import { Button } from "../../../components/ui/button";
 import { Input } from "../../../components/ui/input";
@@ -30,9 +30,14 @@ export function SortieAffinageDialog({ open, lotCode, quantity, emplacements, on
   const [newLocationName, setNewLocationName] = useState("");
   const [newLocationDescription, setNewLocationDescription] = useState("");
   const activeEmplacements = useMemo(() => emplacements.filter((item) => item.active), [emplacements]);
+  const wasOpen = useRef(false);
 
   useEffect(() => {
-    if (!open) return;
+    const hasJustOpened = open && !wasOpen.current;
+    wasOpen.current = open;
+
+    if (!hasJustOpened) return;
+
     const today = new Date().toISOString().slice(0, 10);
     setEmplacementId(activeEmplacements[0]?.id.toString() ?? "");
     setDateEntree(today);
@@ -43,7 +48,7 @@ export function SortieAffinageDialog({ open, lotCode, quantity, emplacements, on
     setCreatingLocation(false);
     setNewLocationName("");
     setNewLocationDescription("");
-  }, [open]);
+  }, [activeEmplacements, open]);
 
   async function handleCreateLocation() {
     if (!newLocationName.trim()) return;

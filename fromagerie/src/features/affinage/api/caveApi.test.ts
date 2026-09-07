@@ -59,7 +59,7 @@ describe("caveApi", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     await expect(caveApi.findOccupations("7")).resolves.toEqual(occupations);
-    expect(fetchMock.mock.calls[0][0]).toBe("http://localhost:8080/api/caves/7/occupations");
+    expect(fetchMock.mock.calls[0][0]).toBe("/api/caves/7/occupations");
     expect(fetchMock.mock.calls[0][1]).toMatchObject({ credentials: "include" });
   });
 
@@ -94,7 +94,7 @@ describe("caveApi", () => {
     await caveApi.create(cave);
 
     const options = fetchMock.mock.calls[1][1] as RequestInit;
-    expect(fetchMock.mock.calls[1][0]).toBe("http://localhost:8080/api/caves");
+    expect(fetchMock.mock.calls[1][0]).toBe("/api/caves");
     expect(options.credentials).toBe("include");
     expect((options.headers as Headers).get("X-CSRF-TOKEN")).toBe("csrf-token");
     expect(JSON.parse(options.body as string).etageres[0].rangees).toEqual([

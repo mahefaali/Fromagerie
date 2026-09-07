@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { Plus, Pencil, RotateCcw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -88,7 +88,7 @@ export default function UsersSection() {
   const [deleteTarget, setDeleteTarget] = useState<UserAccount | null>(null);
   const [showInactive, setShowInactive] = useState(false);
 
-  const loadAccounts = async () => {
+  const loadAccounts = useCallback(async () => {
     try {
       const users = await userApi.findAll(showInactive);
       setAccounts(showInactive ? users.filter((user) => !user.actif) : users);
@@ -97,11 +97,11 @@ export default function UsersSection() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [showInactive]);
 
   useEffect(() => {
     void loadAccounts();
-  }, [showInactive]);
+  }, [loadAccounts]);
 
   const startAdd = () => {
     setEditingAccount(null);
