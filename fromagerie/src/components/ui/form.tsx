@@ -15,8 +15,7 @@ import {
 import { cn } from "../../utils/utils"
 import { Label } from "./../../components/ui/label"
 
-// Form component for UI styling (NOT for form state management)
-// Use FormProvider from services/forms/FormProvider for state management
+// Presentation wrapper; form state is provided by react-hook-form.
 const Form = React.forwardRef<
   HTMLFormElement,
   React.FormHTMLAttributes<HTMLFormElement>

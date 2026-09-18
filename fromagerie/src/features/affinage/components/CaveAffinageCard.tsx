@@ -9,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./../../../components/ui/select";
-import { type Fabrication } from "../../../services/production-store";
+import { type Fabrication } from "../domain/cave";
 
 interface CaveAffinageCardProps {
   readyLots: Fabrication[];

@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { invalidateCsrfToken } from "../../../services/http/apiClient";
-import type { Cave } from "../../../services/production-store";
+import type { Cave } from "../domain/cave";
 import { caveApi } from "./caveApi";
 
 beforeEach(() => invalidateCsrfToken());

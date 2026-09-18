@@ -28,7 +28,6 @@ export interface CareData {
 
 export interface AddCareDialogProps {
   open: boolean;
-  minimumDate: string;
   onOpenChange: (open: boolean) => void;
   onSubmitCare: (careData: CareData) => Promise<void>;
 }
@@ -43,7 +42,6 @@ function localDateToday(): string {
 
 export function AddCareDialog({
   open,
-  minimumDate,
   onOpenChange,
   onSubmitCare,
 }: AddCareDialogProps) {
@@ -53,7 +51,7 @@ export function AddCareDialog({
   const [observations, setObservations] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [dateError, setDateError] = useState<string | null>(null);
-  const maximumDate = localDateToday();
+  const today = localDateToday();
 
   // Réinitialisation des champs à l'ouverture
   useEffect(() => {
@@ -71,12 +69,8 @@ export function AddCareDialog({
     e.preventDefault();
     e.stopPropagation();
 
-    if (date < minimumDate) {
-      setDateError("La date du soin ne peut pas être antérieure à la mise en affinage.");
-      return;
-    }
-    if (date > maximumDate) {
-      setDateError("La date du soin ne peut pas être postérieure à aujourd’hui.");
+    if (date !== localDateToday()) {
+      setDateError("La date du soin doit correspondre à la date du jour.");
       return;
     }
 
@@ -135,12 +129,13 @@ export function AddCareDialog({
                 id="care-date"
                 type="date"
                 value={date}
-                min={minimumDate}
-                max={maximumDate}
+                min={today}
+                max={today}
+                readOnly
                 aria-invalid={dateError !== null}
                 aria-describedby={dateError ? "care-date-error" : undefined}
-                onChange={(e) => {
-                  setDate(e.target.value);
+                onChange={(event) => {
+                  setDate(event.target.value);
                   setDateError(null);
                 }}
                 className="h-11 rounded-xl border-border bg-white/60 pr-8"

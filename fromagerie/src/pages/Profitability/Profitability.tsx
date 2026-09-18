@@ -85,7 +85,7 @@ export default function ProfitabilityPage() {
 
     {error && <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-800">{error}</div>}
 
-    <Tabs defaultValue="costs" className="space-y-7"><TabsList className="h-auto flex-wrap rounded-2xl border border-[#d3c7b6] bg-[#e9e1d4] p-1.5 shadow-sm"><TabsTrigger value="costs" className="rounded-xl border border-transparent px-6 py-3 data-[state=active]:border-[#d3c7b6]">Coûts de production</TabsTrigger><TabsTrigger value="profitability" className="rounded-xl border border-transparent px-6 py-3 data-[state=active]:border-[#d3c7b6]">Rentabilité</TabsTrigger><TabsTrigger value="indicators" className="rounded-xl border border-transparent px-6 py-3 data-[state=active]:border-[#d3c7b6]">Indicateurs</TabsTrigger></TabsList>
+    <Tabs defaultValue="costs" className="space-y-7"><TabsList className="inline-flex h-auto w-max min-w-full justify-start gap-1.5 bg-[#EAE0D0] p-1 sm:min-w-0"><TabsTrigger value="costs">Coûts de production</TabsTrigger><TabsTrigger value="profitability">Rentabilité</TabsTrigger><TabsTrigger value="indicators">Indicateurs</TabsTrigger></TabsList>
       <TabsContent value="costs">{loading && lots.length === 0 ? <Loading /> : <ProductionCostsDashboard lots={lots} dateDebut={dateDebut} dateFin={dateFin} fromageId={selectedFromageId} />}</TabsContent>
       <TabsContent value="profitability">{loading && !analysis ? <Loading /> : <ProfitabilityDashboard analysis={analysis} clients={clients} />}</TabsContent>
       <TabsContent value="indicators">{loading && !performance ? <Loading /> : <IndicatorsDashboard data={performance} />}</TabsContent>

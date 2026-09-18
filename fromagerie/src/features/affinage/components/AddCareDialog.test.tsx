@@ -18,7 +18,6 @@ function renderDialog(onSubmitCare = vi.fn()) {
   render(
     <AddCareDialog
       open
-      minimumDate="2025-05-10"
       onOpenChange={vi.fn()}
       onSubmitCare={onSubmitCare}
     />,
@@ -27,15 +26,17 @@ function renderDialog(onSubmitCare = vi.fn()) {
 }
 
 describe("AddCareDialog", () => {
-  it("expose les dates de mise en affinage et du jour comme bornes", () => {
+  it("fixe la date du soin au jour courant", () => {
     renderDialog();
 
     const dateInput = screen.getByLabelText("Date");
-    expect(dateInput).toHaveAttribute("min", "2025-05-10");
-    expect(dateInput).toHaveAttribute("max");
+    expect(dateInput).toHaveValue(localDateToday());
+    expect(dateInput).toHaveAttribute("min", localDateToday());
+    expect(dateInput).toHaveAttribute("max", localDateToday());
+    expect(dateInput).toHaveAttribute("readonly");
   });
 
-  it("refuse une date antérieure à la mise en affinage", () => {
+  it("refuse une date antérieure à aujourd'hui", () => {
     const onSubmitCare = renderDialog();
     const dateInput = screen.getByLabelText("Date");
 
@@ -43,7 +44,7 @@ describe("AddCareDialog", () => {
     fireEvent.submit(screen.getByRole("button", { name: "Enregistrer" }).closest("form")!);
 
     expect(screen.getByRole("alert")).toHaveTextContent(
-      "La date du soin ne peut pas être antérieure à la mise en affinage.",
+      "La date du soin doit correspondre à la date du jour.",
     );
     expect(onSubmitCare).not.toHaveBeenCalled();
   });
@@ -56,8 +57,16 @@ describe("AddCareDialog", () => {
     fireEvent.submit(screen.getByRole("button", { name: "Enregistrer" }).closest("form")!);
 
     expect(screen.getByRole("alert")).toHaveTextContent(
-      "La date du soin ne peut pas être postérieure à aujourd’hui.",
+      "La date du soin doit correspondre à la date du jour.",
     );
     expect(onSubmitCare).not.toHaveBeenCalled();
   });
 });
+
+function localDateToday(): string {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, "0");
+  const day = String(today.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}

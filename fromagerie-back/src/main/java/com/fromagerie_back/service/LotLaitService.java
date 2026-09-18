@@ -1,0 +1,20 @@
+package com.fromagerie_back.service;
+import java.math.*; import java.util.*;
+import org.springframework.dao.DataIntegrityViolationException; import org.springframework.stereotype.Service; import org.springframework.transaction.annotation.Transactional;
+import com.fromagerie_back.dto.LotLaitDtos.*; import com.fromagerie_back.exception.*; import com.fromagerie_back.model.*; import com.fromagerie_back.repository.*;
+@Service public class LotLaitService {
+ private final LotLaitRepository lots; private final AnalyseLaitRepository analyses; private final UtilisationLotLaitRepository utilisations;
+ public LotLaitService(LotLaitRepository l,AnalyseLaitRepository a,UtilisationLotLaitRepository u){lots=l;analyses=a;utilisations=u;}
+ @Transactional(readOnly=true) public List<Response> findAll(){return lots.findAllByOrderByDateTraiteDesc().stream().map(this::response).toList();}
+ @Transactional(readOnly=true) public Response find(Long id){return response(entity(id));}
+ @Transactional public Response create(Request r){if(lots.existsByNumeroLotIgnoreCase(r.numeroLot().trim()))throw new BusinessConflictException("Ce numéro de lot de lait existe déjà"); LotLait l=new LotLait(); apply(l,r); try{return response(lots.saveAndFlush(l));}catch(DataIntegrityViolationException e){throw new BusinessConflictException("Ce numéro de lot de lait existe déjà");}}
+ @Transactional public Response update(Long id,Request r){LotLait l=entity(id); lots.findByNumeroLotIgnoreCase(r.numeroLot().trim()).filter(x->!x.getId().equals(id)).ifPresent(x->{throw new BusinessConflictException("Ce numéro de lot de lait existe déjà");}); BigDecimal used=utilisations.usedOutside(id,null); if(r.quantite().compareTo(used)<0)throw new BusinessValidationException("La quantité ne peut pas être inférieure à la quantité déjà utilisée"); apply(l,r); return response(lots.save(l));}
+ @Transactional(readOnly=true) public List<AnalyseResponse> analyses(Long id){entity(id);return analyses.findByLotLaitIdOrderByDateAnalyseDesc(id).stream().map(this::analyse).toList();}
+ @Transactional public AnalyseResponse addAnalyse(Long id,AnalyseRequest r){AnalyseLait a=new AnalyseLait();a.setLotLait(entity(id));apply(a,r);return analyse(analyses.save(a));}
+ @Transactional public AnalyseResponse updateAnalyse(Long id,AnalyseRequest r){AnalyseLait a=analyses.findById(id).orElseThrow(()->new ResourceNotFoundException("Analyse de lait introuvable"));apply(a,r);return analyse(analyses.save(a));}
+ private LotLait entity(Long id){return lots.findById(id).orElseThrow(()->new ResourceNotFoundException("Lot de lait introuvable avec l'id : "+id));}
+ private void apply(LotLait l,Request r){l.setNumeroLot(r.numeroLot().trim());l.setDateTraite(r.dateTraite());l.setTypeTraite(r.typeTraite());l.setQuantite(r.quantite());l.setObservations(blank(r.observations()));}
+ private void apply(AnalyseLait a,AnalyseRequest r){a.setDateAnalyse(r.dateAnalyse());a.setTypeAnalyse(r.typeAnalyse().trim());a.setResultat(r.resultat().trim());a.setUnite(blank(r.unite()));a.setObservation(blank(r.observation()));}
+ private Response response(LotLait l){BigDecimal used=utilisations.usedOutside(l.getId(),null);return new Response(l.getId(),l.getNumeroLot(),l.getDateTraite(),l.getTypeTraite(),l.getQuantite(),l.getQuantite().subtract(used),l.getObservations(),analyses.findByLotLaitIdOrderByDateAnalyseDesc(l.getId()).stream().map(this::analyse).toList());}
+ private AnalyseResponse analyse(AnalyseLait a){return new AnalyseResponse(a.getId(),a.getDateAnalyse(),a.getTypeAnalyse(),a.getResultat(),a.getUnite(),a.getObservation());} private String blank(String v){return v==null||v.isBlank()?null:v.trim();}
+}

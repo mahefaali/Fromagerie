@@ -3,7 +3,7 @@ import {
   buildEmplacements,
   type Cave,
   type EtagereConfig,
-} from "../../../services/production-store";
+} from "../domain/cave";
 import type { CaveApiRequest, CaveApiResponse, CaveOccupation } from "../types/cave.types";
 
 function toCave(response: CaveApiResponse): Cave {

@@ -38,7 +38,7 @@ public class Fabrication {
 
     @NotNull
     @Positive
-    @Column(nullable = false)
+    @Column(nullable = false, precision = 19, scale = 4)
     private BigDecimal quantiteLait;
 
     @NotNull

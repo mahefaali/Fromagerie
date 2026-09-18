@@ -85,43 +85,50 @@ export default function UserMenu({ menuPlacement = "bottom" }: UserMenuProps) {
   };
 
   return (
-    <div ref={menuRef} className="relative">
+    <div ref={menuRef} className="relative inline-block text-left">
+      {/* Bouton Trigger (Avatar) */}
       <button
         type="button"
         onClick={() => setIsOpen((current) => !current)}
-        className="relative inline-flex size-11 shrink-0 items-center justify-center rounded-full border border-[#C96A4A] bg-[#C96A4A] text-sm font-semibold uppercase tracking-wider text-[#FFFDF9] shadow-sm transition hover:border-[#3F4A4F] hover:bg-[#3F4A4F] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C96A4A] focus-visible:ring-offset-2"
+        className="group relative inline-flex size-10 shrink-0 items-center justify-center rounded-full border border-[#C96A4A] bg-[#C96A4A] text-xs font-semibold uppercase tracking-wider text-[#FFFDF9] shadow-sm transition-all duration-200 hover:border-[#3F4A4F] hover:bg-[#3F4A4F] hover:shadow-md active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C96A4A] focus-visible:ring-offset-2 sm:size-11 sm:text-sm"
         aria-label={`Ouvrir le menu de ${user.nom}`}
         aria-expanded={isOpen}
         aria-haspopup="menu"
         title={`${user.nom} - ${user.role}`}
       >
-        {initials || <User className="size-5" aria-hidden="true" />}
+        {initials || <User className="size-5 transition-transform duration-200 group-hover:scale-110" aria-hidden="true" />}
         <span
-          className="absolute bottom-0 right-0 size-3 rounded-full border-2 border-[#FFFDF9] bg-emerald-500"
+          className="absolute bottom-0 right-0 size-3 rounded-full border-2 border-background bg-emerald-500 ring-1 ring-black/5"
           aria-hidden="true"
         />
       </button>
 
+      {/* Dropdown Menu */}
       {isOpen && (
         <div
-          className={`absolute right-0 z-[10000] w-72 rounded-2xl border border-border bg-background p-4 shadow-lg ${
+          className={`absolute right-0 z-[10000] w-[min(18rem,calc(100vw-1rem))] origin-top-right rounded-2xl border border-border/80 bg-background/95 p-3.5 shadow-xl backdrop-blur-sm transition-all ${
             menuPlacement === "top" ? "bottom-full mb-3" : "top-full mt-2"
           }`}
           role="menu"
         >
-          <div className="mb-3 rounded-2xl bg-muted p-3">
-            <p className="font-medium text-foreground">{user.nom}</p>
-            <p className="text-xs uppercase tracking-[0.18em] text-secondary">
-              {user.role}
-            </p>
-            <p className="mt-2 text-xs text-muted-foreground">{user.username}</p>
+          {/* Header Profil */}
+          <div className="mb-3 rounded-xl bg-muted/70 p-3.5 border border-border/40">
+            <p className="font-semibold text-foreground truncate text-sm">{user.nom}</p>
+            <div className="mt-1 flex items-center gap-1.5">
+              <span className="inline-block size-1.5 rounded-full bg-primary" />
+              <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                {user.role}
+              </p>
+            </div>
+            <p className="mt-2 text-xs font-mono text-muted-foreground/80 truncate">{user.username}</p>
           </div>
 
-          <div className="space-y-2">
+          {/* Actions */}
+          <div className="space-y-1.5">
             {isOwner && (
               <Link to="/configuration" className="block w-full">
-                <Button className="w-full justify-start rounded-sm bg-primary px-4 py-3 text-left text-sm font-bold uppercase tracking-[0.06em] text-primary-foreground hover:bg-primary/90">
-                  <Settings className="mr-2 size-4" />
+                <Button className="w-full justify-start rounded-lg bg-primary px-3.5 py-2.5 text-xs font-bold uppercase tracking-wider text-primary-foreground shadow-sm transition-all hover:bg-primary/90 active:scale-[0.98]">
+                  <Settings className="mr-2.5 size-4" />
                   Configuration
                 </Button>
               </Link>
@@ -131,13 +138,16 @@ export default function UserMenu({ menuPlacement = "bottom" }: UserMenuProps) {
               type="button"
               onClick={handleLogout}
               disabled={isLoggingOut}
-              className="inline-flex w-full items-center justify-start rounded-sm border border-border bg-card px-4 py-3 text-left text-sm font-medium uppercase tracking-[0.06em] text-foreground transition hover:border-primary hover:bg-primary/5"
+              className="inline-flex w-full items-center justify-start rounded-lg border border-border/60 bg-card px-3.5 py-2.5 text-xs font-semibold uppercase tracking-wider text-foreground transition-all hover:border-destructive/30 hover:bg-destructive/10 hover:text-destructive active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <LogOut className="mr-2 size-4" />
+              <LogOut className="mr-2.5 size-4" />
               {isLoggingOut ? "Déconnexion..." : "Déconnexion"}
             </button>
+            
             {logoutError && (
-              <p role="alert" className="text-sm text-destructive">{logoutError}</p>
+              <p role="alert" className="mt-2 px-1 text-xs font-medium text-destructive">
+                {logoutError}
+              </p>
             )}
           </div>
         </div>

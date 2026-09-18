@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { type Order } from './../types/orders';
 import { OrderStatusBadge } from './OrderStatusBadge';
-import { Trash2, FileText, Truck, Receipt, User, Calendar, AlertTriangle, X } from 'lucide-react';
+import { Trash2, FileText, Truck, Receipt, User, Calendar, AlertTriangle, X, Download } from 'lucide-react';
 
 interface OrderCardProps {
   order: Order;
@@ -9,6 +9,7 @@ interface OrderCardProps {
   onOpenPreparationSlip?: (order: Order) => void;
   onOpenRegisterDelivery?: (order: Order) => void;
   onOpenInvoice?: (order: Order) => void;
+  onDownloadDelivery?: (order: Order) => void;
   onConfirm?: (id: string) => void;
 }
 
@@ -18,6 +19,7 @@ export const OrderCard: React.FC<OrderCardProps> = ({
   onOpenPreparationSlip,
   onOpenRegisterDelivery,
   onOpenInvoice,
+  onDownloadDelivery,
   onConfirm,
 }) => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -145,13 +147,13 @@ export const OrderCard: React.FC<OrderCardProps> = ({
           </div>
           <div className="flex items-center gap-2">
             {order.status === 'draft' && <button type="button" onClick={() => onConfirm?.(order.id)} className="px-4 py-2 bg-[#c85a32] text-white rounded-xl text-xs font-bold hover:bg-[#b34e2a]">Confirmer et réserver</button>}
-            <button
-              onClick={() => onOpenPreparationSlip?.(order)}
-              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-xl text-xs font-semibold hover:bg-gray-50 shadow-xs transition-all cursor-pointer"
-            >
-              <FileText className="w-4 h-4" />
-              Bon de préparation
-            </button>
+            {order.status !== 'draft' && order.status !== 'cancelled' && <button
+                onClick={() => onOpenPreparationSlip?.(order)}
+                className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-xl text-xs font-semibold hover:bg-gray-50 shadow-xs transition-all cursor-pointer"
+              >
+                <FileText className="w-4 h-4" />
+                Bon de préparation
+              </button>}
 
             {/* Affiché uniquement si la commande est PRÉPARÉE */}
             {isPrepared && (
@@ -167,14 +169,19 @@ export const OrderCard: React.FC<OrderCardProps> = ({
 
             {/* Affiché si la commande est LIVRÉE */}
             {isDelivered && (
-              <button
-                type="button"
-                onClick={() => onOpenInvoice?.(order)}
-                className="flex items-center gap-2 px-4 py-2 bg-[#2d4a27] text-white rounded-xl text-xs font-semibold hover:bg-[#233a1e] shadow-xs transition-all cursor-pointer"
-              >
-                <Receipt className="w-4 h-4" />
-                {isInvoiced ? 'Voir la facture' : 'Facturer'}
-              </button>
+              <>
+                <button type="button" onClick={() => onDownloadDelivery?.(order)} className="flex items-center gap-2 rounded-xl border border-[#2d4a27] bg-white px-4 py-2 text-xs font-semibold text-[#2d4a27] shadow-xs hover:bg-[#edf3eb]">
+                  <Download className="size-4" /> Bon de livraison
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onOpenInvoice?.(order)}
+                  className="flex items-center gap-2 px-4 py-2 bg-[#2d4a27] text-white rounded-xl text-xs font-semibold hover:bg-[#233a1e] shadow-xs transition-all cursor-pointer"
+                >
+                  <Receipt className="w-4 h-4" />
+                  {isInvoiced ? 'Voir la facture' : 'Facturer'}
+                </button>
+              </>
             )}
           </div>
         </div>

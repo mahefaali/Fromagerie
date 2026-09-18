@@ -34,7 +34,10 @@ export interface Order {
   createdAt?: string;
   expectedDeliveryDate: string;
   deliveryDate?: string;
+  deliveryId?: number;
+  deliveryNumber?: string;
   invoicedDate?: string;
+  invoiceId?: number;
   invoiceNumber?: string;
   invoicedTotal?: number;
   

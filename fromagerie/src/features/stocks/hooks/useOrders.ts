@@ -1,57 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { orderApi, type ClientOption, type CommandeApi } from '../api/stockApi';
+import { orderApi, type ClientOption } from '../api/stockApi';
 import { type Order, type OrderFilterStatus, type CreateOrderPayload } from '../types/orders';
 
-const statusMap: Record<string, Order['status']> = { BROUILLON: 'draft', CONFIRMEE: 'reserved', EN_PREPARATION: 'reserved', PRETE: 'prepared', LIVREE: 'delivered', ANNULEE: 'cancelled' };
-const paymentMethodMap: Record<string, string> = { VIREMENT: 'Virement', CARTE: 'Carte bancaire', ESPECES: 'Espèces', CHEQUE: 'Chèque', AUTRE: 'Autre' };
-function toOrder(o: CommandeApi): Order {
-  const deliveryLines = new Map((o.livraison?.lignes ?? []).map((line) => [line.reservationId, line]));
-  return {
-    id: String(o.id),
-    code: o.numeroCommande,
-    clientName: o.client.nom,
-    contactInfo: o.client.telephone ?? undefined,
-    status: statusMap[o.statut] ?? 'draft',
-    orderDate: o.dateCommande,
-    expectedDeliveryDate: o.dateLivraisonSouhaitee,
-    deliveryDate: o.livraison?.dateLivraison,
-    invoicedDate: o.facture?.dateFacture,
-    invoiceNumber: o.facture?.numeroFacture,
-    invoicedTotal: o.facture ? Number(o.facture.total) : undefined,
-    paymentMethod: o.facture ? (paymentMethodMap[o.facture.modePaiement] ?? o.facture.modePaiement) : undefined,
-    note: o.observations ?? undefined,
-    totalAmount: o.lignes.reduce((sum, line) => sum + line.quantiteCommandee * Number(line.prixUnitaire), 0),
-    items: o.lignes.flatMap((line) => line.reservations.length
-      ? line.reservations.map((reservation) => {
-          const delivered = deliveryLines.get(reservation.id);
-          return {
-            id: String(reservation.id),
-            reservationId: reservation.id,
-            lineId: String(line.id),
-            name: line.fromageNom,
-            productName: line.fromageNom,
-            quantity: reservation.quantiteReservee,
-            deliveredQuantity: delivered?.quantiteLivree,
-            gap: delivered?.ecart,
-            unit: 'u',
-            pricePerUnit: Number(line.prixUnitaire),
-            stockId: reservation.stockId,
-            batchCode: reservation.lot,
-            location: reservation.emplacement,
-          };
-        })
-      : [{
-          id: String(line.id),
-          lineId: String(line.id),
-          name: line.fromageNom,
-          productName: line.fromageNom,
-          quantity: line.quantiteCommandee,
-          unit: 'u',
-          pricePerUnit: Number(line.prixUnitaire),
-        }]),
-  };
-}
+import { paymentMethodMap, toOrder } from "../mappers/orderMappers";
+
 export const useOrders = () => {
   const [allOrders, setAllOrders] = useState<Order[]>([]); const [clients, setClients] = useState<ClientOption[]>([]); const [fromages, setFromages] = useState<{ id: number; nom: string }[]>([]); const [activeFilter, setActiveFilter] = useState<OrderFilterStatus>('all'); const [isCreateModalOpen, setIsCreateModalOpen] = useState(false); const [loading, setLoading] = useState(true);
   const reload = async () => { try { setAllOrders((await orderApi.findAll()).map(toOrder)); } catch (e) { toast.error(e instanceof Error ? e.message : 'Chargement des commandes impossible'); } finally { setLoading(false); } };

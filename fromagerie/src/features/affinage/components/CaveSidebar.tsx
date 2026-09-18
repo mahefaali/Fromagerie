@@ -1,6 +1,6 @@
 import { Warehouse, Plus, Thermometer, Droplets } from "lucide-react";
 import { Button } from "../../../components/ui/button";
-import { type Cave, capaciteFor } from "../../../services/production-store";
+import { type Cave, capaciteFor } from "../domain/cave";
 
 interface CaveSidebarProps {
   caves: Cave[];

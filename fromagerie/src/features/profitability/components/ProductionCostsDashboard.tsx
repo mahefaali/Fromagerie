@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 
 import type { LotProductionCost } from "../api/profitabilityApi";
 import {
-  CategoryDetails,
+  // CategoryDetails,
   CostBreakdown,
   LotCostCards,
   LotCostDialog,
@@ -36,7 +36,7 @@ export function ProductionCostsDashboard({ lots, dateDebut, dateFin, fromageId }
       <ProductionCostMetrics categories={categories} lotCount={filteredLots.length} />
       <CostBreakdown categories={categories} hasOtherPeriods={lots.length > 0} />
       <MonthlyCostChart data={monthlyCosts} />
-      <CategoryDetails categories={categories} lots={filteredLots} />
+      {/* <CategoryDetails categories={categories} lots={filteredLots} /> */}
       <LotCostCards lots={filteredLots} onSelect={setSelectedLot} />
       <LotCostDialog lot={selectedLot} onClose={() => setSelectedLot(null)} />
     </div>

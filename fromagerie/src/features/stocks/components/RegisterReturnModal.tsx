@@ -1,21 +1,22 @@
-import React, { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
-import { Button } from './../../../components/ui/button';
-import { Input } from './../../../components/ui/input';
+import { useEffect, useState, type FormEvent } from "react";
+import { X } from "lucide-react";
 
-export interface ReturnItemFormState {
-  cheeseName: string;
-  stockId?: number;
-  reservationId?: number;
-  deliveredQuantity: number;
-  returnedQuantity: number;
-  previousReturnedQuantity: number;
-  actuallySold: number;
-}
+import { Button } from "../../../components/ui/button";
+import { Input } from "../../../components/ui/input";
+import type { Order } from "../types/orders";
+import {
+  createReturnItems,
+  getOrderCheeseLabel,
+  localDateToday,
+  updateReturnedQuantity,
+  type ReturnItemFormState,
+} from "./return/returnForm.utils";
+
+export type { ReturnItemFormState } from "./return/returnForm.utils";
 
 interface RegisterReturnModalProps {
   isOpen: boolean;
-  order: any | null;
+  order: Order | null;
   onClose: () => void;
   onSubmit: (data: {
     orderId: string;
@@ -30,50 +31,31 @@ export const RegisterReturnModal: React.FC<RegisterReturnModalProps> = ({
   onClose,
   onSubmit,
 }) => {
-  const [returnDate, setReturnDate] = useState<string>('2026-08-20');
+  const [returnDate, setReturnDate] = useState(localDateToday);
   const [items, setItems] = useState<ReturnItemFormState[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    if (order && order.items) {
-      const initialItems: ReturnItemFormState[] = order.items.map((item: any) => {
-        const delivered = Number(item.deliveredQuantity ?? item.quantity ?? 0);
-        const returned = Number(item.returnedQuantity || 0);
-        return {
-          cheeseName: item.cheeseName || item.name || 'Fromage',
-          stockId: item.stockId,
-          reservationId: item.reservationId,
-          deliveredQuantity: delivered,
-          returnedQuantity: 0,
-          previousReturnedQuantity: returned,
-          actuallySold: delivered - returned,
-        };
-      });
-      setItems(initialItems);
+    if (!order) {
+      setItems([]);
+      return;
     }
+
+    setItems(createReturnItems(order));
+    setReturnDate(localDateToday());
   }, [order]);
 
   if (!isOpen || !order) return null;
 
-  const cheeseNames = [...new Set(order.items.map((item: any) => item.cheeseName || item.name || item.productName || 'Fromage'))];
-  const cheeseLabel = cheeseNames.join(', ');
+  const cheeseLabel = getOrderCheeseLabel(order);
 
   const handleReturnedQtyChange = (index: number, val: string) => {
-    const qty = Math.max(0, parseInt(val, 10) || 0);
     setItems((prev) =>
-      prev.map((item, i) => {
-        if (i !== index) return item;
-        const finalReturned = Math.min(qty, item.deliveredQuantity - item.previousReturnedQuantity);
-        return {
-          ...item,
-          returnedQuantity: finalReturned,
-          actuallySold: item.deliveredQuantity - item.previousReturnedQuantity - finalReturned,
-        };
-      })
+      prev.map((item, itemIndex) => itemIndex === index ? updateReturnedQuantity(item, val) : item)
     );
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setIsSubmitting(true);
@@ -101,6 +83,7 @@ export const RegisterReturnModal: React.FC<RegisterReturnModalProps> = ({
           </div>
           <button
             type="button"
+            aria-label="Fermer la fenêtre de retour"
             onClick={onClose}
             className="text-stone-400 hover:text-stone-600 transition-colors p-1 rounded-lg hover:bg-stone-200/50 cursor-pointer"
           >
@@ -115,8 +98,9 @@ export const RegisterReturnModal: React.FC<RegisterReturnModalProps> = ({
             {/* Top Fields: Date & Opérateur */}
             <div>
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-stone-800">Date du retour</label>
+                <label htmlFor="return-date" className="text-xs font-semibold text-stone-800">Date du retour</label>
                 <Input
+                  id="return-date"
                   type="date"
                   value={returnDate}
                   onChange={(e) => setReturnDate(e.target.value)}
@@ -126,34 +110,41 @@ export const RegisterReturnModal: React.FC<RegisterReturnModalProps> = ({
             </div>
 
             {/* Cards par article */}
-            {items.map((item, index) => (
-              <div
-                key={index}
+            {items.map((item, index) => {
+              const itemKey = item.reservationId ?? item.stockId ?? `${item.cheeseName}-${index}`;
+              const returnedQuantityId = `returned-quantity-${itemKey}`;
+              const actuallySoldId = `actually-sold-${itemKey}`;
+
+              return (
+                <div
+                key={itemKey}
                 className="bg-stone-100/50 border border-stone-300/70 rounded-2xl p-4 space-y-4"
               >
                 <div className="flex items-center justify-between">
                   <h3 className="font-bold text-stone-900 text-sm">{item.cheeseName}</h3>
                   <span className="text-xs font-medium text-stone-500">
-                    livré {item.deliveredQuantity} unite · retour possible {item.deliveredQuantity - item.previousReturnedQuantity}
+                    livré {item.deliveredQuantity} unité · retour possible {Math.max(0, item.deliveredQuantity - item.previousReturnedQuantity)}
                   </span>
                 </div>
 
                 {/* Quantités */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-stone-800">Quantité retournée</label>
+                    <label htmlFor={returnedQuantityId} className="text-xs font-semibold text-stone-800">Quantité retournée</label>
                     <Input
+                      id={returnedQuantityId}
                       type="number"
                       min="0"
-                      max={item.deliveredQuantity}
+                      max={Math.max(0, item.deliveredQuantity - item.previousReturnedQuantity)}
                       value={item.returnedQuantity}
                       onChange={(e) => handleReturnedQtyChange(index, e.target.value)}
                       className="bg-stone-100/80 border-stone-300 rounded-xl text-stone-900 font-medium h-10 text-sm focus-visible:ring-stone-400"
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-stone-800">Vendu réellement</label>
+                    <label htmlFor={actuallySoldId} className="text-xs font-semibold text-stone-800">Vendu réellement</label>
                     <Input
+                      id={actuallySoldId}
                       type="number"
                       disabled
                       value={item.actuallySold}
@@ -162,8 +153,9 @@ export const RegisterReturnModal: React.FC<RegisterReturnModalProps> = ({
                   </div>
                 </div>
 
-              </div>
-            ))}
+                </div>
+              );
+            })}
           </div>
 
           {/* Footer */}

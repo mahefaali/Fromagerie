@@ -1,8 +1,11 @@
-import { lazy, Suspense, useEffect, useState } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { Warehouse, Sparkles } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "./../../components/ui/tabs";
+import { Tabs, TabsContent } from "./../../components/ui/tabs";
 import { LazyContentFallback } from "../../components/common/LazyContentFallback";
+import { PageTabsPortal } from "../../layouts/components/PageTabsPortal";
+import { usePersistentTab } from "../../hooks/usePersistentTab";
+import { FloatingSubnavigation } from "../../components/ui/FloatingSubnavigation";
 
 const CaveManager = lazy(() =>
   import("../../features/affinage/components/CaveManager").then((module) => ({
@@ -12,14 +15,14 @@ const CaveManager = lazy(() =>
 const AffinageTracker = lazy(() => import("../../features/affinage/components/AffinageTracker"));
 
 export function AffinagePage() {
-  const [activeTab, setActiveTab] = useState<string>("caves");
+  const [activeTab, setActiveTab] = usePersistentTab<"caves" | "suivi">("subnavigation:affinage", "caves");
   const [searchParams] = useSearchParams();
 
   useEffect(() => {
     if (searchParams.get("lot")) {
       setActiveTab("suivi");
     }
-  }, [searchParams]);
+  }, [searchParams, setActiveTab]);
 
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6 relative pointer-events-auto">
@@ -39,19 +42,20 @@ export function AffinagePage() {
       {/* Navigation par Onglets (Contrôlée explicitement) */}
       <Tabs 
         value={activeTab} 
-        onValueChange={setActiveTab} 
+        onValueChange={(value) => setActiveTab(value as "caves" | "suivi")} 
         className="w-full space-y-6"
       >
-        <TabsList className="grid w-full max-w-md grid-cols-2">
-          <TabsTrigger value="caves" className="flex items-center gap-2">
-            <Warehouse className="size-4" />
-            Gestion des Caves
-          </TabsTrigger>
-          <TabsTrigger value="suivi" className="flex items-center gap-2">
-            <Sparkles className="size-4" />
-            Suivi de Maturation
-          </TabsTrigger>
-        </TabsList>
+        <PageTabsPortal>
+          <FloatingSubnavigation
+            value={activeTab}
+            items={[
+              { value: "caves", label: "Gestion des Caves", icon: Warehouse },
+              { value: "suivi", label: "Suivi de Maturation", icon: Sparkles },
+            ]}
+            onValueChange={setActiveTab}
+            ariaLabel="Navigation de l'affinage"
+          />
+        </PageTabsPortal>
 
         {/* Vue 1: Gestion physique des caves et plans */}
         <TabsContent value="caves" className="m-0 space-y-4">

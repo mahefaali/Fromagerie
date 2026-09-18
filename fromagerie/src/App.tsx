@@ -14,6 +14,7 @@ const Configuration = lazy(() => import('./pages/Configuration/Configuration'))
 const ProfitabilityPage = lazy(() => import('./pages/Profitability/Profitability'))
 const AffinagePage = lazy(() => import('./pages/Affinage/Affinage'))
 const Stock = lazy(() => import('./pages/StorageSale/StockSale'))
+const TraceabilityPage = lazy(() => import('./pages/Traceability/Traceability'))
 
 function PageLoading() {
   return (
@@ -50,6 +51,7 @@ function App() {
               <Route path="/fabrication" element={<LazyPage><Fabrication /></LazyPage>} />
               <Route path="/affinage" element={<LazyPage><AffinagePage /></LazyPage>} />
               <Route path="/stock" element={<LazyPage><Stock /></LazyPage>} />
+              <Route path="/tracabilite" element={<LazyPage><TraceabilityPage /></LazyPage>} />
               <Route element={<OwnerOnlyRoute />}>
                 <Route path="/configuration" element={<LazyPage><Configuration /></LazyPage>} />
                 <Route path="/rentabilite" element={<LazyPage><ProfitabilityPage /></LazyPage>} />

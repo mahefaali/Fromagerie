@@ -1,317 +1,69 @@
-import React, { useState, useEffect } from 'react';
-import { createPortal } from 'react-dom';
-import { X, Plus, Trash2, Calendar, UserPlus } from 'lucide-react';
-import { type CreateOrderPayload, type CreateOrderItemInput } from './../types/orders';
-import type { ClientOption } from '../api/stockApi';
+import { useEffect } from "react";
+import { createPortal } from "react-dom";
+import { Calendar, X } from "lucide-react";
+
+import type { ClientOption } from "../api/stockApi";
+import type { CreateOrderPayload } from "../types/orders";
+import { OrderClientFields } from "./order-form/OrderClientFields";
+import { OrderItemsFields } from "./order-form/OrderItemsFields";
+import type { NewClientForm } from "./order-form/createOrderForm";
+import { useCreateOrderForm } from "./order-form/useCreateOrderForm";
 
 interface CreateOrderModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (payload: CreateOrderPayload) => void;
   clients: ClientOption[];
-  fromages: { id: number; nom: string }[];
-  onCreateClient: (client: { nom: string; typeClient: string; telephone?: string; adresse?: string }) => Promise<ClientOption | null>;
+  fromages: Array<{ id: number; nom: string }>;
+  onCreateClient: (client: NewClientForm) => Promise<ClientOption | null>;
 }
 
-export const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
-  isOpen,
-  onClose,
-  onSubmit,
-  clients,
-  fromages,
-  onCreateClient,
-}) => {
-  const [clientName, setClientName] = useState('');
-  const [contactInfo, setContactInfo] = useState('');
-  const [expectedDeliveryDate, setExpectedDeliveryDate] = useState('2026-08-13');
-  const [note, setNote] = useState('');
-  const [showNewClient, setShowNewClient] = useState(false);
-  const [newClient, setNewClient] = useState({ nom: '', typeClient: 'EPICERIE', telephone: '', adresse: '' });
-  const [items, setItems] = useState<CreateOrderItemInput[]>([
-    {
-      id: '1',
-      productName: '',
-      quantity: 1,
-      unit: 'u',
-      pricePerUnit: 7.50,
-    },
-  ]);
+export function CreateOrderModal(props: CreateOrderModalProps) {
+  const { isOpen, onClose, clients, fromages } = props;
+  const form = useCreateOrderForm(props);
 
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    if (isOpen) window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    if (!isOpen) return;
+    const handleKeyDown = (event: KeyboardEvent) => { if (event.key === "Escape") onClose(); };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
-  const handleAddItem = () => {
-    setItems((prev) => [
-      ...prev,
-      {
-        id: Date.now().toString(),
-        productName: '',
-        quantity: 1,
-        unit: 'u',
-        pricePerUnit: 0,
-      },
-    ]);
-  };
-
-  const handleRemoveItem = (id: string) => {
-    if (items.length === 1) return;
-    setItems((prev) => prev.filter((item) => item.id !== id));
-  };
-
-  const handleCheeseChange = (id: string, productName: string) => {
-    setItems((prev) =>
-      prev.map((item) => {
-        if (item.id !== id) return item;
-        return {
-          ...item,
-          id: productName,
-          productName: fromages.find((f) => String(f.id) === productName)?.nom ?? '',
-          unit: 'u',
-        };
-      })
-    );
-  };
-
-  const handleItemChange = (
-    id: string,
-    field: keyof CreateOrderItemInput,
-    value: string | number
-  ) => {
-    setItems((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, [field]: value } : item))
-    );
-  };
-
-  // Vérifie si un produit au moins dépasse le stock disponible
-  const hasStockError = items.some((item) => !item.id || item.quantity <= 0 || item.unit !== 'u');
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!clientName.trim() || hasStockError) return;
-    onSubmit({
-      clientName,
-      contactInfo,
-      expectedDeliveryDate,
-      note,
-      items,
-    });
-  };
-
-  const handleCreateClient = async () => {
-    if (!newClient.nom.trim()) return;
-    const client = await onCreateClient(newClient);
-    if (client) {
-      setClientName(client.nom);
-      setContactInfo(client.telephone ?? '');
-      setNewClient({ nom: '', typeClient: 'EPICERIE', telephone: '', adresse: '' });
-      setShowNewClient(false);
-    }
-  };
-
   return createPortal(
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 sm:p-6 overflow-hidden">
-      <div className="bg-[#fcfbfa] w-full max-w-2xl max-h-[85vh] rounded-2xl shadow-2xl border border-[#e2dacb] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-        
-        {/* Header */}
-        <div className="p-5 sm:p-6 pb-3 flex items-start justify-between border-b border-[#e2dacb]/40 shrink-0">
-          <div>
-            <h2 className="text-xl font-bold text-[#2c2825]">Nouvelle commande</h2>
-            <p className="text-xs text-gray-500 mt-0.5">
-              La commande réserve le stock : elle n'est pas encore livrée.
-            </p>
-          </div>
-          <button
-            onClick={onClose}
-            type="button"
-            className="text-gray-400 hover:text-gray-700 p-1.5 rounded-lg transition-colors cursor-pointer"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center overflow-hidden bg-black/50 p-4 backdrop-blur-xs sm:p-6" role="dialog" aria-modal="true" aria-labelledby="create-order-title">
+      <div className="flex max-h-[85vh] w-full max-w-2xl animate-in flex-col overflow-hidden rounded-2xl border border-[#e2dacb] bg-[#fcfbfa] shadow-2xl duration-150 fade-in zoom-in-95">
+        <header className="flex shrink-0 items-start justify-between border-b border-[#e2dacb]/40 p-5 pb-3 sm:p-6">
+          <div><h2 id="create-order-title" className="text-xl font-bold text-[#2c2825]">Nouvelle commande</h2><p className="mt-0.5 text-xs text-gray-500">La commande réserve le stock : elle n'est pas encore livrée.</p></div>
+          <button onClick={onClose} type="button" aria-label="Fermer la création de commande" className="cursor-pointer rounded-lg p-1.5 text-gray-400 transition-colors hover:text-gray-700"><X className="size-5" /></button>
+        </header>
 
-        {/* Form Body */}
-        <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-y-auto min-h-0">
-          <div className="p-5 sm:p-6 space-y-5">
-            {/* Client & Contact */}
-            <div className="flex items-center gap-2">
-              <select value={clientName} onChange={(e) => setClientName(e.target.value)} required
-                className="w-full px-4 py-2.5 rounded-xl bg-[#f5f2eb] border border-transparent focus:border-[#2d4a27] focus:bg-white text-sm outline-none transition-all"
-              ><option value="">Choisir un client</option>{clients.filter(c => c.actif).map(c => <option key={c.id} value={c.nom}>{c.nom}</option>)}</select>
-              <button type="button" onClick={() => setShowNewClient((value) => !value)} title="Créer un client" className="shrink-0 rounded-xl border border-[#2d4a27] px-3 py-2.5 text-[#2d4a27] hover:bg-[#eef3eb]"><UserPlus className="size-5" /></button>
-            </div>
-            {showNewClient && <div className="rounded-xl border border-[#d9cdbb] bg-[#f8f4ec] p-4 space-y-3">
-              <div className="text-sm font-bold text-[#2c2825]">Nouveau client</div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                <input autoFocus value={newClient.nom} onChange={(e) => setNewClient({ ...newClient, nom: e.target.value })} placeholder="Nom du client" className="w-full px-3 py-2 rounded-lg bg-white border border-gray-200 text-sm outline-none focus:border-[#2d4a27]" />
-                <select value={newClient.typeClient} onChange={(e) => setNewClient({ ...newClient, typeClient: e.target.value })} className="w-full px-3 py-2 rounded-lg bg-white border border-gray-200 text-sm outline-none focus:border-[#2d4a27]"><option value="EPICERIE">Épicerie</option><option value="MARCHE">Marché</option><option value="VENTE_DIRECTE">Vente directe</option></select>
-                <input value={newClient.telephone} onChange={(e) => setNewClient({ ...newClient, telephone: e.target.value })} placeholder="Téléphone (optionnel)" className="w-full px-3 py-2 rounded-lg bg-white border border-gray-200 text-sm outline-none focus:border-[#2d4a27]" />
-                <input value={newClient.adresse} onChange={(e) => setNewClient({ ...newClient, adresse: e.target.value })} placeholder="Adresse (optionnel)" className="w-full px-3 py-2 rounded-lg bg-white border border-gray-200 text-sm outline-none focus:border-[#2d4a27]" />
-              </div>
-              <button type="button" onClick={() => void handleCreateClient()} disabled={!newClient.nom.trim()} className="rounded-lg bg-[#2d4a27] px-3 py-2 text-xs font-semibold text-white disabled:opacity-50">Ajouter et sélectionner</button>
-            </div>}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <input
-                type="text"
-                placeholder="email / téléphone"
-                value={contactInfo}
-                onChange={(e) => setContactInfo(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-xl bg-[#f5f2eb] border border-transparent focus:border-[#2d4a27] focus:bg-white text-sm outline-none transition-all"
-              />
+        <form onSubmit={form.submit} className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+          <div className="space-y-5 p-5 sm:p-6">
+            <OrderClientFields clients={clients} clientName={form.clientName} contactInfo={form.contactInfo} showNewClient={form.showNewClient} newClient={form.newClient}
+              onClientNameChange={form.setClientName} onContactInfoChange={form.setContactInfo} onToggleNewClient={() => form.setShowNewClient((value) => !value)} onNewClientChange={form.setNewClient} onCreateClient={form.createClient} />
+
+            <div><label htmlFor="expected-delivery-date" className="mb-1.5 block text-xs font-semibold text-gray-700">Date de livraison souhaitée</label>
+              <div className="relative max-w-xs"><input id="expected-delivery-date" type="date" value={form.expectedDeliveryDate} onChange={(event) => form.setExpectedDeliveryDate(event.target.value)} className={mainFieldClass} />
+                <Calendar className="pointer-events-none absolute right-3 top-3 size-4 text-gray-500" /></div>
             </div>
 
-            {/* Date */}
-            <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-                Date de livraison souhaitée
-              </label>
-              <div className="relative max-w-xs">
-                <input
-                  type="date"
-                  value={expectedDeliveryDate}
-                  onChange={(e) => setExpectedDeliveryDate(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl bg-[#f5f2eb] border border-transparent focus:border-[#2d4a27] focus:bg-white text-sm outline-none transition-all"
-                />
-                <Calendar className="w-4 h-4 absolute right-3 top-3 text-gray-500 pointer-events-none" />
-              </div>
-            </div>
+            <OrderItemsFields items={form.items} fromages={fromages} onAdd={form.addItem} onRemove={form.removeItem} onSelectCheese={form.selectCheese} onUpdate={form.updateItem} />
 
-            {/* Produits */}
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-bold text-[#2c2825]">Produits commandés</h3>
-                <button
-                  type="button"
-                  onClick={handleAddItem}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-gray-300 rounded-xl text-xs font-semibold hover:bg-gray-50 shadow-2xs transition-all cursor-pointer"
-                >
-                  <Plus className="w-3.5 h-3.5" /> Ligne
-                </button>
-              </div>
-
-              <div className="space-y-3">
-                {items.map((item) => {
-                  return (
-                    <div
-                      key={item.id}
-                      className="p-4 bg-[#f5f2eb]/70 rounded-2xl border border-[#e2dacb]/60 space-y-3"
-                    >
-                      <div className="flex items-center gap-2">
-                        <select
-                          value={item.id}
-                          onChange={(e) => handleCheeseChange(item.id, e.target.value)}
-                          className="w-full px-3 py-2 rounded-xl bg-white border border-gray-200 text-sm outline-none focus:border-[#2d4a27]"
-                        >
-                          <option value="">Type de fromage</option>
-                          {fromages.map((cheese) => (
-                            <option key={cheese.id} value={cheese.id}>
-                              {cheese.nom}
-                            </option>
-                          ))}
-                        </select>
-
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveItem(item.id)}
-                          disabled={items.length === 1}
-                          className="p-2 text-red-600 hover:text-red-800 disabled:opacity-30 transition-colors cursor-pointer"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-center">
-                        <div>
-                          <label className="block text-[11px] text-gray-600 mb-1">Quantité</label>
-                          <input
-                            type="number"
-                            min="1"
-                            value={item.quantity}
-                            onChange={(e) =>
-                              handleItemChange(item.id, 'quantity', Number(e.target.value))
-                            }
-                            className="w-full px-3 py-1.5 rounded-xl bg-white border border-gray-200 text-sm outline-none transition-all"
-                          />
-                        </div>
-
-                        <div>
-                          <label className="block text-[11px] text-gray-600 mb-1">Unité</label>
-                          <div className="flex items-center gap-4 text-xs pt-1">
-                            <label className="flex items-center gap-1.5 cursor-pointer">
-                              <input
-                                type="radio"
-                                name={`unit-${item.id}`}
-                                value="u"
-                                checked={item.unit === 'u'}
-                                onChange={() => handleItemChange(item.id, 'unit', 'u')}
-                                className="accent-[#2d4a27]"
-                              />
-                              unités
-                            </label>
-                          </div>
-                        </div>
-
-                        <div>
-                          <label className="block text-[11px] text-gray-600 mb-1">
-                            Prix unitaire (€)
-                          </label>
-                          <input
-                            type="number"
-                            step="0.01"
-                            value={item.pricePerUnit}
-                            onChange={(e) =>
-                              handleItemChange(item.id, 'pricePerUnit', Number(e.target.value))
-                            }
-                            className="w-full px-3 py-1.5 rounded-xl bg-white border border-gray-200 text-sm outline-none focus:border-[#2d4a27]"
-                          />
-                        </div>
-                      </div>
-
-                      {/* Message d'état du Stock avec Erreur */}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Note */}
-            <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1">Note</label>
-              <textarea
-                rows={2}
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-xl bg-[#f5f2eb] border border-transparent focus:border-[#2d4a27] focus:bg-white text-sm outline-none transition-all resize-none"
-              />
+            <div><label htmlFor="order-note" className="mb-1 block text-xs font-semibold text-gray-700">Note</label>
+              <textarea id="order-note" rows={2} value={form.note} onChange={(event) => form.setNote(event.target.value)} className={`${mainFieldClass} resize-none`} />
             </div>
           </div>
-
-          {/* Footer Actions */}
-          <div className="p-4 sm:p-5 bg-[#f5f2eb]/40 border-t border-[#e2dacb]/60 flex items-center justify-end gap-3 shrink-0">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-5 py-2.5 rounded-xl bg-[#f0eae1] hover:bg-[#e4dcce] text-gray-800 text-sm font-semibold transition-all cursor-pointer"
-            >
-              Annuler
-            </button>
-            <button
-              type="submit"
-              disabled={hasStockError}
-              className="px-5 py-2.5 rounded-xl bg-[#2d4a27] hover:bg-[#233a1e] disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold shadow-xs transition-all cursor-pointer"
-            >
-              Enregistrer la commande
-            </button>
-          </div>
+          <footer className="flex items-center justify-end gap-3 border-t border-[#e2dacb]/60 bg-[#f5f2eb]/40 p-4 sm:p-5">
+            <button type="button" onClick={onClose} className="rounded-xl border border-gray-300 bg-white px-4 py-2 text-sm font-semibold">Annuler</button>
+            <button type="submit" disabled={!form.clientName.trim() || form.hasItemError} className="rounded-xl bg-[#2d4a27] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">Créer la commande</button>
+          </footer>
         </form>
       </div>
     </div>,
-    document.body
+    document.body,
   );
-};
+}
+
+const mainFieldClass = "w-full rounded-xl border border-transparent bg-[#f5f2eb] px-4 py-2.5 text-sm outline-none transition-all focus:border-[#2d4a27] focus:bg-white";

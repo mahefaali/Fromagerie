@@ -47,6 +47,9 @@ export const fabricationApi = {
       json: request,
     }),
 
+  delete: (id: number): Promise<void> =>
+    apiRequest<void>(`/api/fabrications/${id}`, { method: "DELETE" }),
+
   findRecettes: (): Promise<RecetteListItem[]> =>
     apiRequest<RecetteListItem[]>("/api/recettes"),
 

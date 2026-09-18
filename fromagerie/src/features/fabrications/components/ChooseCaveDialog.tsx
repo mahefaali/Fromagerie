@@ -13,7 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "./../../../components/ui/dialog";
-import { type Cave, type Fabrication } from "../../../services/production-store";
+import { type Cave, type Fabrication } from "../../affinage/domain/cave";
 
 interface ChooseCaveDialogProps {
   fabrication: Fabrication | null;

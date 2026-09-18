@@ -16,6 +16,7 @@ import com.fromagerie_back.model.StatutStockFromageFini;
 import com.fromagerie_back.model.Fromage;
 
 public interface StockFromageFiniRepository extends JpaRepository<StockFromageFini, Long> {
+    Optional<StockFromageFini> findByLotAffinageFabricationId(Long fabricationId);
     interface AffinagePerformanceProjection {
         Long getFromageId();
         String getFromageNom();

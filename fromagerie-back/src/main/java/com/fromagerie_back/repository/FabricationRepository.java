@@ -51,6 +51,9 @@ public interface FabricationRepository
         boolean existsByNumeroLot(String numeroLot);
 
         @EntityGraph(attributePaths = { "recette", "recette.fromage", "operateur" })
+        Optional<Fabrication> findByNumeroLotIgnoreCase(String numeroLot);
+
+        @EntityGraph(attributePaths = { "recette", "recette.fromage", "operateur" })
         @Query("SELECT f FROM Fabrication f ORDER BY f.dateHeureDebut DESC")
         List<Fabrication> findAllWithDetailsOrderByDateHeureDebutDesc();
 

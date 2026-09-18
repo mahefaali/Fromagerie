@@ -13,6 +13,7 @@ import com.fromagerie_back.model.LotAffinage;
 import jakarta.persistence.LockModeType;
 
 public interface LotAffinageRepository extends JpaRepository<LotAffinage, Long> {
+    Optional<LotAffinage> findByFabricationId(Long fabricationId);
 
     boolean existsByFabricationId(Long fabricationId);
 

@@ -44,13 +44,18 @@ export interface CreateFabricationRequest {
   dureeChauffageMinutes: number;
   typePresure: string;
   quantitePresure: number;
+  presureHorsPlageConfirmee?: boolean;
   typeFerments: string;
   quantiteFerments: number;
+  fermentHorsPlageConfirmee?: boolean;
   temperatureMiseEnMoule: number;
   dureeEgouttageMinutes: number;
   poidsTotalFromages: number;
+  rendementAnormalConfirme?: boolean;
   nombreFromages: number;
+  nombreFromagesFaibleConfirme?: boolean;
   observations: string | null;
+  lotsLait?: { lotLaitId: number; quantiteUtilisee: number }[];
 }
 
 export type UpdateFabricationRequest = CreateFabricationRequest;

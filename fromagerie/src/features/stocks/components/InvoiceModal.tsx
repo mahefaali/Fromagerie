@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { X } from 'lucide-react';
+import { Download, X } from 'lucide-react';
 import { type Order } from './../types/orders';
 
 interface InvoiceModalProps {
@@ -10,9 +10,8 @@ interface InvoiceModalProps {
   onSubmit: (data: {
     orderId: string;
     paymentMethod: string;
-    invoiceNote: string;
-    invoicedDate: string;
   }) => void;
+  onDownloadPdf?: (order: Order) => void;
 }
 
 const PAYMENT_METHODS = [
@@ -28,14 +27,13 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
   order,
   onClose,
   onSubmit,
+  onDownloadPdf,
 }) => {
   const [paymentMethod, setPaymentMethod] = useState<string>('Virement');
-  const [invoiceNote, setInvoiceNote] = useState<string>('');
 
   useEffect(() => {
     if (order) {
       setPaymentMethod(order.paymentMethod || 'Virement');
-      setInvoiceNote('');
     }
   }, [order]);
 
@@ -75,12 +73,9 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
       onClose();
       return;
     }
-    const todayISO = new Date().toISOString().split('T')[0];
     onSubmit({
       orderId: order.id,
       paymentMethod,
-      invoiceNote,
-      invoicedDate: todayISO,
     });
     onClose();
   };
@@ -160,22 +155,11 @@ export const InvoiceModal: React.FC<InvoiceModalProps> = ({
             </select>
           </div>
 
-          {/* Note */}
-          {!isAlreadyInvoiced && <div className="space-y-1.5">
-            <label className="block text-xs font-bold text-[#2c2825]">
-              Note
-            </label>
-            <textarea
-              rows={3}
-              value={invoiceNote}
-              onChange={(e) => setInvoiceNote(e.target.value)}
-              placeholder="Note..."
-              className="w-full bg-[#f5f2eb]/70 border border-[#e2dacb] rounded-xl p-3 text-sm text-[#2c2825] focus:outline-none focus:border-[#2d4a27] resize-none transition-all"
-            />
-          </div>}
-
           {/* Pied de modale / Boutons */}
           <div className="pt-2 flex items-center justify-end gap-3 shrink-0">
+            {isAlreadyInvoiced && <button type="button" onClick={() => onDownloadPdf?.(order)} className="flex items-center gap-2 rounded-xl border border-[#2d4a27] bg-white px-5 py-2.5 text-xs font-bold text-[#2d4a27] hover:bg-[#edf3eb]">
+              <Download className="size-4" /> Télécharger le PDF
+            </button>}
             <button
               type="button"
               onClick={onClose}

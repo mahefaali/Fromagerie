@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Toaster } from 'sonner';
+import { toast, Toaster } from 'sonner';
 import { useOrders } from './../hooks/useOrders';
 import { OrderCard } from './OrderCard';
 import { CreateOrderModal } from './CreateOrderModal';
@@ -8,6 +8,8 @@ import { RegisterDeliveryModal } from './RegisterDeliveryModal';
 import { InvoiceModal } from './InvoiceModal';
 import { type Order, type OrderFilterStatus } from './../types/orders';
 import { ShoppingBag, } from 'lucide-react';
+import { orderApi } from '../api/stockApi';
+import { downloadDocument } from '../utils/downloadDocument';
 
 const FILTERS: { id: OrderFilterStatus; label: string }[] = [
   { id: 'all', label: 'Toutes' },
@@ -45,11 +47,23 @@ export const OrdersView: React.FC = () => {
 
   const [selectedOrderForInvoice, setSelectedOrderForInvoice] = useState<Order | null>(null);
 
+  const downloadPdf = async (kind: 'preparation' | 'delivery' | 'invoice', order: Order) => {
+    try {
+      const blob = kind === 'preparation'
+        ? await orderApi.preparationPdf(Number(order.id))
+        : kind === 'delivery'
+          ? await orderApi.deliveryPdf(Number(order.id))
+          : await orderApi.invoicePdf(order.invoiceId!);
+      const reference = kind === 'preparation' ? order.code : kind === 'delivery' ? order.deliveryNumber : order.invoiceNumber;
+      downloadDocument(blob, `${kind === 'preparation' ? 'bon-preparation' : kind === 'delivery' ? 'bon-livraison' : 'facture'}-${reference ?? order.id}.pdf`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Téléchargement du document impossible');
+    }
+  };
+
   const handleInvoiceSubmit = (data: {
     orderId: string;
     paymentMethod: string;
-    invoiceNote: string;
-    invoicedDate: string;
   }) => {
     handleCreateInvoice(data);
   };
@@ -127,6 +141,7 @@ export const OrdersView: React.FC = () => {
               onOpenPreparationSlip={(ord) => setSelectedOrderForSlip(ord)}
               onOpenRegisterDelivery={(ord) => setSelectedOrderForDelivery(ord)}
               onOpenInvoice={(ord) => setSelectedOrderForInvoice(ord)}
+              onDownloadDelivery={(ord) => void downloadPdf('delivery', ord)}
               onConfirm={handleConfirmOrder}
             />
           ))}
@@ -153,6 +168,7 @@ export const OrdersView: React.FC = () => {
         order={selectedOrderForSlip}
         onClose={() => setSelectedOrderForSlip(null)}
         onMarkAsPrepared={handleMarkAsPrepared}
+        onDownloadPdf={(order) => void downloadPdf('preparation', order)}
       />
 
       {/* Modale Enregistrer la Livraison */}
@@ -169,6 +185,7 @@ export const OrdersView: React.FC = () => {
         order={selectedOrderForInvoice}
         onClose={() => setSelectedOrderForInvoice(null)}
         onSubmit={handleInvoiceSubmit}
+        onDownloadPdf={(order) => void downloadPdf('invoice', order)}
       />
     </div>
   );

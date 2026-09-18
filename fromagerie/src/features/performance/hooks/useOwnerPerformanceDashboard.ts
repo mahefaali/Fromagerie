@@ -17,11 +17,12 @@ import {
 } from "../components/ownerPerformance.utils";
 
 type CheeseOption = { id: number; nom: string };
+const DEFAULT_PERIOD = "three-months" satisfies Period;
 
 export function useOwnerPerformanceDashboard() {
   const today = useMemo(() => new Date(), []);
-  const [period, setPeriod] = useState<Period>("month");
-  const [customStart, setCustomStart] = useState(() => toIsoDate(getPeriodDates("month", today).start));
+  const [period, setPeriod] = useState<Period>(DEFAULT_PERIOD);
+  const [customStart, setCustomStart] = useState(() => toIsoDate(getPeriodDates(DEFAULT_PERIOD, today).start));
   const [customEnd, setCustomEnd] = useState(() => toIsoDate(today));
   const [fromageId, setFromageId] = useState("all");
   const [fromages, setFromages] = useState<CheeseOption[]>([]);

@@ -1,4 +1,4 @@
-import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -309,17 +309,19 @@ describe("gestion des recettes", () => {
     render(<RecipeManager />);
 
     await user.click(screen.getByRole("button", { name: "Nouvelle recette" }));
-    await user.type(screen.getByLabelText("Nom de la recette"), "Recette fermière");
+    fireEvent.change(screen.getByLabelText("Nom de la recette"), {
+      target: { value: "Recette fermière" },
+    });
     await user.click(screen.getByRole("button", { name: "Ajouter un nouveau type de fromage" }));
-    await user.type(screen.getByLabelText("Nom du fromage"), "Tomme fermière");
-    await user.type(screen.getByLabelText("Description"), "Pâte pressée");
+    fireEvent.change(screen.getByLabelText("Nom du fromage"), { target: { value: "Tomme fermière" } });
+    fireEvent.change(screen.getByLabelText("Description"), { target: { value: "Pâte pressée" } });
     await user.click(screen.getByRole("button", { name: "Ajouter et sélectionner" }));
 
     await waitFor(() => expect(mocks.createCheese).toHaveBeenCalledWith({
       nom: "Tomme fermière",
       description: "Pâte pressée",
     }));
-    await user.type(screen.getByLabelText("Quantité"), "80");
+    fireEvent.change(screen.getByLabelText("Quantité"), { target: { value: "80" } });
     await user.click(screen.getByRole("button", { name: "Créer la recette" }));
 
     await waitFor(() => expect(mocks.createRecipe).toHaveBeenCalledWith({
@@ -337,9 +339,9 @@ describe("gestion des recettes", () => {
 
     await user.click(screen.getByRole("button", { name: "Nouvelle recette" }));
     await user.click(screen.getByRole("button", { name: "Créer un nouvel ingrédient" }));
-    await user.type(screen.getByLabelText("Nom de l’ingrédient"), "Ferments lactiques");
+    fireEvent.change(screen.getByLabelText("Nom de l’ingrédient"), { target: { value: "Ferments lactiques" } });
     await user.selectOptions(screen.getByLabelText("Unité de référence"), "G");
-    await user.type(screen.getByLabelText("Coût unitaire de référence (€)"), "4.5");
+    fireEvent.change(screen.getByLabelText("Coût unitaire de référence (€)"), { target: { value: "4.5" } });
     await user.click(screen.getByRole("button", { name: "Ajouter à la recette" }));
 
     await waitFor(() => expect(mocks.createMaterial).toHaveBeenCalledWith({

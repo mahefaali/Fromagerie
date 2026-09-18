@@ -12,6 +12,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -41,6 +42,7 @@ import com.fromagerie_back.model.OrigineLait;
 import com.fromagerie_back.model.Rangee;
 import com.fromagerie_back.model.Recette;
 import com.fromagerie_back.model.Role;
+import com.fromagerie_back.model.SoinAffinage;
 import com.fromagerie_back.model.TypeSoinAffinage;
 import com.fromagerie_back.model.Utilisateur;
 import com.fromagerie_back.repository.CaveRepository;
@@ -195,6 +197,73 @@ class AffinageIntegrationTests {
     }
 
     @Test
+    void initialPlacementDistributesTheWholeLotAcrossCompatibleCaves() {
+        Cave premiere = cave("Cave compatible A", new int[][] { { 3 } });
+        Cave seconde = cave("Cave compatible B", new int[][] { { 4 } });
+        Fabrication fabrication = fabrication(6);
+
+        var lot = affinageService.create(new AffinageCreateRequest(
+                fabrication.getId(), LocalDate.now(), LocalDate.now().plusDays(30),
+                placement(premiere)));
+
+        assertThat(lot.quantitePlacee()).isEqualTo(6);
+        assertThat(lot.quantiteRestante()).isZero();
+        assertThat(lot.statut()).isEqualTo(com.fromagerie_back.model.StatutLotAffinage.EN_AFFINAGE);
+        assertThat(lot.placementsActifs())
+                .extracting(com.fromagerie_back.dto.PlacementAffinageResponse::caveNom)
+                .containsExactlyInAnyOrder("Cave compatible A", "Cave compatible B");
+    }
+
+    @Test
+    void initialPlacementUsesEveryExplicitlySelectedCaveAndStartingRow() {
+        Cave premiere = cave("Cave choisie A", new int[][] { { 3 } });
+        Cave seconde = cave("Cave choisie B", new int[][] { { 4 } });
+        Fabrication fabrication = fabrication(6);
+
+        var lot = affinageService.create(new AffinageCreateRequest(
+                fabrication.getId(), LocalDate.now(), LocalDate.now().plusDays(30), null,
+                List.of(placement(premiere), placement(seconde))));
+
+        assertThat(lot.quantitePlacee()).isEqualTo(6);
+        assertThat(lot.quantiteRestante()).isZero();
+        assertThat(lot.placementsActifs())
+                .extracting(com.fromagerie_back.dto.PlacementAffinageResponse::caveNom)
+                .containsExactlyInAnyOrder("Cave choisie A", "Cave choisie B");
+    }
+
+    @Test
+    void initialPlacementRejectsInsufficientCapacityAcrossCompatibleCaves() {
+        Cave reference = cave("Cave de référence", new int[][] { { 3 } });
+        Cave incompatible = cave("Cave incompatible", new int[][] { { 10 } });
+        incompatible.setTemperature(BigDecimal.valueOf(10));
+        caveRepository.saveAndFlush(incompatible);
+        Fabrication fabrication = fabrication(5);
+
+        assertThatThrownBy(() -> affinageService.create(new AffinageCreateRequest(
+                fabrication.getId(), LocalDate.now(), LocalDate.now().plusDays(30),
+                placement(reference))))
+                .isInstanceOf(BusinessValidationException.class)
+                .hasMessage("Les places disponibles totales de toutes les caves compatibles ne peuvent pas accueillir ce lot de fabrication");
+
+        assertThat(lotRepository.existsByFabricationId(fabrication.getId())).isFalse();
+        assertThat(placementRepository.count()).isZero();
+    }
+
+    @Test
+    void remainingPlacementRejectsACaveWithDifferentConditions() {
+        Cave reference = cave("Cave de référence", new int[][] { { 3 } });
+        Cave incompatible = cave("Cave incompatible", new int[][] { { 3 } });
+        incompatible.setHumidite(BigDecimal.valueOf(85));
+        caveRepository.saveAndFlush(incompatible);
+        var lot = createLot(fabrication(5), LocalDate.now().plusDays(30));
+        affinageService.placer(lot.id(), placement(reference));
+
+        assertThatThrownBy(() -> affinageService.placer(lot.id(), placement(incompatible)))
+                .isInstanceOf(BusinessValidationException.class)
+                .hasMessage("Les caves utilisées pour un même lot doivent avoir les mêmes conditions de température, d'humidité et d'âge");
+    }
+
+    @Test
     void movementClosesOldPlacementsAndFailureKeepsCurrentPlacementActive() {
         Cave source = cave("Source", new int[][] { { 5 } });
         Cave destination = cave("Destination", new int[][] { { 5 } });
@@ -232,7 +301,36 @@ class AffinageIntegrationTests {
     }
 
     @Test
-    void rejectsCareBeforeAffinageAndAfterToday() {
+    void dashboardUsesCategorySpecificMessagesAndARealCaveMoveCriterion() {
+        recette.setFrequenceRetournementJours(2);
+        recette = recetteRepository.saveAndFlush(recette);
+        Cave cave = cave("Cave de démarrage", new int[][] { { 10 } });
+        var lot = affinageService.create(new AffinageCreateRequest(
+                fabrication(5).getId(), LocalDate.now(), LocalDate.now().plusDays(5), null));
+        affinageService.placer(lot.id(), placement(cave));
+        var lotHistorique = lotRepository.findById(lot.id()).orElseThrow();
+        lotHistorique.setDateMiseEnCave(LocalDate.now().minusDays(5));
+        lotRepository.saveAndFlush(lotHistorique);
+        cave.setAgeMaxJours(3);
+        cave = caveRepository.saveAndFlush(cave);
+        SoinAffinage soinHistorique = new SoinAffinage();
+        soinHistorique.setLotAffinage(lotRepository.findById(lot.id()).orElseThrow());
+        soinHistorique.setType(TypeSoinAffinage.RETOURNEMENT);
+        soinHistorique.setDateHeure(LocalDate.now().minusDays(5).atTime(12, 0));
+        soinHistorique.setUtilisateur(employe);
+        soinRepository.saveAndFlush(soinHistorique);
+        var dashboard = affinageService.dashboard();
+
+        assertThat(dashboard.retounementsAEffectuer()).singleElement()
+                .extracting(item -> item.message()).isEqualTo("Retournement à effectuer aujourd'hui");
+        assertThat(dashboard.sortiesProches()).singleElement()
+                .extracting(item -> item.message()).isEqualTo("Sortie prévue dans 5 jours");
+        assertThat(dashboard.changementsCaveRecommandes()).singleElement()
+                .extracting(item -> item.message()).isEqualTo("La durée maximale recommandée dans la cave actuelle est atteinte");
+    }
+
+    @Test
+    void rejectsCareWhoseDateIsNotToday() {
         var lot = createLot(fabrication(6), LocalDate.now().plusDays(10));
         var authentication = new UsernamePasswordAuthenticationToken("employee", "ignored");
 
@@ -240,13 +338,13 @@ class AffinageIntegrationTests {
                 TypeSoinAffinage.LAVAGE, LocalDate.now().minusDays(1).atTime(12, 0),
                 null, null), authentication))
                 .isInstanceOf(BusinessValidationException.class)
-                .hasMessage("La date du soin ne peut pas être antérieure à la mise en affinage");
+                .hasMessage("La date du soin doit correspondre à la date du jour");
 
         assertThatThrownBy(() -> affinageService.addSoin(lot.id(), new SoinAffinageRequest(
                 TypeSoinAffinage.LAVAGE, LocalDate.now().plusDays(1).atTime(12, 0),
                 null, null), authentication))
                 .isInstanceOf(BusinessValidationException.class)
-                .hasMessage("La date du soin ne peut pas être dans le futur");
+                .hasMessage("La date du soin doit correspondre à la date du jour");
 
         assertThat(soinRepository.count()).isZero();
     }

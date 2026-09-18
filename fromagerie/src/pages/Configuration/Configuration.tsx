@@ -7,8 +7,8 @@ export default function Configuration() {
   const [active, setActive] = useState<"users" | "site" | "nav" | "reports" | "costs">("users");
 
   return (
-    <div className="w-full pb-32">
-        <section className="min-h-[calc(100vh-8rem)] w-full bg-background py-8 text-foreground md:py-12">
+    <div className="min-h-[calc(100vh-7.5rem)] w-full">
+        <section className="min-h-[calc(100vh-7.5rem)] w-full bg-background pb-8 text-foreground">
             <div className="w-full">
                 <header className="mb-10 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                 <div>

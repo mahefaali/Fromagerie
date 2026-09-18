@@ -99,15 +99,39 @@ public class AffinageService {
         List<AffinageAlertItemResponse> items = lots.stream()
                 .map(lot -> toDashboardItem(lot, actifsParLot.getOrDefault(lot.getId(), List.of())))
                 .toList();
+        Map<Long, AffinageAlertItemResponse> itemsParLot = items.stream()
+                .collect(Collectors.toMap(AffinageAlertItemResponse::lotId, item -> item));
         return new AffinageDashboardResponse(
-                items.stream().filter(this::needsTurningToday).toList(),
-                items.stream().filter(this::isTurningLate).toList(),
-                items.stream().filter(this::isReleaseSoon).toList(),
-                items.stream().filter(this::isReadyToRelease).toList(),
-                items.stream().filter(this::needsCaveMove).toList(),
+                items.stream().filter(this::needsTurningToday)
+                        .map(item -> withMessage(item, "Retournement à effectuer aujourd'hui"))
+                        .toList(),
+                items.stream().filter(this::isTurningLate)
+                        .map(item -> withMessage(item, "Retournement en retard"))
+                        .toList(),
+                items.stream().filter(this::isReleaseSoon)
+                        .map(item -> withMessage(item, releaseSoonMessage(item.joursRestants())))
+                        .toList(),
+                items.stream().filter(this::isReadyToRelease)
+                        .map(item -> withMessage(item, "Sortie d'affinage à traiter"))
+                        .toList(),
+                lots.stream()
+                        .filter(lot -> needsCaveMove(lot, actifsParLot.getOrDefault(lot.getId(), List.of())))
+                        .map(lot -> withMessage(itemsParLot.get(lot.getId()), "La durée maximale recommandée dans la cave actuelle est atteinte"))
+                        .toList(),
                 (int) lots.stream().filter(lot -> lot.getStatut() != StatutLotAffinage.TERMINE).count(),
                 (int) items.stream().filter(this::isReadyToRelease).count(),
                 totalFreePlaces());
+    }
+
+    private AffinageAlertItemResponse withMessage(AffinageAlertItemResponse item, String message) {
+        return new AffinageAlertItemResponse(
+                item.lotId(), item.fabricationId(), item.numeroLot(), item.fromageNom(), item.recetteNom(),
+                item.dateSortiePrevue(), item.joursRestants(), item.statut(), item.frequenceRetournementJours(),
+                item.caveNom(), message, item.route());
+    }
+
+    private String releaseSoonMessage(long daysRemaining) {
+        return "Sortie prévue dans " + daysRemaining + (daysRemaining > 1 ? " jours" : " jour");
     }
 
     @Transactional(readOnly = true)
@@ -171,9 +195,12 @@ public class AffinageService {
             throw new BusinessConflictException("Cette fabrication possède déjà un lot d'affinage");
         }
 
-        AffinagePlacementRequest initial = request.emplacementInitial();
-        if (initial != null) {
-            placementService.placerReste(
+        List<AffinagePlacementRequest> initiaux = request.emplacementsInitiaux();
+        if (initiaux != null && !initiaux.isEmpty()) {
+            placementService.placerLotComplet(lot.getId(), initiaux);
+        } else if (request.emplacementInitial() != null) {
+            AffinagePlacementRequest initial = request.emplacementInitial();
+            placementService.placerLotComplet(
                     lot.getId(), initial.caveId(), initial.rangeeDepartId());
         }
         return toDetailResponse(findDetail(lot.getId()));
@@ -209,12 +236,13 @@ public class AffinageService {
                 .orElseThrow(() -> new ResourceNotFoundException("Utilisateur authentifié introuvable"));
         LocalDateTime dateHeure = request.dateHeure() == null ? LocalDateTime.now() : request.dateHeure();
         LocalDate dateSoin = dateHeure.toLocalDate();
+        if (!dateSoin.equals(LocalDate.now())) {
+            throw new BusinessValidationException(
+                    "La date du soin doit correspondre à la date du jour");
+        }
         if (dateSoin.isBefore(lot.getDateMiseEnCave())) {
             throw new BusinessValidationException(
                     "La date du soin ne peut pas être antérieure à la mise en affinage");
-        }
-        if (dateSoin.isAfter(LocalDate.now())) {
-            throw new BusinessValidationException("La date du soin ne peut pas être dans le futur");
         }
 
         SoinAffinage soin = new SoinAffinage();
@@ -340,10 +368,15 @@ public class AffinageService {
         return item.statut() != StatutLotAffinage.TERMINE && item.joursRestants() <= 0;
     }
 
-    private boolean needsCaveMove(AffinageAlertItemResponse item) {
-        return item.statut() != StatutLotAffinage.TERMINE
-                && item.joursRestants() <= 7
-                && item.frequenceRetournementJours() != null;
+    private boolean needsCaveMove(LotAffinage lot, List<PlacementAffinage> activePlacements) {
+        if (lot.getStatut() == StatutLotAffinage.TERMINE || joursRestants(lot) <= 0) {
+            return false;
+        }
+        long maturationDays = ChronoUnit.DAYS.between(lot.getDateMiseEnCave(), LocalDate.now());
+        return activePlacements.stream()
+                .filter(PlacementAffinage::isActif)
+                .map(placement -> placement.getRangee().getEtagere().getCave())
+                .anyMatch(cave -> cave.getAgeMaxJours() != null && maturationDays >= cave.getAgeMaxJours());
     }
 
     private int totalFreePlaces() {

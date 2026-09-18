@@ -57,6 +57,17 @@ export function useFabrications() {
     return created;
   };
 
+  const updateFabrication = async (id: number, request: CreateFabricationRequest): Promise<FabricationDetail> => {
+    const updated = await fabricationApi.update(id, request);
+    await loadFabrications();
+    return updated;
+  };
+
+  const deleteFabrication = async (id: number): Promise<void> => {
+    await fabricationApi.delete(id);
+    await loadFabrications();
+  };
+
   return {
     fabrications,
     recettes,
@@ -67,5 +78,7 @@ export function useFabrications() {
     loadFabrications,
     loadRecettes,
     createFabrication,
+    updateFabrication,
+    deleteFabrication,
   };
 }

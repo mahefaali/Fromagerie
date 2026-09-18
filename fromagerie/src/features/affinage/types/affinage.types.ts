@@ -112,7 +112,8 @@ export interface CreateAffinageRequest {
   fabricationId: number;
   dateMiseEnCave: string;
   dateSortiePrevue: string;
-  emplacementInitial: PlacementRequest;
+  emplacementInitial?: PlacementRequest;
+  emplacementsInitiaux?: PlacementRequest[];
 }
 
 export interface DeplacementRequest {

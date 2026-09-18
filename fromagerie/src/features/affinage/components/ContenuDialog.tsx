@@ -10,7 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "./../../../components/ui/dialog";
-import { type Emplacement } from "../../../services/production-store";
+import { type Emplacement } from "../domain/cave";
 
 interface ContenuDialogProps {
   emplacement: Emplacement | null;

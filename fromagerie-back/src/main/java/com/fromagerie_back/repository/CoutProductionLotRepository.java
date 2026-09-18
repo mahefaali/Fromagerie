@@ -44,6 +44,8 @@ public interface CoutProductionLotRepository extends JpaRepository<CoutProductio
 
     Optional<CoutProductionLot> findByFabricationId(Long fabricationId);
 
+    void deleteByFabricationId(Long fabricationId);
+
     @EntityGraph(attributePaths = { "fabrication", "fabrication.recette", "fabrication.recette.fromage" })
     List<CoutProductionLot> findAllByOrderByDateCalculDesc();
 

@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { Badge } from "./../../../components/ui/badge";
 import { Button } from "./../../../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./../../../components/ui/card";
-import { type Cave, type Emplacement } from "../../../services/production-store";
+import { type Cave, type Emplacement } from "../domain/cave";
 import type { CaveOccupation } from "../types/cave.types";
 
 interface CaveGridPlanProps {

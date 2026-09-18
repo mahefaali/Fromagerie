@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
-import type { Cave } from "../../../services/production-store";
+import type { Cave } from "../domain/cave";
 import { CaveGridPlan } from "./CaveGridPlan";
 
 const cave: Cave = {

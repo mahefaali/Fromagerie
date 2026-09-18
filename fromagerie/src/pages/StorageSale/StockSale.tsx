@@ -1,4 +1,4 @@
-import React, { lazy, Suspense, useState } from 'react';
+import React, { lazy, Suspense } from 'react';
 import { Archive, ClipboardList, TriangleAlert } from 'lucide-react';
 import { StockHeader } from '../../features/stocks/components/StockHeader';
 import { StockAlertBanner } from '../../features/stocks/components/StockAlertBanner';
@@ -7,8 +7,11 @@ import { StockFilters } from '../../features/stocks/components/StockFilters';
 import { StockList } from '../../features/stocks/components/StockList';
 import { useStock } from '../../features/stocks/useStock';
 import { GROUP_BY_OPTIONS } from '../../features/stocks/stock.constants';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
+import { Tabs, TabsContent } from '../../components/ui/tabs';
 import { LazyContentFallback } from '../../components/common/LazyContentFallback';
+import { PageTabsPortal } from '../../layouts/components/PageTabsPortal';
+import { usePersistentTab } from '../../hooks/usePersistentTab';
+import { FloatingSubnavigation } from '../../components/ui/FloatingSubnavigation';
 
 const OrdersView = lazy(() =>
   import('../../features/stocks/components/OrdersView').then((module) => ({ default: module.OrdersView })),
@@ -84,7 +87,7 @@ const StockView: React.FC = () => {
 };
 
 export const StockSale: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<ActiveTab>('stock');
+  const [activeTab, setActiveTab] = usePersistentTab<ActiveTab>('subnavigation:stock-sales', 'stock');
 
   return (
     <div className="min-h-screen bg-background p-6 lg:p-8 font-sans text-[#2c2825]">
@@ -94,20 +97,18 @@ export const StockSale: React.FC = () => {
           onValueChange={(value) => setActiveTab(value as ActiveTab)}
           className="w-full gap-6"
         >
-          <TabsList className="max-w-2xl grid grid-cols-3">
-            <TabsTrigger value="stock">
-              <Archive className="size-4" />
-              Stock
-            </TabsTrigger>
-            <TabsTrigger value="orders">
-              <ClipboardList className="size-4" />
-              Commande
-            </TabsTrigger>
-            <TabsTrigger value="unsold_loss">
-              <TriangleAlert className="size-4" />
-              Invendu &amp; Perte
-            </TabsTrigger>
-          </TabsList>
+          <PageTabsPortal>
+            <FloatingSubnavigation
+              value={activeTab}
+              items={[
+                { value: 'stock', label: 'Stock', icon: Archive },
+                { value: 'orders', label: 'Commande', icon: ClipboardList },
+                { value: 'unsold_loss', label: 'Invendu & Perte', icon: TriangleAlert },
+              ]}
+              onValueChange={setActiveTab}
+              ariaLabel="Navigation du stock et des ventes"
+            />
+          </PageTabsPortal>
 
           <TabsContent value="stock" className="m-0">
             <StockView />

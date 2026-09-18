@@ -86,7 +86,7 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(List.of(
                 "http://localhost:5173",
-                "http://192.168.88.60:5173"));
+                "http://192.168.194.112:5173"));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("Content-Type", "Accept", "X-CSRF-TOKEN"));
         configuration.setAllowCredentials(true);
@@ -140,6 +140,10 @@ public class SecurityConfig {
                         .hasAnyRole("PROPRIETAIRE", "FABRICATION")
                         .requestMatchers("/api/fabrications/**", "/api/affinage/**", "/api/affinages/**")
                         .hasAnyRole("PROPRIETAIRE", "FABRICATION")
+                        .requestMatchers(HttpMethod.GET, "/api/tracabilite/**", "/api/lots-lait/**")
+                        .hasAnyRole("PROPRIETAIRE", "FABRICATION", "VENTE")
+                        .requestMatchers("/api/lots-lait/**", "/api/analyses-lait/**")
+                        .hasRole("PROPRIETAIRE")
                         .requestMatchers(HttpMethod.GET, "/api/emplacements-stock/**")
                         .hasAnyRole("PROPRIETAIRE", "FABRICATION", "VENTE")
                         .requestMatchers(HttpMethod.GET, "/api/stock-fromages-finis/**")

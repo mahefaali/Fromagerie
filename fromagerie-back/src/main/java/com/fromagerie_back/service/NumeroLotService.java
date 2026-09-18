@@ -27,9 +27,17 @@ public class NumeroLotService {
 
         long sequence = nombreFabrications + 1;
 
-        return String.format(
+        String numeroLot = String.format(
                 "%s-%03d",
                 date.format(DateTimeFormatter.BASIC_ISO_DATE),
                 sequence);
+        while (fabricationRepository.existsByNumeroLot(numeroLot)) {
+            sequence++;
+            numeroLot = String.format(
+                    "%s-%03d",
+                    date.format(DateTimeFormatter.BASIC_ISO_DATE),
+                    sequence);
+        }
+        return numeroLot;
     }
 }

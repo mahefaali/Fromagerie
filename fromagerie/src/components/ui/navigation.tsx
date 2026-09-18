@@ -1,39 +1,55 @@
+import { useEffect, useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "../../features/authentication/hooks/useAuth";
-import UserMenu from "../../layouts/components/UserMenu";
-import { navItems } from "./navigationItems";
+import { mainNavItems } from "./navigationItems";
 
-export default function BottomNavigation() {
+interface BottomNavigationProps {
+  onNavigate?: () => void;
+}
+
+export default function BottomNavigation({ onNavigate }: BottomNavigationProps) {
   const location = useLocation();
+  const [, refreshDestinations] = useState(0);
   const { user } = useAuth();
   const authorizedNavItems = user
-    ? navItems.filter((item) => item.roles.includes(user.role))
+    ? mainNavItems.filter((item) => item.roles.some((role) => role === user.role))
     : [];
+
+  useEffect(() => {
+    const activeGroup = mainNavItems.find((item) =>
+      item.paths.some((path) => location.pathname === path || location.pathname.startsWith(`${path}/`)),
+    );
+    if (!activeGroup) return;
+    window.sessionStorage.setItem(`main-navigation:${activeGroup.label}`, location.pathname);
+    refreshDestinations((value) => value + 1);
+  }, [location.pathname]);
 
   return (
     <nav
-      className="fixed bottom-3 md:bottom-5 left-1/2 -translate-x-1/2 z-[9999] w-[calc(100%-1rem)] sm:w-[calc(100%-2rem)] max-w-5xl transform-gpu pb-[env(safe-area-inset-bottom)]"
+      className="fixed inset-x-0 bottom-3 z-[9999] flex justify-center px-2 pb-[env(safe-area-inset-bottom)] sm:bottom-5"
       aria-label="Navigation principale"
     >
-      <div className="mx-auto flex w-full items-center gap-1 rounded-full border border-[#D8C3A5]/80 bg-[#FFFDF9]/95 p-1.5 shadow-[0_18px_45px_rgba(63,74,79,0.18)] backdrop-blur-md sm:w-fit sm:gap-2 md:p-2">
-        <div className="flex min-w-0 flex-1 items-center gap-1 overflow-x-auto no-scrollbar sm:flex-none sm:gap-2">
-          {authorizedNavItems.map(({ to, label, icon: Icon }) => {
-            const isActive =
-              location.pathname === to ||
-              (to === "/home" && location.pathname === "/");
+      <div className="flex w-full max-w-[46rem] items-center justify-evenly gap-1 rounded-[1.75rem] border border-white/10 bg-[#262318] p-1.5 shadow-[0_18px_45px_rgba(35,31,24,0.3)] backdrop-blur-md sm:p-2">
+          {authorizedNavItems.map(({ to, paths, label, icon: Icon }) => {
+            const isActive = paths.some((path) => location.pathname === path || location.pathname.startsWith(`${path}/`));
+            const rememberedPath = window.sessionStorage.getItem(`main-navigation:${label}`);
+            const destination = rememberedPath && paths.some((path) => rememberedPath === path || rememberedPath.startsWith(`${path}/`))
+              ? rememberedPath
+              : to;
 
             return (
               <NavLink
-                key={to}
-                to={to}
+                key={label}
+                to={destination}
                 title={label}
+                onClick={onNavigate}
                 className={({ isActive: linkActive }) => {
                   const active = isActive || linkActive;
                   return [
-                    "flex items-center gap-1.5 md:gap-2 rounded-full px-2.5 sm:px-3 md:px-4 py-2 text-[10px] md:text-[11px] font-mono uppercase transition-all duration-300 shrink-0",
+                    "flex min-h-12 min-w-0 flex-1 items-center justify-center gap-2 rounded-[1.35rem] px-2 py-2 text-xs font-semibold transition-all duration-200 sm:px-5 sm:text-sm",
                     active
-                      ? "bg-[#C96A4A] text-[#F7F3EC] shadow-sm"
-                      : "text-[#3F4A4F] hover:bg-[#F7F3EC] hover:text-[#C96A4A]",
+                      ? "bg-[#444136] text-[#FFFDF9] shadow-sm"
+                      : "text-[#E8E0D3] hover:bg-white/10 hover:text-white",
                   ].join(" ");
                 }}
               >
@@ -41,17 +57,8 @@ export default function BottomNavigation() {
                   const active = isActive || linkActive;
                   return (
                     <>
-                      <span
-                        className={[
-                          "flex h-7 w-7 md:h-8 md:w-8 items-center justify-center rounded-full border shrink-0",
-                          active
-                            ? "border-[#F7F3EC]/40 bg-[#F7F3EC]/10 text-[#F7F3EC]"
-                            : "border-transparent bg-[#F7F3EC] text-[#C96A4A]",
-                        ].join(" ")}
-                      >
-                        <Icon className="h-3.5 w-3.5 md:h-4 md:w-4" />
-                      </span>
-                      <span className="tracking-wider whitespace-nowrap text-[10px] md:text-[11px]">
+                      <Icon className={`size-4 shrink-0 ${active ? "text-[#D84E1F]" : "text-[#E8E0D3]"}`} />
+                      <span className="hidden whitespace-nowrap sm:inline">
                         {label}
                       </span>
                     </>
@@ -60,11 +67,6 @@ export default function BottomNavigation() {
               </NavLink>
             );
           })}
-        </div>
-
-        <div className="shrink-0 border-l border-[#D8C3A5]/70 pl-1.5 sm:pl-2">
-          <UserMenu menuPlacement="top" />
-        </div>
       </div>
     </nav>
   );

@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { X, MapPin } from 'lucide-react';
+import { X, MapPin, Download } from 'lucide-react';
 import { type Order } from './../types/orders';
 
 interface PreparationSlipModalProps {
@@ -8,6 +8,7 @@ interface PreparationSlipModalProps {
   order: Order | null;
   onClose: () => void;
   onMarkAsPrepared?: (orderId: string) => void;
+  onDownloadPdf?: (order: Order) => void;
 }
 
 export const PreparationSlipModal: React.FC<PreparationSlipModalProps> = ({
@@ -15,6 +16,7 @@ export const PreparationSlipModal: React.FC<PreparationSlipModalProps> = ({
   order,
   onClose,
   onMarkAsPrepared,
+  onDownloadPdf,
 }) => {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -68,8 +70,8 @@ export const PreparationSlipModal: React.FC<PreparationSlipModalProps> = ({
           <div className="space-y-3">
             {order.items?.map((item) => {
               const itemName = item.name || item.productName || 'Article';
-              const location = item.location || 'Chambre froide de vente';
-              const batchCode = item.batchCode || 'LOT-CAM-2026-110';
+              const location = item.location || 'Emplacement non attribué';
+              const batchCode = item.batchCode || 'Lot non attribué';
 
               return (
                 <div
@@ -93,6 +95,9 @@ export const PreparationSlipModal: React.FC<PreparationSlipModalProps> = ({
 
         {/* Footer Actions */}
         <div className="p-5 bg-[#f5f2eb]/40 border-t border-[#e2dacb]/60 flex items-center justify-end gap-3">
+          <button type="button" onClick={() => onDownloadPdf?.(order)} className="flex items-center gap-2 rounded-xl border border-[#2d4a27] bg-white px-5 py-2.5 text-xs font-bold text-[#2d4a27] hover:bg-[#edf3eb]">
+            <Download className="size-4" /> Télécharger le PDF
+          </button>
           {isAlreadyPrepared ? (
             /* Affichage pour une commande déjà préparée */
             <button
@@ -117,7 +122,7 @@ export const PreparationSlipModal: React.FC<PreparationSlipModalProps> = ({
                 onClick={handleConfirmPrepared}
                 className="px-5 py-2.5 rounded-xl bg-[#2d4a27] hover:bg-[#233a1e] text-white text-xs font-bold shadow-xs transition-all cursor-pointer"
               >
-                Marquer préparée (décrémenter le stock)
+                Marquer préparée
               </button>
             </>
           )}

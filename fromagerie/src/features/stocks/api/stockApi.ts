@@ -1,9 +1,9 @@
-import { apiRequest, HttpError, refreshCsrfToken } from "../../../services/http/apiClient";
+import { apiBlobRequest, apiRequest, HttpError, refreshCsrfToken } from "../../../services/http/apiClient";
 
 export interface ClientOption { id: number; nom: string; typeClient: string; telephone: string | null; adresse: string | null; actif: boolean; }
 export interface ReservationApi { id: number; ligneCommandeId: number; stockId: number; lot: string; fromage: string; emplacement: string; quantiteReservee: number; quantiteDisponible: number; }
 export interface LivraisonLigneApi { reservationId: number; quantitePrevue: number; quantiteLivree: number; ecart: number; }
-export interface LivraisonApi { dateLivraison: string; observations: string | null; lignes: LivraisonLigneApi[]; }
+export interface LivraisonApi { id: number; numeroLivraison: string; dateLivraison: string; observations: string | null; utilisateurNom: string; lignes: LivraisonLigneApi[]; }
 export interface FactureApi { id: number; numeroFacture: string; commandeId: number; dateFacture: string; total: number; modePaiement: string; }
 export interface CommandeApi { id: number; numeroCommande: string; client: ClientOption; dateCommande: string; dateLivraisonSouhaitee: string; statut: string; observations: string | null; lignes: { id: number; fromageId: number; fromageNom: string; quantiteCommandee: number; prixUnitaire: number; reservations: ReservationApi[] }[]; livraison: LivraisonApi | null; facture: FactureApi | null; }
 
@@ -131,5 +131,8 @@ export const orderApi = {
   confirm: (id: number): Promise<CommandeApi> => apiRequest<CommandeApi>(`/api/commandes/${id}/confirmation`, { method: 'POST' }),
   deliver: (id: number, json: unknown): Promise<CommandeApi> => apiRequest<CommandeApi>(`/api/commandes/${id}/livraison`, { method: 'POST', json }),
   invoice: (id: number, json: unknown): Promise<FactureApi> => apiRequest<FactureApi>(`/api/commandes/${id}/facture`, { method: 'POST', json }),
+  preparationPdf: (id: number): Promise<Blob> => apiBlobRequest(`/api/commandes/${id}/bon-preparation.pdf`),
+  deliveryPdf: (id: number): Promise<Blob> => apiBlobRequest(`/api/commandes/${id}/bon-livraison.pdf`),
+  invoicePdf: (id: number): Promise<Blob> => apiBlobRequest(`/api/factures/${id}/document.pdf`),
   cancel: (id: number) => apiRequest(`/api/commandes/${id}/annulation`, { method: 'POST' }),
 };

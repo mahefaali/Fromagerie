@@ -1,6 +1,8 @@
 package com.fromagerie_back.service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -13,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.fromagerie_back.dto.DeplacementAffinageRequest;
+import com.fromagerie_back.dto.AffinagePlacementRequest;
 import com.fromagerie_back.dto.PlacementAffinageResponse;
 import com.fromagerie_back.dto.PlacementResultResponse;
 import com.fromagerie_back.exception.BusinessValidationException;
@@ -54,6 +57,8 @@ public class PlacementAffinageService {
             Long rangeeDepartId) {
         LotAffinage lot = findLotForUpdate(lotId);
         Cave cave = lockCave(caveId);
+        validerCaveAdaptee(lot, cave);
+        validerCoherenceAvecPlacements(lotId, cave);
         int quantiteDejaPlacee = Math.toIntExact(placementRepository.sumActiveQuantityByLotId(lotId));
         int quantiteDemandee = lot.getQuantiteInitiale() - quantiteDejaPlacee;
         if (quantiteDemandee <= 0) {
@@ -71,6 +76,99 @@ public class PlacementAffinageService {
                 quantitePlacee,
                 quantiteDemandee - quantitePlacee,
                 quantitePlacee == quantiteDemandee,
+                placements.stream().map(this::toResponse).toList());
+    }
+
+    @Transactional
+    public PlacementResultResponse placerLotComplet(
+            Long lotId,
+            Long caveReferenceId,
+            Long rangeeDepartId) {
+        LotAffinage lot = findLotForUpdate(lotId);
+        Cave reference = caveRepository.findById(caveReferenceId)
+                .orElseThrow(() -> new ResourceNotFoundException("Cave introuvable : " + caveReferenceId));
+        List<AffinagePlacementRequest> selections = new ArrayList<>();
+        selections.add(new AffinagePlacementRequest(caveReferenceId, rangeeDepartId));
+        caveRepository.findAll().stream()
+                .filter(cave -> !cave.getId().equals(caveReferenceId))
+                .filter(Cave::isActive)
+                .filter(cave -> caveAccepteAgeDuLot(lot, cave))
+                .filter(cave -> memesConditions(reference, cave))
+                .sorted(Comparator.comparing(Cave::getNom).thenComparing(Cave::getId))
+                .forEach(cave -> selections.add(new AffinagePlacementRequest(
+                        cave.getId(), premiereRangee(cave).getId())));
+        return placerLotComplet(lotId, selections);
+    }
+
+    @Transactional
+    public PlacementResultResponse placerLotComplet(
+            Long lotId,
+            List<AffinagePlacementRequest> emplacements) {
+        LotAffinage lot = findLotForUpdate(lotId);
+        if (placementRepository.sumActiveQuantityByLotId(lotId) > 0) {
+            throw new BusinessValidationException("Le placement initial du lot a déjà commencé");
+        }
+
+        if (emplacements == null || emplacements.isEmpty()) {
+            throw new BusinessValidationException("Sélectionnez au moins une cave pour ce lot");
+        }
+        Set<Long> caveIds = emplacements.stream()
+                .map(AffinagePlacementRequest::caveId)
+                .collect(java.util.stream.Collectors.toSet());
+        if (caveIds.size() != emplacements.size()) {
+            throw new BusinessValidationException("Une cave ne peut être sélectionnée qu'une seule fois");
+        }
+        Map<Long, Cave> cavesVerrouillees = lockCaves(caveIds);
+        Cave caveReference = cavesVerrouillees.get(emplacements.get(0).caveId());
+        if (caveReference == null) {
+            throw new ResourceNotFoundException("Cave introuvable : " + emplacements.get(0).caveId());
+        }
+        validerCaveAdaptee(lot, caveReference);
+
+        List<Cave> cavesCompatibles = emplacements.stream().map(emplacement -> {
+            Cave cave = cavesVerrouillees.get(emplacement.caveId());
+            if (cave == null) throw new ResourceNotFoundException("Cave introuvable : " + emplacement.caveId());
+            validerCaveAdaptee(lot, cave);
+            if (!memesConditions(caveReference, cave)) {
+                throw new BusinessValidationException("Les caves sélectionnées doivent avoir les mêmes conditions d'affinage");
+            }
+            return cave;
+        }).toList();
+
+        int capaciteDisponible = cavesCompatibles.stream()
+                .mapToInt(this::capaciteDisponible)
+                .sum();
+        int quantiteDemandee = lot.getQuantiteInitiale();
+        if (capaciteDisponible < quantiteDemandee) {
+            throw new BusinessValidationException(
+                    "Les places disponibles totales de toutes les caves compatibles ne peuvent pas accueillir ce lot de fabrication");
+        }
+
+        List<PlacementAffinage> placements = new ArrayList<>();
+        int restant = quantiteDemandee;
+        for (int index = 0; index < cavesCompatibles.size(); index++) {
+            if (restant == 0) break;
+            Cave cave = cavesCompatibles.get(index);
+            Long rangeeDepartId = emplacements.get(index).rangeeDepartId();
+            List<PlanSegment> plan = calculerPlan(cave, rangeeDepartId, restant, Set.of());
+            placements.addAll(sauvegarderPlan(lot, plan, LocalDateTime.now()));
+            restant -= plan.stream().mapToInt(PlanSegment::quantite).sum();
+            Long premiereRangeeId = premiereRangee(cave).getId();
+            if (restant > 0 && !premiereRangeeId.equals(rangeeDepartId)) {
+                List<PlanSegment> complement = calculerPlan(
+                        cave, premiereRangeeId, restant, Set.of());
+                placements.addAll(sauvegarderPlan(lot, complement, LocalDateTime.now()));
+                restant -= complement.stream().mapToInt(PlanSegment::quantite).sum();
+            }
+        }
+        if (restant > 0) {
+            throw new BusinessValidationException(
+                    "Les places disponibles totales de toutes les caves compatibles ne peuvent pas accueillir ce lot de fabrication");
+        }
+
+        mettreAJourStatut(lot, quantiteDemandee);
+        return new PlacementResultResponse(
+                quantiteDemandee, quantiteDemandee, 0, true,
                 placements.stream().map(this::toResponse).toList());
     }
 
@@ -94,6 +192,7 @@ public class PlacementAffinageService {
         }
 
         Cave destination = cavesVerrouillees.get(request.caveDestinationId());
+        validerCaveAdaptee(lot, destination);
         Set<Long> placementsExclus = anciensPlacements.stream()
                 .map(PlacementAffinage::getId)
                 .collect(java.util.stream.Collectors.toSet());
@@ -205,7 +304,58 @@ public class PlacementAffinageService {
             placement.setDateDebut(dateDebut);
             return placement;
         }).toList();
-        return placementRepository.saveAll(placements);
+        return placementRepository.saveAllAndFlush(placements);
+    }
+
+    private void validerCaveAdaptee(LotAffinage lot, Cave cave) {
+        if (!cave.isActive()) {
+            throw new BusinessValidationException("La cave sélectionnée est inactive");
+        }
+        if (!caveAccepteAgeDuLot(lot, cave)) {
+            throw new BusinessValidationException(
+                    "La cave sélectionnée n'est pas adaptée à l'âge actuel de ce lot");
+        }
+    }
+
+    private void validerCoherenceAvecPlacements(Long lotId, Cave destination) {
+        placementRepository.findActiveByLotIdWithLocation(lotId).stream()
+                .map(placement -> placement.getRangee().getEtagere().getCave())
+                .filter(cave -> !memesConditions(cave, destination))
+                .findAny()
+                .ifPresent(cave -> {
+                    throw new BusinessValidationException(
+                            "Les caves utilisées pour un même lot doivent avoir les mêmes conditions de température, d'humidité et d'âge");
+                });
+    }
+
+    private boolean caveAccepteAgeDuLot(LotAffinage lot, Cave cave) {
+        long ageJours = Math.max(1, ChronoUnit.DAYS.between(lot.getDateMiseEnCave(), LocalDate.now()) + 1);
+        return ageJours >= cave.getAgeMinJours() && ageJours <= cave.getAgeMaxJours();
+    }
+
+    private boolean memesConditions(Cave reference, Cave candidate) {
+        return reference.getTemperature().compareTo(candidate.getTemperature()) == 0
+                && reference.getHumidite().compareTo(candidate.getHumidite()) == 0
+                && reference.getAgeMinJours().equals(candidate.getAgeMinJours())
+                && reference.getAgeMaxJours().equals(candidate.getAgeMaxJours());
+    }
+
+    private int capaciteDisponible(Cave cave) {
+        int capaciteTotale = cave.getEtageres().stream()
+                .flatMap(etagere -> etagere.getRangees().stream())
+                .mapToInt(Rangee::getCapacite)
+                .sum();
+        return Math.max(0, capaciteTotale
+                - Math.toIntExact(placementRepository.sumActiveQuantityByCaveId(cave.getId())));
+    }
+
+    private Rangee premiereRangee(Cave cave) {
+        return cave.getEtageres().stream()
+                .sorted(Comparator.comparing(Etagere::getOrdre).thenComparing(Etagere::getNumero))
+                .flatMap(etagere -> etagere.getRangees().stream()
+                        .sorted(Comparator.comparing(Rangee::getOrdre).thenComparing(Rangee::getNumero)))
+                .findFirst()
+                .orElseThrow(() -> new BusinessValidationException("La cave sélectionnée ne contient aucune rangée"));
     }
 
     private LotAffinage findLotForUpdate(Long lotId) {

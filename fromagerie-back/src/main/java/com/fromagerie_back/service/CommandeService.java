@@ -75,6 +75,7 @@ public class CommandeService {
         }
 
         Livraison delivery=new Livraison();
+        delivery.setNumeroLivraison("BL-"+LocalDate.now().toString().replace("-","")+"-"+UUID.randomUUID().toString().substring(0,6).toUpperCase());
         delivery.setCommande(o);delivery.setDateLivraison(r.dateLivraison());delivery.setObservations(r.observations());
         Utilisateur deliveryUser=user(auth);delivery.setUtilisateur(deliveryUser);
         Map<StockFromageFini,Integer> physicalBefore=reserved.values().stream().map(ReservationStock::getStockFromageFini).distinct().collect(Collectors.toMap(stock->stock,this::physical));
@@ -107,11 +108,12 @@ public class CommandeService {
     private CommandeResponse response(Commande o){
         List<ReservationStock> all=reservations.findByLigneCommandeCommandeId(o.getId());
         List<LigneResponse> lines=o.getLignes().stream().map(l->new LigneResponse(l.getId(),l.getFromage().getId(),l.getFromage().getNom(),l.getQuantiteCommandee(),l.getPrixUnitaire(),all.stream().filter(r->r.getLigneCommande().getId().equals(l.getId())).map(r->new ReservationResponse(r.getId(),l.getId(),r.getStockFromageFini().getId(),r.getStockFromageFini().getLotAffinage().getFabrication().getNumeroLot(),l.getFromage().getNom(),r.getStockFromageFini().getEmplacementStock().getNom(),r.getQuantiteReservee(),physical(r.getStockFromageFini()))).toList())).toList();
-        LivraisonResponse delivery=livraisons.findByCommandeId(o.getId()).map(d->new LivraisonResponse(d.getDateLivraison(),d.getObservations(),d.getLignes().stream().map(line->{
+        LivraisonResponse delivery=livraisons.findByCommandeId(o.getId()).map(d->new LivraisonResponse(d.getId(),numeroLivraison(d),d.getDateLivraison(),d.getObservations(),d.getUtilisateur().getNom(),d.getLignes().stream().map(line->{
             ReservationStock reservation=all.stream().filter(item->item.getLigneCommande().getId().equals(line.getLigneCommande().getId())&&item.getStockFromageFini().getId().equals(line.getStockFromageFini().getId())).findFirst().orElseThrow();
             return new LivraisonLigneResponse(reservation.getId(),line.getQuantitePrevue(),line.getQuantiteLivree(),line.getQuantiteLivree()-line.getQuantitePrevue());
         }).toList())).orElse(null);
         FactureResponse invoice=factures.findByCommandeId(o.getId()).map(this::facture).orElse(null);
         return new CommandeResponse(o.getId(),o.getNumeroCommande(),client(o.getClient()),o.getDateCommande(),o.getDateLivraisonSouhaitee(),o.getStatut(),o.getObservations(),lines,delivery,invoice);
     }
+    private String numeroLivraison(Livraison livraison){return livraison.getNumeroLivraison()!=null?livraison.getNumeroLivraison():"BL-HIST-"+livraison.getId();}
 }

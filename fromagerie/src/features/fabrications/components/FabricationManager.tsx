@@ -1,14 +1,26 @@
-import { useMemo, useState } from "react";
-import { Factory, Milk, PackageCheck, Plus, RefreshCw } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { ChevronLeft, ChevronRight, Factory, Milk, PackageCheck, Plus, RefreshCw, Search } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "../../../components/ui/button";
+import { affinageApi } from "../../affinage/api/affinageApi";
+import { AffinagePlacementDialog } from "../../affinage/components/AffinagePlacementDialog";
+import type { CreateAffinageRequest, PlacementRequest } from "../../affinage/types/affinage.types";
+import type { CaveApiResponse } from "../../affinage/types/cave.types";
 import { FabricationCard } from "./FabricationCard";
 import FabricationCreateModal from "./FabricationCreateModal";
 import { FabricationDetailsModal } from "./FabricationDetailsModal";
 import { useFabrications } from "../hooks/useFabrications";
-import type { CreateFabricationRequest } from "../types/fabrication.types";
+import { fabricationApi } from "../api/fabricationApi";
+import type { CreateFabricationRequest, FabricationListItem } from "../types/fabrication.types";
 import { formatNumber } from "../utils/fabricationFormatters";
+import type { FabricationDetail } from "../types/fabrication.types";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "../../../components/ui/alert-dialog";
+
+const PAGE_SIZE = 6;
 
 export default function FabricationManager() {
   const {
@@ -21,9 +33,21 @@ export default function FabricationManager() {
     loadFabrications,
     loadRecettes,
     createFabrication,
+    updateFabrication,
+    deleteFabrication,
   } = useFabrications();
   const [createOpen, setCreateOpen] = useState(false);
   const [selectedFabricationId, setSelectedFabricationId] = useState<number | null>(null);
+  const [affinageFabrication, setAffinageFabrication] = useState<FabricationListItem | null>(null);
+  const [affinageFabricationIds, setAffinageFabricationIds] = useState<Set<number>>(new Set());
+  const [isAffinageCatalogLoaded, setIsAffinageCatalogLoaded] = useState(false);
+  const [caves, setCaves] = useState<CaveApiResponse[]>([]);
+  const [preparingAffinageId, setPreparingAffinageId] = useState<number | null>(null);
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [editingFabrication, setEditingFabrication] = useState<FabricationDetail | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<FabricationListItem | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const totals = useMemo(
     () => ({
@@ -33,13 +57,93 @@ export default function FabricationManager() {
     [fabrications],
   );
 
+  const filteredFabrications = useMemo(() => {
+    const query = search.trim().toLocaleLowerCase("fr");
+    if (!query) return fabrications;
+    return fabrications.filter((item) =>
+      [item.numeroLot, item.fromageNom, item.recetteNom, item.operateurNom]
+        .some((value) => value.toLocaleLowerCase("fr").includes(query)),
+    );
+  }, [fabrications, search]);
+  const pageCount = Math.max(1, Math.ceil(filteredFabrications.length / PAGE_SIZE));
+  const visibleFabrications = filteredFabrications.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  useEffect(() => { setPage(1); }, [search]);
+  useEffect(() => { setPage((current) => Math.min(current, pageCount)); }, [pageCount]);
+
+  useEffect(() => {
+    let active = true;
+    affinageApi.findAll()
+      .then((lots) => {
+        if (active) {
+          setAffinageFabricationIds(new Set(lots.map((lot) => lot.fabricationId)));
+          setIsAffinageCatalogLoaded(true);
+        }
+      })
+      .catch(() => {
+        if (active) toast.error("Impossible de vérifier les fabrications déjà en affinage.");
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
   const handleCreate = async (request: CreateFabricationRequest): Promise<void> => {
     const created = await createFabrication(request);
     toast.success(`Fabrication ${created.numeroLot} enregistrée avec succès.`);
   };
 
+  const openEdit = async (fabrication: FabricationListItem) => {
+    try {
+      setEditingFabrication(await fabricationApi.findById(fabrication.id));
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Chargement de la fabrication impossible.");
+    }
+  };
+
+  const handleUpdate = async (request: CreateFabricationRequest) => {
+    if (!editingFabrication) return;
+    const updated = await updateFabrication(editingFabrication.id, request);
+    toast.success(`Fabrication ${updated.numeroLot} modifiée.`);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    setIsDeleting(true);
+    try {
+      await deleteFabrication(deleteTarget.id);
+      toast.success(`Fabrication ${deleteTarget.numeroLot} supprimée.`);
+      setDeleteTarget(null);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Suppression impossible.");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const prepareAffinage = async (fabrication: FabricationListItem) => {
+    setPreparingAffinageId(fabrication.id);
+    try {
+      setCaves(await affinageApi.findCaves());
+      setAffinageFabrication(fabrication);
+    } catch (requestError) {
+      toast.error(requestError instanceof Error
+        ? requestError.message
+        : "Impossible de charger les caves disponibles.");
+    } finally {
+      setPreparingAffinageId(null);
+    }
+  };
+
+  const createAffinage = async (request: CreateAffinageRequest | PlacementRequest) => {
+    if (affinageFabrication === null) return;
+    await affinageApi.create(request as CreateAffinageRequest);
+    setAffinageFabricationIds((ids) => new Set(ids).add(affinageFabrication.id));
+    toast.success("La fabrication a été mise en affinage.");
+  };
+
   return (
-    <div className="mx-auto w-full max-w-6xl space-y-6 px-3 py-4 sm:px-6 sm:py-6">
+    <div className="min-h-[calc(100vh-7.5rem)] w-full space-y-6 py-4 sm:py-6">
       <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="space-y-1">
           <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-primary">
@@ -81,6 +185,18 @@ export default function FabricationManager() {
         />
       </section>
 
+      <div className="relative max-w-xl">
+        <Search className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-muted-foreground" />
+        <input
+          type="search"
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+          placeholder="Rechercher un lot, un fromage, une recette..."
+          aria-label="Rechercher une fabrication"
+          className="h-12 w-full rounded-2xl border border-border bg-card pl-12 pr-4 text-sm shadow-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+        />
+      </div>
+
       {isLoading ? (
         <div
           role="status"
@@ -108,17 +224,31 @@ export default function FabricationManager() {
             <Plus className="size-5" /> Créer la première fabrication
           </Button>
         </div>
-      ) : (
+      ) : filteredFabrications.length === 0 ? (
+        <div className="rounded-3xl border border-dashed border-border p-10 text-center text-sm text-muted-foreground">
+          Aucune fabrication ne correspond à « {search} ».
+        </div>
+      ) : (<>
         <ul className="grid gap-4 lg:grid-cols-2" aria-label="Liste des fabrications">
-          {fabrications.map((fabrication) => (
+          {visibleFabrications.map((fabrication) => (
             <FabricationCard
               key={fabrication.id}
               fabrication={fabrication}
               onSelect={setSelectedFabricationId}
+              canStartAffinage={isAffinageCatalogLoaded && !affinageFabricationIds.has(fabrication.id)}
+              isPreparingAffinage={preparingAffinageId === fabrication.id}
+              onStartAffinage={(item) => void prepareAffinage(item)}
+              onEdit={(item) => void openEdit(item)}
+              onDelete={setDeleteTarget}
             />
           ))}
         </ul>
-      )}
+        {pageCount > 1 && <nav aria-label="Pagination des fabrications" className="flex items-center justify-center gap-3">
+          <Button type="button" variant="outline" size="icon" aria-label="Page précédente" disabled={page === 1} onClick={() => setPage((value) => value - 1)}><ChevronLeft className="size-4" /></Button>
+          <span className="text-sm font-medium">Page {page} sur {pageCount}</span>
+          <Button type="button" variant="outline" size="icon" aria-label="Page suivante" disabled={page === pageCount} onClick={() => setPage((value) => value + 1)}><ChevronRight className="size-4" /></Button>
+        </nav>}
+      </>)}
 
       <FabricationCreateModal
         open={createOpen}
@@ -134,6 +264,36 @@ export default function FabricationManager() {
         fabricationId={selectedFabricationId}
         onClose={() => setSelectedFabricationId(null)}
       />
+
+      <FabricationCreateModal
+        key={editingFabrication?.id ?? "edit-fabrication"}
+        open={editingFabrication !== null}
+        onOpenChange={(open) => !open && setEditingFabrication(null)}
+        onCreate={handleUpdate}
+        fabrication={editingFabrication}
+        recettes={recettes}
+        isLoadingRecettes={isLoadingRecettes}
+        recettesError={recettesError}
+        onRetryRecettes={loadRecettes}
+      />
+
+      <AlertDialog open={deleteTarget !== null} onOpenChange={(open) => !open && !isDeleting && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader><AlertDialogTitle>Supprimer cette fabrication ?</AlertDialogTitle><AlertDialogDescription>Le lot {deleteTarget?.numeroLot} sera définitivement supprimé. Cette action est impossible dès son passage en affinage.</AlertDialogDescription></AlertDialogHeader>
+          <AlertDialogFooter><AlertDialogCancel disabled={isDeleting}>Annuler</AlertDialogCancel><AlertDialogAction disabled={isDeleting} onClick={(event) => { event.preventDefault(); void confirmDelete(); }} className="bg-destructive text-white hover:bg-destructive/90">{isDeleting ? "Suppression..." : "Supprimer"}</AlertDialogAction></AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {affinageFabrication && (
+        <AffinagePlacementDialog
+          open
+          mode="create"
+          fabrications={[affinageFabrication]}
+          caves={caves}
+          onOpenChange={(open) => !open && setAffinageFabrication(null)}
+          onSubmit={createAffinage}
+        />
+      )}
     </div>
   );
 }

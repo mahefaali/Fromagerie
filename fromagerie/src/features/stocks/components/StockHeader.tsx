@@ -1,18 +1,16 @@
 import React from 'react';
-import { Box } from 'lucide-react';
+import { PackageCheck } from 'lucide-react';
 
 export const StockHeader: React.FC = () => {
   return (
-    <div className="flex items-start gap-3 mb-6">
-      <div className="p-2 bg-[#2d5a37] text-white rounded-lg mt-1 shrink-0">
-        <Box className="w-6 h-6" />
-      </div>
-      <div>
+    <div className=" mb-6">
+      <div className="flex items-center gap-2">
+        <PackageCheck className="h-5 w-5 text-emerald-600" />
         <h1 className="text-2xl font-bold text-foreground">Stock de fromage finis</h1>
-        <p className="text-sm text-muted-foreground">
-          Ce qui est immédiatement disponible à la vente : quantités, localisation et durabilité (DLC / DDM).
-        </p>
       </div>
+      <p className="text-sm text-muted-foreground">
+        Ce qui est immédiatement disponible à la vente : quantités, localisation et durabilité (DLC / DDM).
+      </p>
     </div>
   );
 };

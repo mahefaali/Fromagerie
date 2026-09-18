@@ -1,0 +1,3 @@
+package com.fromagerie_back.controller;
+import org.springframework.web.bind.annotation.*; import com.fromagerie_back.dto.CommandeTracabiliteResponse; import com.fromagerie_back.dto.TracabiliteResponse; import com.fromagerie_back.service.TracabiliteService;
+@RestController @RequestMapping("/api/tracabilite/ascendante") public class TracabiliteController{private final TracabiliteService service;public TracabiliteController(TracabiliteService s){service=s;}@GetMapping("/commande") public CommandeTracabiliteResponse commande(@RequestParam String numeroCommande){return service.findCommande(numeroCommande);}@GetMapping("/livraison/{ligneId}") public TracabiliteResponse vente(@PathVariable Long ligneId){return service.byLigneLivraison(ligneId);}}

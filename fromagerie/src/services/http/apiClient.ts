@@ -169,3 +169,18 @@ export async function apiRequest<T>(path: string, options: ApiRequestOptions = {
 
   return body as T;
 }
+
+export async function apiBlobRequest(path: string): Promise<Blob> {
+  const response = await fetch(buildUrl(path), {
+    credentials: "include",
+    headers: { Accept: "application/pdf" },
+  });
+  if (!response.ok) {
+    if (response.status === 401) notifyUnauthorized();
+    const body = await parseResponseBody(response);
+    const errorBody = isApiErrorBody(body) ? body : undefined;
+    throw new HttpError(response.status, errorBody?.message ?? `Erreur HTTP ${response.status}`,
+      errorBody?.errors ?? null);
+  }
+  return response.blob();
+}
