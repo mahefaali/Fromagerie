@@ -54,12 +54,31 @@ public interface FabricationRepository
         Optional<Fabrication> findByNumeroLotIgnoreCase(String numeroLot);
 
         @EntityGraph(attributePaths = { "recette", "recette.fromage", "operateur" })
+        @Query("""
+                        SELECT f FROM Fabrication f
+                        WHERE lower(f.numeroLot) LIKE lower(concat('%', :numeroLot, '%'))
+                        ORDER BY CASE WHEN lower(f.numeroLot) = lower(:numeroLot) THEN 0 ELSE 1 END,
+                                 f.dateHeureDebut DESC, f.id DESC
+                        """)
+        List<Fabrication> findByNumeroLotContainingWithDetails(@Param("numeroLot") String numeroLot);
+
+        @EntityGraph(attributePaths = { "recette", "recette.fromage", "operateur" })
         @Query("SELECT f FROM Fabrication f ORDER BY f.dateHeureDebut DESC")
         List<Fabrication> findAllWithDetailsOrderByDateHeureDebutDesc();
 
         @EntityGraph(attributePaths = { "recette", "recette.fromage", "operateur" })
         @Query("SELECT f FROM Fabrication f WHERE f.id = :id")
         Optional<Fabrication> findByIdWithDetails(@Param("id") Long id);
+
+        @EntityGraph(attributePaths = { "recette", "recette.fromage", "operateur" })
+        @Query("""
+                        SELECT f FROM Fabrication f
+                        WHERE f.dateHeureDebut >= :debut AND f.dateHeureDebut < :finExclusive
+                        ORDER BY f.dateHeureDebut ASC, f.id ASC
+                        """)
+        List<Fabrication> findForTraceabilityRegister(
+                        @Param("debut") LocalDateTime debut,
+                        @Param("finExclusive") LocalDateTime finExclusive);
 
         @Query("""
                         SELECT

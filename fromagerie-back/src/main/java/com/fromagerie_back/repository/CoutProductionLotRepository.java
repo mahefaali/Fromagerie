@@ -44,6 +44,14 @@ public interface CoutProductionLotRepository extends JpaRepository<CoutProductio
 
     Optional<CoutProductionLot> findByFabricationId(Long fabricationId);
 
+    @Query("""
+            select (count(c) > 0) from CoutProductionLot c
+            where c.fabrication.id in (
+                select u.fabrication.id from UtilisationLotLait u where u.lotLait.id = :lotLaitId
+            )
+            """)
+    boolean existsFinaliseByLotLaitId(@Param("lotLaitId") Long lotLaitId);
+
     void deleteByFabricationId(Long fabricationId);
 
     @EntityGraph(attributePaths = { "fabrication", "fabrication.recette", "fabrication.recette.fromage" })

@@ -6,6 +6,8 @@ import org.springframework.transaction.annotation.Transactional;
 import com.fromagerie_back.dto.*;
 import com.fromagerie_back.dto.CommandeTracabiliteResponse.ProduitLivre;
 import com.fromagerie_back.dto.TracabiliteResponse.*;
+import com.fromagerie_back.dto.TracabiliteDescendanteResponse;
+import com.fromagerie_back.dto.TracabiliteDescendanteResponse.*;
 import com.fromagerie_back.exception.ResourceNotFoundException;
 import com.fromagerie_back.model.*;
 import com.fromagerie_back.repository.*;
@@ -18,15 +20,126 @@ public class TracabiliteService {
     private final LotAffinageRepository affinages;
     private final StockFromageFiniRepository stocks;
     private final LigneLivraisonRepository livraisons;
+    private final PlacementAffinageRepository placements;
+    private final MouvementStockRepository mouvements;
+    private final PerteStockRepository pertes;
 
     public TracabiliteService(FabricationRepository f, UtilisationLotLaitRepository u, AnalyseLaitRepository a,
-            LotAffinageRepository af, StockFromageFiniRepository s, LigneLivraisonRepository l) {
+            LotAffinageRepository af, StockFromageFiniRepository s, LigneLivraisonRepository l,
+            PlacementAffinageRepository p, MouvementStockRepository m, PerteStockRepository ps) {
         fabrications = f;
         usages = u;
         analyses = a;
         affinages = af;
         stocks = s;
         livraisons = l;
+        placements = p;
+        mouvements = m;
+        pertes = ps;
+    }
+
+    @Transactional(readOnly = true)
+    public TracabiliteDescendanteResponse byNumeroLotDescendant(String numero) {
+        if (numero == null || numero.isBlank())
+            throw new com.fromagerie_back.exception.BusinessValidationException("Le numéro de lot est obligatoire");
+        String recherche = numero.trim();
+        Fabrication fabrication = fabrications.findByNumeroLotContainingWithDetails(recherche).stream()
+                .findFirst()
+                .orElseThrow(() -> new ResourceNotFoundException("Lot de fabrication introuvable : " + recherche));
+        return buildDescendant(fabrication);
+    }
+
+    private TracabiliteDescendanteResponse buildDescendant(Fabrication fabrication) {
+        int produite = fabrication.getNombreFromages();
+        LotAffinage affinage = affinages.findByFabricationId(fabrication.getId()).orElse(null);
+        StockFromageFini stock = stocks.findByLotAffinageFabricationId(fabrication.getId()).orElse(null);
+        List<LigneLivraison> lignesLivrees = livraisons.findTraceByFabricationId(fabrication.getId());
+        int livree = lignesLivrees.stream().mapToInt(LigneLivraison::getQuantiteLivree).sum();
+
+        Map<Long, ClientLivreAccumulator> clients = new LinkedHashMap<>();
+        List<LocalisationTrace> localisations = new ArrayList<>();
+        for (LigneLivraison ligne : lignesLivrees) {
+            Client client = ligne.getLivraison().getCommande().getClient();
+            clients.computeIfAbsent(client.getId(), id -> new ClientLivreAccumulator(client.getNom()))
+                    .quantite += ligne.getQuantiteLivree();
+            localisations.add(new LocalisationTrace(
+                    "DERNIERE_DESTINATION_CONNUE",
+                    "Client " + client.getNom(),
+                    ligne.getQuantiteLivree(),
+                    ligne.getLivraison().getNumeroLivraison(),
+                    ligne.getLivraison().getDateLivraison()));
+        }
+
+        List<PerteTrace> pertesTrace = stock == null ? List.of()
+                : pertes.findByStockFromageFiniIdOrderByDateHeureAscIdAsc(stock.getId()).stream()
+                        .map(perte -> new PerteTrace(perte.getId(), perte.getQuantite(), perte.getTypePerte(),
+                                perte.getMotif(), perte.getDateHeure()))
+                        .toList();
+        int perdue = pertesTrace.stream().mapToInt(PerteTrace::quantite).sum();
+
+        int disponible;
+        if (stock != null) {
+            disponible = quantitePhysique(stock);
+            if (disponible > 0) {
+                localisations.addFirst(new LocalisationTrace(
+                        "STOCK_FINI",
+                        stock.getEmplacementStock().getNom(),
+                        disponible,
+                        null,
+                        null));
+            }
+        } else if (affinage != null) {
+            disponible = affinage.getQuantiteInitiale();
+            for (PlacementAffinage placement : placements.findActiveByLotIdWithLocation(affinage.getId())) {
+                Rangee rangee = placement.getRangee();
+                int positionFin = placement.getPositionDebut() + placement.getQuantite() - 1;
+                localisations.add(new LocalisationTrace(
+                        "AFFINAGE",
+                        "Cave " + rangee.getEtagere().getCave().getNom()
+                                + ", étagère " + rangee.getEtagere().getNumero()
+                                + ", rangée " + rangee.getNumero()
+                                + ", positions " + placement.getPositionDebut() + "-" + positionFin,
+                        placement.getQuantite(),
+                        null,
+                        null));
+            }
+        } else {
+            disponible = produite;
+        }
+
+        List<ClientLivre> clientsLivres = clients.entrySet().stream()
+                .map(entry -> new ClientLivre(entry.getKey(), entry.getValue().nom, entry.getValue().quantite))
+                .toList();
+        return new TracabiliteDescendanteResponse(
+                fabrication.getId(),
+                fabrication.getNumeroLot(),
+                fabrication.getRecette().getFromage().getNom(),
+                fabrication.getDateHeureDebut(),
+                produite,
+                livree,
+                Math.max(0, produite - livree),
+                disponible,
+                perdue,
+                clientsLivres,
+                pertesTrace,
+                localisations);
+    }
+
+    private int quantitePhysique(StockFromageFini stock) {
+        int balance = mouvements.quantityAvailable(stock.getId(),
+                EnumSet.of(TypeMouvementStock.ENTREE, TypeMouvementStock.AJUSTEMENT));
+        int historique = mouvements.existsByStockFromageFiniIdAndType(stock.getId(), TypeMouvementStock.ENTREE)
+                ? 0 : stock.getQuantiteInitiale();
+        return Math.max(0, historique + balance);
+    }
+
+    private static final class ClientLivreAccumulator {
+        private final String nom;
+        private int quantite;
+
+        private ClientLivreAccumulator(String nom) {
+            this.nom = nom;
+        }
     }
 
     @Transactional(readOnly = true)

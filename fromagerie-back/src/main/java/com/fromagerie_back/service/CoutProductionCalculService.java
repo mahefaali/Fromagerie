@@ -22,10 +22,8 @@ import com.fromagerie_back.model.RecetteIngredient;
 import com.fromagerie_back.model.RegleAmortissement;
 import com.fromagerie_back.model.RegleCoutEnergie;
 import com.fromagerie_back.model.RegleMainOeuvre;
-import com.fromagerie_back.model.TarifLait;
 import com.fromagerie_back.model.TypeOperationEnergie;
 import com.fromagerie_back.model.TypeOperationMainOeuvre;
-import com.fromagerie_back.model.TypeSaison;
 import com.fromagerie_back.model.TypeSoinAffinage;
 import com.fromagerie_back.repository.ConfigurationEmballageRepository;
 import com.fromagerie_back.repository.CoutProductionLotRepository;
@@ -33,37 +31,34 @@ import com.fromagerie_back.repository.RegleAmortissementRepository;
 import com.fromagerie_back.repository.RegleCoutEnergieRepository;
 import com.fromagerie_back.repository.RegleMainOeuvreRepository;
 import com.fromagerie_back.repository.SoinAffinageRepository;
-import com.fromagerie_back.repository.TarifLaitRepository;
+import com.fromagerie_back.repository.UtilisationLotLaitRepository;
 
 @Service
 public class CoutProductionCalculService {
     private static final BigDecimal MINUTES_PAR_HEURE = BigDecimal.valueOf(60);
 
     private final CoutProductionLotRepository coutRepository;
-    private final TarifLaitRepository tarifLaitRepository;
+    private final UtilisationLotLaitRepository utilisationLotLaitRepository;
     private final ConfigurationEmballageRepository configurationEmballageRepository;
     private final RegleCoutEnergieRepository energieRepository;
     private final RegleMainOeuvreRepository mainOeuvreRepository;
     private final RegleAmortissementRepository amortissementRepository;
     private final SoinAffinageRepository soinRepository;
-    private final SaisonService saisonService;
 
     public CoutProductionCalculService(CoutProductionLotRepository coutRepository,
-            TarifLaitRepository tarifLaitRepository,
+            UtilisationLotLaitRepository utilisationLotLaitRepository,
             ConfigurationEmballageRepository configurationEmballageRepository,
             RegleCoutEnergieRepository energieRepository,
             RegleMainOeuvreRepository mainOeuvreRepository,
             RegleAmortissementRepository amortissementRepository,
-            SoinAffinageRepository soinRepository,
-            SaisonService saisonService) {
+            SoinAffinageRepository soinRepository) {
         this.coutRepository = coutRepository;
-        this.tarifLaitRepository = tarifLaitRepository;
+        this.utilisationLotLaitRepository = utilisationLotLaitRepository;
         this.configurationEmballageRepository = configurationEmballageRepository;
         this.energieRepository = energieRepository;
         this.mainOeuvreRepository = mainOeuvreRepository;
         this.amortissementRepository = amortissementRepository;
         this.soinRepository = soinRepository;
-        this.saisonService = saisonService;
     }
 
     @Transactional
@@ -78,7 +73,7 @@ public class CoutProductionCalculService {
         }
 
         LocalDate dateFabrication = fabrication.getDateHeureDebut().toLocalDate();
-        BigDecimal coutLait = calculerLait(fabrication, dateFabrication);
+        BigDecimal coutLait = calculerLait(fabrication);
         List<RecetteIngredient> matieresHorsLait = fabrication.getRecette().getIngredients().stream()
                 .filter(i -> !estDuLait(i))
                 .toList();
@@ -133,12 +128,21 @@ public class CoutProductionCalculService {
                         "Coût de production introuvable pour la fabrication : " + fabricationId)));
     }
 
-    private BigDecimal calculerLait(Fabrication fabrication, LocalDate date) {
-        TypeSaison saison = saisonService.determinerSaison(date);
-        TarifLait tarif = uniqueApplicable(tarifLaitRepository.findBySaison(saison), date,
-                "tarif lait " + saison, TarifLait::isActif, TarifLait::getDateDebutValidite,
-                TarifLait::getDateFinValidite);
-        return fabrication.getQuantiteLait().multiply(tarif.getPrixParLitre());
+    private BigDecimal calculerLait(Fabrication fabrication) {
+        var utilisations = utilisationLotLaitRepository
+                .findByFabricationIdOrderByLotLaitDateTraiteAsc(fabrication.getId());
+        if (utilisations.isEmpty()) {
+            throw new BusinessConflictException("Aucun lot de lait n'est associé à la fabrication "
+                    + fabrication.getNumeroLot());
+        }
+        return utilisations.stream().map(utilisation -> {
+            BigDecimal coutUnitaire = utilisation.getLotLait().getCoutUnitaire();
+            if (coutUnitaire == null) {
+                throw new BusinessConflictException("Le coût unitaire du lot de lait "
+                        + utilisation.getLotLait().getNumeroLot() + " n'est pas renseigné");
+            }
+            return utilisation.getQuantiteUtilisee().multiply(coutUnitaire);
+        }).reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
     private boolean estDuLait(RecetteIngredient ingredient) {

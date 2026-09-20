@@ -18,8 +18,6 @@ import com.fromagerie_back.dto.RegleCoutEnergieRequest;
 import com.fromagerie_back.dto.RegleCoutEnergieResponse;
 import com.fromagerie_back.dto.RegleMainOeuvreRequest;
 import com.fromagerie_back.dto.RegleMainOeuvreResponse;
-import com.fromagerie_back.dto.TarifLaitRequest;
-import com.fromagerie_back.dto.TarifLaitResponse;
 import com.fromagerie_back.exception.BusinessConflictException;
 import com.fromagerie_back.exception.ResourceNotFoundException;
 import com.fromagerie_back.model.Emballage;
@@ -29,7 +27,6 @@ import com.fromagerie_back.model.Equipement;
 import com.fromagerie_back.model.RegleAmortissement;
 import com.fromagerie_back.model.RegleCoutEnergie;
 import com.fromagerie_back.model.RegleMainOeuvre;
-import com.fromagerie_back.model.TarifLait;
 import com.fromagerie_back.repository.EmballageRepository;
 import com.fromagerie_back.repository.ConfigurationEmballageRepository;
 import com.fromagerie_back.repository.FromageRepository;
@@ -37,11 +34,9 @@ import com.fromagerie_back.repository.EquipementRepository;
 import com.fromagerie_back.repository.RegleAmortissementRepository;
 import com.fromagerie_back.repository.RegleCoutEnergieRepository;
 import com.fromagerie_back.repository.RegleMainOeuvreRepository;
-import com.fromagerie_back.repository.TarifLaitRepository;
 
 @Service
 public class CoutProductionService {
-    private final TarifLaitRepository tarifLaitRepository;
     private final EmballageRepository emballageRepository;
     private final RegleCoutEnergieRepository regleCoutEnergieRepository;
     private final RegleMainOeuvreRepository regleMainOeuvreRepository;
@@ -50,13 +45,12 @@ public class CoutProductionService {
     private final ConfigurationEmballageRepository configurationEmballageRepository;
     private final FromageRepository fromageRepository;
 
-    public CoutProductionService(TarifLaitRepository tarifLaitRepository, EmballageRepository emballageRepository,
+    public CoutProductionService(EmballageRepository emballageRepository,
             RegleCoutEnergieRepository regleCoutEnergieRepository,
             RegleMainOeuvreRepository regleMainOeuvreRepository, EquipementRepository equipementRepository,
             RegleAmortissementRepository regleAmortissementRepository,
             ConfigurationEmballageRepository configurationEmballageRepository,
             FromageRepository fromageRepository) {
-        this.tarifLaitRepository = tarifLaitRepository;
         this.emballageRepository = emballageRepository;
         this.regleCoutEnergieRepository = regleCoutEnergieRepository;
         this.regleMainOeuvreRepository = regleMainOeuvreRepository;
@@ -66,7 +60,6 @@ public class CoutProductionService {
         this.fromageRepository = fromageRepository;
     }
 
-    public List<TarifLaitResponse> findTarifsLait() { return tarifLaitRepository.findAllByOrderBySaisonAscDateDebutValiditeDesc().stream().map(this::toResponse).toList(); }
     public List<EmballageResponse> findEmballages() { return emballageRepository.findAllByOrderByNomAsc().stream().map(this::toResponse).toList(); }
     @Transactional(readOnly = true)
     public List<ConfigurationEmballageResponse> findConfigurationsEmballages() {
@@ -79,10 +72,6 @@ public class CoutProductionService {
     @Transactional(readOnly = true)
     public List<RegleAmortissementResponse> findReglesAmortissement() { return regleAmortissementRepository.findAllByOrderByEquipementNomAscDateDebutValiditeDesc().stream().map(this::toResponse).toList(); }
 
-    @Transactional
-    public TarifLaitResponse createTarifLait(TarifLaitRequest request) { return toResponse(saveTarifLait(new TarifLait(), request)); }
-    @Transactional
-    public TarifLaitResponse updateTarifLait(Long id, TarifLaitRequest request) { return toResponse(saveTarifLait(findTarifLait(id), request)); }
     @Transactional
     public EmballageResponse createEmballage(EmballageRequest request) { return toResponse(saveEmballage(new Emballage(), request)); }
     @Transactional
@@ -114,20 +103,6 @@ public class CoutProductionService {
     public RegleAmortissementResponse createRegleAmortissement(RegleAmortissementRequest request) { return toResponse(saveRegleAmortissement(new RegleAmortissement(), request)); }
     @Transactional
     public RegleAmortissementResponse updateRegleAmortissement(Long id, RegleAmortissementRequest request) { return toResponse(saveRegleAmortissement(findRegleAmortissement(id), request)); }
-
-    private TarifLait saveTarifLait(TarifLait tarif, TarifLaitRequest request) {
-        validatePeriod(request.dateDebutValidite(), request.dateFinValidite());
-        validateTarifLaitOverlap(tarif.getId(), request);
-        if (request.dateFinValidite() != null && request.dateFinValidite().isBefore(request.dateDebutValidite())) {
-            throw new BusinessConflictException("La période du tarif lait est invalide");
-        }
-        tarif.setSaison(request.saison());
-        tarif.setPrixParLitre(request.prixParLitre());
-        tarif.setDateDebutValidite(request.dateDebutValidite());
-        tarif.setDateFinValidite(request.dateFinValidite());
-        tarif.setActif(request.actif() == null || request.actif());
-        return tarifLaitRepository.saveAndFlush(tarif);
-    }
 
     private Emballage saveEmballage(Emballage emballage, EmballageRequest request) {
         String nom = request.nom().trim();
@@ -227,20 +202,6 @@ public class CoutProductionService {
         }
     }
 
-    private void validateTarifLaitOverlap(Long currentId, TarifLaitRequest request) {
-        List<TarifLait> candidates = tarifLaitRepository.findBySaison(request.saison());
-        boolean overlaps = candidates.stream()
-                .filter(tarif -> currentId == null || !currentId.equals(tarif.getId()))
-                .anyMatch(tarif -> overlaps(
-                        request.dateDebutValidite(),
-                        request.dateFinValidite(),
-                        tarif.getDateDebutValidite(),
-                        tarif.getDateFinValidite()));
-        if (overlaps) {
-            throw new BusinessConflictException("Le tarif lait chevauche une période déjà existante pour cette saison");
-        }
-    }
-
     private void validateEnergieOverlap(Long currentId, RegleCoutEnergieRequest request) {
         if (Boolean.FALSE.equals(request.actif())) {
             return;
@@ -269,14 +230,12 @@ public class CoutProductionService {
         return !startA.isAfter(effectiveEndB) && !startB.isAfter(effectiveEndA);
     }
 
-    private TarifLait findTarifLait(Long id) { return tarifLaitRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Tarif lait introuvable avec l'id : " + id)); }
     private Emballage findEmballage(Long id) { return emballageRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Emballage introuvable avec l'id : " + id)); }
     private RegleCoutEnergie findRegle(Long id) { return regleCoutEnergieRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Règle énergie introuvable avec l'id : " + id)); }
     private RegleMainOeuvre findRegleMainOeuvre(Long id) { return regleMainOeuvreRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Règle de main-d'œuvre introuvable avec l'id : " + id)); }
     private Equipement findEquipement(Long id) { return equipementRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Équipement introuvable avec l'id : " + id)); }
     private RegleAmortissement findRegleAmortissement(Long id) { return regleAmortissementRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Règle d'amortissement introuvable avec l'id : " + id)); }
 
-    private TarifLaitResponse toResponse(TarifLait t) { return new TarifLaitResponse(t.getId(), t.getSaison(), t.getPrixParLitre(), t.getDateDebutValidite(), t.getDateFinValidite(), t.isActif()); }
     private EmballageResponse toResponse(Emballage e) { return new EmballageResponse(e.getId(), e.getNom(), e.getCoutUnitaire(), e.getUnite(), e.isActif()); }
     private ConfigurationEmballageResponse toResponse(ConfigurationEmballage c) {
         return new ConfigurationEmballageResponse(c.getId(), c.getFromage().getId(), c.getFromage().getNom(),

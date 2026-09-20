@@ -24,8 +24,6 @@ import com.fromagerie_back.dto.RegleCoutEnergieRequest;
 import com.fromagerie_back.dto.RegleCoutEnergieResponse;
 import com.fromagerie_back.dto.RegleMainOeuvreRequest;
 import com.fromagerie_back.dto.RegleMainOeuvreResponse;
-import com.fromagerie_back.dto.TarifLaitRequest;
-import com.fromagerie_back.dto.TarifLaitResponse;
 import com.fromagerie_back.service.CoutProductionService;
 
 import jakarta.validation.Valid;
@@ -35,18 +33,6 @@ import jakarta.validation.Valid;
 public class CoutProductionController {
     private final CoutProductionService service;
     public CoutProductionController(CoutProductionService service) { this.service = service; }
-
-    @GetMapping("/lait")
-    public List<TarifLaitResponse> lait() { return service.findTarifsLait(); }
-    @PostMapping("/lait")
-    public ResponseEntity<TarifLaitResponse> createLait(@Valid @RequestBody TarifLaitRequest request) {
-        TarifLaitResponse response = service.createTarifLait(request);
-        return ResponseEntity.created(URI.create("/api/configuration/couts/lait/" + response.id())).body(response);
-    }
-    @PutMapping("/lait/{id}")
-    public TarifLaitResponse updateLait(@PathVariable Long id, @Valid @RequestBody TarifLaitRequest request) {
-        return service.updateTarifLait(id, request);
-    }
 
     @GetMapping("/emballages")
     public List<EmballageResponse> emballages() { return service.findEmballages(); }

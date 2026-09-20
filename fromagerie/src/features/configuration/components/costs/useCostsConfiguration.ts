@@ -9,7 +9,6 @@ import {
   type RegleAmortissement,
   type RegleMainOeuvre,
   type RegleCoutEnergie,
-  type TarifLait,
 } from "../../api/costsApi";
 import {
   EMPTY_AMORTISSEMENT,
@@ -18,11 +17,9 @@ import {
   EMPTY_ENERGIE,
   EMPTY_EQUIPEMENT,
   EMPTY_MAIN_OEUVRE,
-  EMPTY_TARIF,
 } from "./costForm.config";
 
 export function useCostsConfiguration() {
-  const [tarifs, setTarifs] = useState<TarifLait[]>([]);
   const [emballages, setEmballages] = useState<Emballage[]>([]);
   const [configurationsEmballages, setConfigurationsEmballages] = useState<ConfigurationEmballage[]>([]);
   const [fromages, setFromages] = useState<{ id: number; nom: string }[]>([]);
@@ -31,7 +28,6 @@ export function useCostsConfiguration() {
   const [equipements, setEquipements] = useState<Equipement[]>([]);
   const [amortissements, setAmortissements] = useState<RegleAmortissement[]>([]);
 
-  const [tarifForm, setTarifForm] = useState(EMPTY_TARIF);
   const [emballageForm, setEmballageForm] = useState(EMPTY_EMBALLAGE);
   const [configurationEmballageForm, setConfigurationEmballageForm] = useState(EMPTY_CONFIGURATION_EMBALLAGE);
   const [energieForm, setEnergieForm] = useState(EMPTY_ENERGIE);
@@ -44,8 +40,7 @@ export function useCostsConfiguration() {
 
   const load = useCallback(async () => {
     try {
-      const [lait, pack, packagingConfigurations, cheeses, regles, labor, equipment, depreciation] = await Promise.all([
-        costsApi.listTarifsLait(),
+      const [pack, packagingConfigurations, cheeses, regles, labor, equipment, depreciation] = await Promise.all([
         costsApi.listEmballages(),
         costsApi.listConfigurationsEmballages(),
         costsApi.listFromages(),
@@ -54,7 +49,6 @@ export function useCostsConfiguration() {
         costsApi.listEquipements(),
         costsApi.listAmortissements(),
       ]);
-      setTarifs(lait);
       setEmballages(pack);
       setConfigurationsEmballages(packagingConfigurations);
       setFromages(cheeses);
@@ -75,19 +69,6 @@ export function useCostsConfiguration() {
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Enregistrement impossible");
     }
-  };
-
-  const submitTarif = async () => {
-    await costsApi.createTarifLait({
-      saison: tarifForm.saison,
-      prixParLitre: Number(tarifForm.prixParLitre),
-      dateDebutValidite: tarifForm.dateDebutValidite,
-      dateFinValidite: tarifForm.dateFinValidite || null,
-      actif: tarifForm.actif,
-    });
-    toast.success("Tarif lait ajouté");
-    setTarifForm(EMPTY_TARIF);
-    await load();
   };
 
   const submitEmballage = async () => {
@@ -173,12 +154,12 @@ export function useCostsConfiguration() {
 
 
   return {
-    tarifs, emballages, configurationsEmballages, fromages, energie, mainOeuvre, equipements, amortissements,
-    tarifForm, setTarifForm, emballageForm, setEmballageForm, configurationEmballageForm, setConfigurationEmballageForm,
+    emballages, configurationsEmballages, fromages, energie, mainOeuvre, equipements, amortissements,
+    emballageForm, setEmballageForm, configurationEmballageForm, setConfigurationEmballageForm,
     energieForm, setEnergieForm, mainOeuvreForm, setMainOeuvreForm, equipementForm, setEquipementForm,
     amortissementForm, setAmortissementForm, editingMainOeuvreId, setEditingMainOeuvreId,
     editingEquipementId, setEditingEquipementId, editingAmortissementId, setEditingAmortissementId,
-    runSubmission, submitTarif, submitEmballage, submitConfigurationEmballage, submitEnergie,
+    runSubmission, submitEmballage, submitConfigurationEmballage, submitEnergie,
     submitMainOeuvre, submitEquipement, submitAmortissement,
   };
 }

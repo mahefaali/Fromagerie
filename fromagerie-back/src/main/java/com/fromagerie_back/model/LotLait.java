@@ -12,10 +12,12 @@ public class LotLait {
     @Column(name = "date_traite", nullable = false) private LocalDateTime dateTraite;
     @Enumerated(EnumType.STRING) @Column(name = "type_traite", nullable = false, length = 10) private TypeTraite typeTraite;
     @Column(nullable = false, precision = 19, scale = 4) private BigDecimal quantite;
+    @Column(name = "cout_unitaire", precision = 19, scale = 4) private BigDecimal coutUnitaire;
     @Column(columnDefinition = "TEXT") private String observations;
     public Long getId(){return id;} public String getNumeroLot(){return numeroLot;} public void setNumeroLot(String v){numeroLot=v;}
     public LocalDateTime getDateTraite(){return dateTraite;} public void setDateTraite(LocalDateTime v){dateTraite=v;}
     public TypeTraite getTypeTraite(){return typeTraite;} public void setTypeTraite(TypeTraite v){typeTraite=v;}
     public BigDecimal getQuantite(){return quantite;} public void setQuantite(BigDecimal v){quantite=v;}
+    public BigDecimal getCoutUnitaire(){return coutUnitaire;} public void setCoutUnitaire(BigDecimal v){coutUnitaire=v;}
     public String getObservations(){return observations;} public void setObservations(String v){observations=v;}
 }

@@ -160,8 +160,10 @@ class AuthIntegrationTests {
 
         mockMvc.perform(get("/api/utilisateurs").session(session))
                 .andExpect(status().isOk());
-        mockMvc.perform(get("/api/configuration/couts/lait").session(session))
+        mockMvc.perform(get("/api/configuration/couts/emballages").session(session))
                 .andExpect(status().isOk());
+        mockMvc.perform(get("/api/configuration/couts/lait").session(session))
+                .andExpect(status().isNotFound());
     }
 
     @Test

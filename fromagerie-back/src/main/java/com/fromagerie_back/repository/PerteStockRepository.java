@@ -27,6 +27,9 @@ public interface PerteStockRepository extends JpaRepository<PerteStock, Long> {
             "stockFromageFini.lotAffinage.fabrication.recette.fromage", "utilisateur" })
     List<PerteStock> findByStockFromageFiniIdOrderByDateHeureDescIdDesc(Long stockId);
 
+    @EntityGraph(attributePaths = { "stockFromageFini", "utilisateur" })
+    List<PerteStock> findByStockFromageFiniIdOrderByDateHeureAscIdAsc(Long stockId);
+
     @EntityGraph(attributePaths = { "stockFromageFini", "stockFromageFini.lotAffinage",
             "stockFromageFini.lotAffinage.fabrication", "stockFromageFini.lotAffinage.fabrication.recette",
             "stockFromageFini.lotAffinage.fabrication.recette.fromage", "utilisateur" })

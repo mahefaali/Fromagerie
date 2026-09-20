@@ -21,16 +21,6 @@ public class CoutProductionSchemaMigration implements ApplicationRunner {
     @Override
     public void run(ApplicationArguments args) {
         jdbcTemplate.execute("""
-                CREATE TABLE IF NOT EXISTS tarif_lait (
-                    id BIGSERIAL PRIMARY KEY,
-                    saison VARCHAR(20) NOT NULL,
-                    prix_par_litre NUMERIC(19,4) NOT NULL,
-                    date_debut_validite DATE NOT NULL,
-                    date_fin_validite DATE,
-                    actif BOOLEAN NOT NULL DEFAULT TRUE
-                )
-                """);
-        jdbcTemplate.execute("""
                 CREATE TABLE IF NOT EXISTS emballage (
                     id BIGSERIAL PRIMARY KEY,
                     nom VARCHAR(120) NOT NULL UNIQUE,

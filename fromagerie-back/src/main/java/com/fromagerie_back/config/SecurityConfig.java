@@ -86,7 +86,7 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(List.of(
                 "http://localhost:5173",
-                "http://192.168.194.112:5173"));
+                "http://192.168.100.9:5173"));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("Content-Type", "Accept", "X-CSRF-TOKEN"));
         configuration.setAllowCredentials(true);
@@ -126,6 +126,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/me", "/api/auth/logout").authenticated()
                         .requestMatchers("/api/utilisateurs/**").hasRole("PROPRIETAIRE")
                         .requestMatchers("/api/configuration/couts/**").hasRole("PROPRIETAIRE")
+                        .requestMatchers("/api/documents/**").hasRole("PROPRIETAIRE")
                         .requestMatchers("/api/couts-production/**", "/api/rentabilite/**", "/api/performances/**")
                         .hasRole("PROPRIETAIRE")
                         .requestMatchers(HttpMethod.GET, "/api/recettes/**", "/api/matieres-premieres/**")

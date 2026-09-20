@@ -5,6 +5,8 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
@@ -141,6 +143,31 @@ public class DocumentPdfService {
     private static String money(BigDecimal value) { return value.setScale(2, java.math.RoundingMode.HALF_UP).toPlainString(); }
 
     public record PdfDocument(byte[] content, String filename) {}
+
+    public PdfDocument documentReglementaire(String titre, String identification, List<String> lignes,
+            String filename) {
+        try (PDDocument pdf = new PDDocument(); ByteArrayOutputStream output = new ByteArrayOutputStream()) {
+            PdfWriter writer = new PdfWriter(pdf);
+            writer.title(titre, identification);
+            writer.line("Fromagerie Salazie", true);
+            writer.line("Genere le " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")), false);
+            writer.space(12);
+            for (String ligne : lignes) {
+                if (ligne.startsWith("## ")) {
+                    writer.space(6);
+                    writer.line(ligne.substring(3), true);
+                    writer.rule();
+                } else {
+                    writer.line(ligne, false);
+                }
+            }
+            writer.close();
+            pdf.save(output);
+            return new PdfDocument(output.toByteArray(), filename);
+        } catch (IOException exception) {
+            throw new IllegalStateException("Impossible de generer le document PDF", exception);
+        }
+    }
 
     private static final class PdfWriter {
         private static final float MARGIN = 52;

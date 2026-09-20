@@ -1,27 +1,9 @@
 import { apiRequest } from "../../../services/http/apiClient";
 
-export type Saison = "SECHE" | "HUMIDE";
 export type EtapeEmballage = "AFFINAGE" | "PREPARATION_VENTE";
 export type TypeOperationEnergie = "CHAUFFE" | "AFFINAGE_CAVE" | "CHAMBRE_FROIDE";
 export type UniteCalculEnergie = "PAR_HEURE" | "PAR_FROMAGE_PAR_JOUR" | "PAR_FABRICATION";
 export type TypeOperationMainOeuvre = "FABRICATION" | "RETOURNEMENT" | "LAVAGE" | "PREPARATION_VENTE";
-
-export interface TarifLait {
-  id: number;
-  saison: Saison;
-  prixParLitre: number;
-  dateDebutValidite: string;
-  dateFinValidite: string | null;
-  actif: boolean;
-}
-
-export interface TarifLaitRequest {
-  saison: Saison;
-  prixParLitre: number;
-  dateDebutValidite: string;
-  dateFinValidite?: string | null;
-  actif?: boolean;
-}
 
 export interface Emballage {
   id: number;
@@ -125,12 +107,6 @@ export interface RegleAmortissementRequest {
 }
 
 export const costsApi = {
-  listTarifsLait: () => apiRequest<TarifLait[]>("/api/configuration/couts/lait"),
-  createTarifLait: (request: TarifLaitRequest) =>
-    apiRequest<TarifLait>("/api/configuration/couts/lait", { method: "POST", json: request }),
-  updateTarifLait: (id: number, request: TarifLaitRequest) =>
-    apiRequest<TarifLait>(`/api/configuration/couts/lait/${id}`, { method: "PUT", json: request }),
-
   listEmballages: () => apiRequest<Emballage[]>("/api/configuration/couts/emballages"),
   createEmballage: (request: EmballageRequest) =>
     apiRequest<Emballage>("/api/configuration/couts/emballages", { method: "POST", json: request }),

@@ -16,6 +16,7 @@ import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import com.fromagerie_back.exception.BusinessConflictException;
 import com.fromagerie_back.model.ConfigurationEmballage;
@@ -25,16 +26,16 @@ import com.fromagerie_back.model.Equipement;
 import com.fromagerie_back.model.Fabrication;
 import com.fromagerie_back.model.Fromage;
 import com.fromagerie_back.model.LotAffinage;
+import com.fromagerie_back.model.LotLait;
 import com.fromagerie_back.model.MatierePremiere;
 import com.fromagerie_back.model.Recette;
 import com.fromagerie_back.model.RecetteIngredient;
 import com.fromagerie_back.model.RegleAmortissement;
 import com.fromagerie_back.model.RegleCoutEnergie;
 import com.fromagerie_back.model.RegleMainOeuvre;
-import com.fromagerie_back.model.TarifLait;
 import com.fromagerie_back.model.TypeOperationEnergie;
 import com.fromagerie_back.model.TypeOperationMainOeuvre;
-import com.fromagerie_back.model.TypeSaison;
+import com.fromagerie_back.model.UtilisationLotLait;
 import com.fromagerie_back.model.UniteCalculEnergie;
 import com.fromagerie_back.repository.ConfigurationEmballageRepository;
 import com.fromagerie_back.repository.CoutProductionLotRepository;
@@ -42,23 +43,22 @@ import com.fromagerie_back.repository.RegleAmortissementRepository;
 import com.fromagerie_back.repository.RegleCoutEnergieRepository;
 import com.fromagerie_back.repository.RegleMainOeuvreRepository;
 import com.fromagerie_back.repository.SoinAffinageRepository;
-import com.fromagerie_back.repository.TarifLaitRepository;
+import com.fromagerie_back.repository.UtilisationLotLaitRepository;
 
 class CoutProductionCalculServiceTests {
     private final CoutProductionLotRepository couts = mock(CoutProductionLotRepository.class);
-    private final TarifLaitRepository tarifs = mock(TarifLaitRepository.class);
+    private final UtilisationLotLaitRepository utilisations = mock(UtilisationLotLaitRepository.class);
     private final ConfigurationEmballageRepository emballages = mock(ConfigurationEmballageRepository.class);
     private final RegleCoutEnergieRepository energie = mock(RegleCoutEnergieRepository.class);
     private final RegleMainOeuvreRepository mainOeuvre = mock(RegleMainOeuvreRepository.class);
     private final RegleAmortissementRepository amortissements = mock(RegleAmortissementRepository.class);
     private final SoinAffinageRepository soins = mock(SoinAffinageRepository.class);
-    private final SaisonService saisons = mock(SaisonService.class);
     private CoutProductionCalculService service;
 
     @BeforeEach
     void setUp() {
-        service = new CoutProductionCalculService(couts, tarifs, emballages, energie, mainOeuvre,
-                amortissements, soins, saisons);
+        service = new CoutProductionCalculService(couts, utilisations, emballages, energie, mainOeuvre,
+                amortissements, soins);
         when(couts.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
         when(soins.findByLotAffinageIdOrderByDateHeureDesc(any())).thenReturn(List.of());
     }
@@ -68,8 +68,7 @@ class CoutProductionCalculServiceTests {
         LotAffinage lot = lotComplet();
         LocalDate fabricationDate = LocalDate.of(2026, 1, 1);
         when(couts.findByFabricationId(10L)).thenReturn(Optional.empty());
-        when(saisons.determinerSaison(fabricationDate)).thenReturn(TypeSaison.SECHE);
-        when(tarifs.findBySaison(TypeSaison.SECHE)).thenReturn(List.of(tarif("2.0000", fabricationDate)));
+        when(utilisations.findByFabricationIdOrderByLotLaitDateTraiteAsc(10L)).thenReturn(List.of(utilisation("10.0000", "2.0000")));
         when(emballages.findByFromageIdAndActifTrue(1L)).thenReturn(List.of(configurationEmballage("0.5000")));
         when(energie.findAll()).thenReturn(List.of(
                 regleEnergie(TypeOperationEnergie.CHAUFFE, UniteCalculEnergie.PAR_HEURE, "3.0000", fabricationDate),
@@ -95,12 +94,23 @@ class CoutProductionCalculServiceTests {
     }
 
     @Test
+    void calculeLeCoutExactDePlusieursLotsAvecLesQuantitesUtilisees() {
+        Fabrication fabrication = new Fabrication();
+        fabrication.setId(10L);
+        when(utilisations.findByFabricationIdOrderByLotLaitDateTraiteAsc(10L)).thenReturn(List.of(
+                utilisation("40.0000", "1.2000"), utilisation("30.0000", "1.3500")));
+
+        BigDecimal resultat = ReflectionTestUtils.invokeMethod(service, "calculerLait", fabrication);
+
+        assertThat(resultat).isEqualByComparingTo("88.50000000");
+    }
+
+    @Test
     void refuseLaFinalisationSiAucunEmballageNestConfigure() {
         LotAffinage lot = lotComplet();
         LocalDate date = LocalDate.of(2026, 1, 1);
         when(couts.findByFabricationId(10L)).thenReturn(Optional.empty());
-        when(saisons.determinerSaison(date)).thenReturn(TypeSaison.SECHE);
-        when(tarifs.findBySaison(TypeSaison.SECHE)).thenReturn(List.of(tarif("2.0000", date)));
+        when(utilisations.findByFabricationIdOrderByLotLaitDateTraiteAsc(10L)).thenReturn(List.of(utilisation("10.0000", "2.0000")));
         when(emballages.findByFromageIdAndActifTrue(1L)).thenReturn(List.of());
 
         assertThatThrownBy(() -> service.calculerPourSortie(lot, 5, LocalDate.of(2026, 1, 3)))
@@ -116,8 +126,7 @@ class CoutProductionCalculServiceTests {
         lot.getFabrication().getRecette().getIngredients().clear();
         lot.getFabrication().getRecette().addIngredient(ingredient("Lait cru", "10.0000", "2.0000"));
         when(couts.findByFabricationId(10L)).thenReturn(Optional.empty());
-        when(saisons.determinerSaison(date)).thenReturn(TypeSaison.SECHE);
-        when(tarifs.findBySaison(TypeSaison.SECHE)).thenReturn(List.of(tarif("2.0000", date)));
+        when(utilisations.findByFabricationIdOrderByLotLaitDateTraiteAsc(10L)).thenReturn(List.of(utilisation("10.0000", "2.0000")));
 
         assertThatThrownBy(() -> service.calculerPourSortie(lot, 5, LocalDate.of(2026, 1, 3)))
                 .isInstanceOf(BusinessConflictException.class)
@@ -133,8 +142,7 @@ class CoutProductionCalculServiceTests {
         lot.getFabrication().getRecette().getIngredients().clear();
         lot.getFabrication().getRecette().addIngredient(ingredient("Sel", "2.0000", "0.0000"));
         when(couts.findByFabricationId(10L)).thenReturn(Optional.empty());
-        when(saisons.determinerSaison(date)).thenReturn(TypeSaison.SECHE);
-        when(tarifs.findBySaison(TypeSaison.SECHE)).thenReturn(List.of(tarif("2.0000", date)));
+        when(utilisations.findByFabricationIdOrderByLotLaitDateTraiteAsc(10L)).thenReturn(List.of(utilisation("10.0000", "2.0000")));
 
         assertThatThrownBy(() -> service.calculerPourSortie(lot, 5, LocalDate.of(2026, 1, 3)))
                 .isInstanceOf(BusinessConflictException.class)
@@ -149,7 +157,7 @@ class CoutProductionCalculServiceTests {
         when(couts.findByFabricationId(10L)).thenReturn(Optional.of(existing));
 
         assertThat(service.calculerPourSortie(lot, 5, LocalDate.of(2026, 1, 3))).isSameAs(existing);
-        verify(tarifs, never()).findBySaison(any());
+        verify(utilisations, never()).findByFabricationIdOrderByLotLaitDateTraiteAsc(any());
         verify(couts, never()).save(any());
     }
 
@@ -185,13 +193,14 @@ class CoutProductionCalculServiceTests {
         return ingredient;
     }
 
-    private TarifLait tarif(String prix, LocalDate date) {
-        TarifLait tarif = new TarifLait();
-        tarif.setSaison(TypeSaison.SECHE);
-        tarif.setPrixParLitre(new BigDecimal(prix));
-        tarif.setDateDebutValidite(date);
-        tarif.setActif(true);
-        return tarif;
+    private UtilisationLotLait utilisation(String quantite, String coutUnitaire) {
+        LotLait lot = new LotLait();
+        lot.setNumeroLot("LAIT-TEST");
+        lot.setCoutUnitaire(new BigDecimal(coutUnitaire));
+        UtilisationLotLait utilisation = new UtilisationLotLait();
+        utilisation.setLotLait(lot);
+        utilisation.setQuantiteUtilisee(new BigDecimal(quantite));
+        return utilisation;
     }
 
     private ConfigurationEmballage configurationEmballage(String cout) {
