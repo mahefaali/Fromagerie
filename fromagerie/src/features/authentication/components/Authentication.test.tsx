@@ -35,7 +35,7 @@ describe("comptes de démonstration", () => {
     expect(screen.getByRole("combobox", { name: "Choisir un compte de démonstration" })).toBeInTheDocument();
   });
 
-  it("préremplit le propriétaire sans lancer la connexion", async () => {
+  it("sélectionne le propriétaire sans dévoiler son mot de passe", async () => {
     const user = userEvent.setup();
     renderForm();
 
@@ -43,20 +43,21 @@ describe("comptes de démonstration", () => {
     await user.click(screen.getByRole("option", { name: /Propriétaire démo/ }));
 
     expect(screen.getByLabelText("Nom d'utilisateur")).toHaveValue("gilles.demo");
-    expect(screen.getByLabelText("Mot de passe")).toHaveValue("DemoFromagerie2026!");
+    expect(screen.getByLabelText("Mot de passe")).toHaveValue("");
     expect(loginMock).not.toHaveBeenCalled();
 
+    await user.type(screen.getByLabelText("Mot de passe"), "mot-de-passe-local");
     await user.click(screen.getByRole("button", { name: "Se connecter" }));
 
     await waitFor(() => {
       expect(loginMock).toHaveBeenCalledWith({
         username: "gilles.demo",
-        password: "DemoFromagerie2026!",
+        password: "mot-de-passe-local",
       });
     });
   });
 
-  it("préremplit l'employé sans lancer la connexion", async () => {
+  it("sélectionne l'employé sans dévoiler son PIN", async () => {
     const user = userEvent.setup();
     renderForm();
 
@@ -64,17 +65,18 @@ describe("comptes de démonstration", () => {
     await user.click(screen.getByRole("option", { name: /Fabrication démo/ }));
 
     expect(screen.getByLabelText("Nom d'utilisateur")).toHaveValue("jean.demo");
-    expect(screen.getByLabelText("Code PIN")).toHaveValue("1234");
+    expect(screen.getByLabelText("Code PIN")).toHaveValue("");
     expect(loginMock).not.toHaveBeenCalled();
 
+    await user.type(screen.getByLabelText("Code PIN"), "2468");
     await user.click(screen.getByRole("button", { name: "Se connecter" }));
 
     await waitFor(() => {
-      expect(loginMock).toHaveBeenCalledWith({ username: "jean.demo", password: "1234" });
+      expect(loginMock).toHaveBeenCalledWith({ username: "jean.demo", password: "2468" });
     });
   });
 
-  it("préremplit le compte vente sans lancer la connexion", async () => {
+  it("sélectionne le compte vente sans dévoiler son PIN", async () => {
     const user = userEvent.setup();
     renderForm();
 
@@ -82,13 +84,14 @@ describe("comptes de démonstration", () => {
     await user.click(screen.getByRole("option", { name: /Vente démo/ }));
 
     expect(screen.getByLabelText("Nom d'utilisateur")).toHaveValue("nathalie.demo");
-    expect(screen.getByLabelText("Code PIN")).toHaveValue("5678");
+    expect(screen.getByLabelText("Code PIN")).toHaveValue("");
     expect(loginMock).not.toHaveBeenCalled();
 
+    await user.type(screen.getByLabelText("Code PIN"), "1357");
     await user.click(screen.getByRole("button", { name: "Se connecter" }));
 
     await waitFor(() => {
-      expect(loginMock).toHaveBeenCalledWith({ username: "nathalie.demo", password: "5678" });
+      expect(loginMock).toHaveBeenCalledWith({ username: "nathalie.demo", password: "1357" });
     });
   });
 
@@ -98,15 +101,17 @@ describe("comptes de démonstration", () => {
 
     await user.click(screen.getByRole("combobox", { name: "Choisir un compte de démonstration" }));
     await user.click(screen.getByRole("option", { name: /Fabrication démo/ }));
+    await user.type(screen.getByLabelText("Code PIN"), "2468");
     await user.click(screen.getByRole("combobox", { name: "Choisir un compte de démonstration" }));
     await user.click(screen.getByRole("option", { name: /Propriétaire démo/ }));
+    expect(screen.getByLabelText("Mot de passe")).toHaveValue("");
+    await user.type(screen.getByLabelText("Mot de passe"), "mot-de-passe-local");
     await user.click(screen.getByRole("button", { name: "Se connecter" }));
 
-    expect(screen.getByLabelText("Mot de passe")).toHaveValue("DemoFromagerie2026!");
     await waitFor(() => {
       expect(loginMock).toHaveBeenCalledWith({
         username: "gilles.demo",
-        password: "DemoFromagerie2026!",
+        password: "mot-de-passe-local",
       });
     });
   });
@@ -117,13 +122,15 @@ describe("comptes de démonstration", () => {
 
     await user.click(screen.getByRole("combobox", { name: "Choisir un compte de démonstration" }));
     await user.click(screen.getByRole("option", { name: /Propriétaire démo/ }));
+    await user.type(screen.getByLabelText("Mot de passe"), "mot-de-passe-local");
     await user.click(screen.getByRole("combobox", { name: "Choisir un compte de démonstration" }));
     await user.click(screen.getByRole("option", { name: /Fabrication démo/ }));
+    expect(screen.getByLabelText("Code PIN")).toHaveValue("");
+    await user.type(screen.getByLabelText("Code PIN"), "2468");
     await user.click(screen.getByRole("button", { name: "Se connecter" }));
 
-    expect(screen.getByLabelText("Code PIN")).toHaveValue("1234");
     await waitFor(() => {
-      expect(loginMock).toHaveBeenCalledWith({ username: "jean.demo", password: "1234" });
+      expect(loginMock).toHaveBeenCalledWith({ username: "jean.demo", password: "2468" });
     });
   });
 

@@ -9,7 +9,7 @@ export function DemoAccountSelector({ onSelect }: { onSelect: (account: DemoAcco
       <div className="mb-3 flex items-center justify-between gap-4">
         <div>
           <p id="demo-accounts-title" className="font-mono text-[0.6875rem] uppercase tracking-[0.2em] text-[#C96A4A]">Compte démo</p>
-          <p className="mt-1 text-sm text-[#7E9A9A]">Préremplir un accès de démonstration</p>
+          <p className="mt-1 text-sm text-[#7E9A9A]">Choisir un compte ; saisir ensuite son mot de passe ou PIN</p>
         </div>
         <span className="hidden rounded-full bg-[#C96A4A]/[0.08] px-3 py-1 font-mono text-[0.6rem] uppercase tracking-[0.14em] text-[#C96A4A] sm:inline-flex">Accès rapide</span>
       </div>

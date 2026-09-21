@@ -293,6 +293,14 @@ class AuthIntegrationTests {
     }
 
     @Test
+    void corsRejectsAnOriginNotConfiguredForThisEnvironment() throws Exception {
+        mockMvc.perform(options("/api/auth/login")
+                        .header("Origin", "http://untrusted.example:5173")
+                        .header("Access-Control-Request-Method", "POST"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     void csrfTokenIsRenewedAfterLogin() throws Exception {
         MvcResult initialCsrfResult = mockMvc.perform(get("/api/auth/csrf"))
                 .andExpect(status().isOk())

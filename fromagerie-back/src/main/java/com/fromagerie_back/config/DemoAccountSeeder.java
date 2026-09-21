@@ -2,6 +2,7 @@ package com.fromagerie_back.config;
 
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
@@ -13,16 +14,22 @@ import com.fromagerie_back.service.UtilisateurService;
 public class DemoAccountSeeder implements ApplicationRunner {
 
     public static final String OWNER_USERNAME = "gilles.demo";
-    public static final String OWNER_PASSWORD = "DemoFromagerie2026!";
     public static final String EMPLOYEE_USERNAME = "jean.demo";
-    public static final String EMPLOYEE_PIN = "1234";
     public static final String SALES_USERNAME = "nathalie.demo";
-    public static final String SALES_PIN = "5678";
 
     private final UtilisateurService utilisateurService;
+    private final String ownerPassword;
+    private final String employeePin;
+    private final String salesPin;
 
-    public DemoAccountSeeder(UtilisateurService utilisateurService) {
+    public DemoAccountSeeder(UtilisateurService utilisateurService,
+            @Value("${DEMO_OWNER_PASSWORD}") String ownerPassword,
+            @Value("${DEMO_EMPLOYEE_PIN}") String employeePin,
+            @Value("${DEMO_SALES_PIN}") String salesPin) {
         this.utilisateurService = utilisateurService;
+        this.ownerPassword = ownerPassword;
+        this.employeePin = employeePin;
+        this.salesPin = salesPin;
     }
 
     @Override
@@ -34,17 +41,17 @@ public class DemoAccountSeeder implements ApplicationRunner {
         createIfMissing(
                 OWNER_USERNAME,
                 "Gilles Payet Démo",
-                OWNER_PASSWORD,
+                ownerPassword,
                 Role.PROPRIETAIRE);
         createIfMissing(
                 EMPLOYEE_USERNAME,
                 "Jean Lebon Démo",
-                EMPLOYEE_PIN,
+                employeePin,
                 Role.FABRICATION);
         createIfMissing(
                 SALES_USERNAME,
                 "Nathalie Vente Démo",
-                SALES_PIN,
+                salesPin,
                 Role.VENTE);
     }
 

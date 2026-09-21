@@ -1,10 +1,7 @@
 package com.fromagerie_back;
 
-import static com.fromagerie_back.config.DemoAccountSeeder.EMPLOYEE_PIN;
 import static com.fromagerie_back.config.DemoAccountSeeder.EMPLOYEE_USERNAME;
-import static com.fromagerie_back.config.DemoAccountSeeder.OWNER_PASSWORD;
 import static com.fromagerie_back.config.DemoAccountSeeder.OWNER_USERNAME;
-import static com.fromagerie_back.config.DemoAccountSeeder.SALES_PIN;
 import static com.fromagerie_back.config.DemoAccountSeeder.SALES_USERNAME;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
@@ -27,10 +24,21 @@ import com.fromagerie_back.model.Role;
 import com.fromagerie_back.model.Utilisateur;
 import com.fromagerie_back.repository.UtilisateurRepository;
 
-@SpringBootTest
+@SpringBootTest(properties = {
+        "spring.datasource.password=",
+        "spring.jpa.hibernate.ddl-auto=create-drop",
+        "spring.jpa.show-sql=false",
+        "DEMO_OWNER_PASSWORD=mot-de-passe-test-owner",
+        "DEMO_EMPLOYEE_PIN=2468",
+        "DEMO_SALES_PIN=1357"
+})
 @AutoConfigureMockMvc
 @ActiveProfiles("dev")
 class DemoAccountSeederDevTests {
+
+    private static final String OWNER_PASSWORD = "mot-de-passe-test-owner";
+    private static final String EMPLOYEE_PIN = "2468";
+    private static final String SALES_PIN = "1357";
 
     @Autowired
     private DemoAccountSeeder demoAccountSeeder;

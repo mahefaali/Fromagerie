@@ -1,32 +1,36 @@
-# React + TypeScript + Vite
+# Fromagerie — interface web
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Interface React, TypeScript et Vite de l'application Fromagerie. Le backend se
+trouve dans le dossier voisin `fromagerie-back`.
 
-Currently, two official plugins are available:
+## Démarrage local
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Prérequis : Node.js et npm compatibles avec les versions déclarées dans
+`package.json`, ainsi qu'un backend démarré sur `localhost:8080`.
 
-## React Compiler
+Depuis ce dossier :
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+npm ci
+npm run dev
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+Ouvrir `http://localhost:5173`. En développement, Vite transmet les requêtes
+`/api` au backend sur `http://localhost:8080`. Aucune URL d'API supplémentaire
+n'est donc nécessaire pour ce mode de lancement. Pour appeler une autre URL,
+définir `VITE_API_BASE_URL` dans un fichier local non suivi, par exemple
+`.env.local`, et adapter les origines CORS autorisées côté backend si les
+requêtes passent par un autre site.
+
+Le guide de préparation de PostgreSQL, des variables d'environnement et du
+profil `dev` se trouve dans [le README du backend](../fromagerie-back/README.md).
+
+## Vérifications
+
+```bash
+npm test
+npm run lint
+npm run build
+```
+
+La commande `npm run build` vérifie également les types TypeScript.

@@ -1,0 +1,22 @@
+name: Backend tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+          cache-dependency-path: fromagerie-back/pom.xml
+      - name: Check Docker availability
+        run: docker info
+      - name: Run backend tests, including PostgreSQL migration
+        working-directory: fromagerie-back
+        run: ./mvnw --batch-mode test

@@ -1,0 +1,14 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "java",
+      "request": "launch",
+      "name": "Backend Fromagerie (dev)",
+      "mainClass": "com.fromagerie_back.FromagerieBackApplication",
+      "projectName": "fromagerie-back",
+      "args": "--spring.profiles.active=dev",
+      "envFile": "${workspaceFolder}/fromagerie-back/.vscode/demo.env"
+    }
+  ]
+}

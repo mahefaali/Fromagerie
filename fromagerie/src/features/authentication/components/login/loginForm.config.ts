@@ -10,14 +10,12 @@ export interface DemoAccount {
   label: string;
   accessMode: AccessMode;
   username: string;
-  credential: string;
-  credentialLabel: "Mot de passe" | "PIN";
 }
 
 export const DEMO_ACCOUNTS: readonly DemoAccount[] = import.meta.env.DEV ? [
-  { label: "Propriétaire démo", accessMode: "Propriétaire", username: "gilles.demo", credential: "DemoFromagerie2026!", credentialLabel: "Mot de passe" },
-  { label: "Fabrication démo", accessMode: "Employé", username: "jean.demo", credential: "1234", credentialLabel: "PIN" },
-  { label: "Vente démo", accessMode: "Employé", username: "nathalie.demo", credential: "5678", credentialLabel: "PIN" },
+  { label: "Propriétaire démo", accessMode: "Propriétaire", username: "gilles.demo" },
+  { label: "Fabrication démo", accessMode: "Employé", username: "jean.demo" },
+  { label: "Vente démo", accessMode: "Employé", username: "nathalie.demo" },
 ] : [];
 
 export const ACCESS_LEVELS = [

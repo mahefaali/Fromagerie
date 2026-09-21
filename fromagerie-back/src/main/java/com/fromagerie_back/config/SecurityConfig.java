@@ -1,7 +1,9 @@
 package com.fromagerie_back.config;
 
 import java.util.List;
+import java.util.Arrays;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -82,11 +84,17 @@ public class SecurityConfig {
     }
 
     @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
+    public CorsConfigurationSource corsConfigurationSource(
+            @Value("${app.cors.allowed-origins:}") String allowedOrigins) {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of(
-                "http://localhost:5173",
-                "http://192.168.100.9:5173"));
+        List<String> origins = Arrays.stream(allowedOrigins.split(","))
+                .map(String::trim)
+                .filter(origin -> !origin.isEmpty())
+                .toList();
+        if (origins.contains("*")) {
+            throw new IllegalArgumentException("Une origine CORS explicite est obligatoire avec les cookies de session");
+        }
+        configuration.setAllowedOrigins(origins);
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("Content-Type", "Accept", "X-CSRF-TOKEN"));
         configuration.setAllowCredentials(true);
@@ -101,9 +109,10 @@ public class SecurityConfig {
             HttpSecurity http,
             SecurityContextRepository securityContextRepository,
             CsrfTokenRepository csrfTokenRepository,
+            CorsConfigurationSource corsConfigurationSource,
             RestSecurityErrorHandler securityErrorHandler) throws Exception {
         http
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .cors(cors -> cors.configurationSource(corsConfigurationSource))
                 .csrf(csrf -> csrf
                         .csrfTokenRepository(csrfTokenRepository)
                         .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler()))

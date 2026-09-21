@@ -44,7 +44,7 @@ export function InnerCircleForm() {
   const selectDemoAccount = (account: DemoAccount): void => {
     setValue("accessMode", account.accessMode, { shouldDirty: true, shouldValidate: true });
     setValue("username", account.username, { shouldDirty: true, shouldValidate: true });
-    setValue("password", account.credential, { shouldDirty: true, shouldValidate: true });
+    setValue("password", "");
     clearErrors("root");
     window.requestAnimationFrame(() => {
       submitButtonRef.current?.scrollIntoView?.({ behavior: "smooth", block: "center" });

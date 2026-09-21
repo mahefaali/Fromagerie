@@ -10,7 +10,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.web.servlet.MockMvc;
 
-@SpringBootTest(properties={"spring.datasource.url=jdbc:h2:mem:documents-security;DB_CLOSE_DELAY=-1","spring.datasource.driver-class-name=org.h2.Driver","spring.jpa.hibernate.ddl-auto=create-drop","app.schema-migration.enabled=false","spring.profiles.active=test"})
+@SpringBootTest(properties={"spring.datasource.url=jdbc:h2:mem:documents-security;DB_CLOSE_DELAY=-1","spring.datasource.driver-class-name=org.h2.Driver","spring.jpa.hibernate.ddl-auto=create-drop","spring.profiles.active=test"})
 @AutoConfigureMockMvc
 class DocumentReglementaireSecurityTests {
     @Autowired MockMvc mvc;
