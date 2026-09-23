@@ -25,7 +25,7 @@ export function AffinagePage() {
   }, [searchParams, setActiveTab]);
 
   return (
-    <div className="flex flex-col gap-6 p-4 md:p-6 relative pointer-events-auto">
+    <div className="relative mx-auto flex w-full max-w-[1440px] flex-col gap-5 py-2 pointer-events-auto sm:px-1 sm:py-3">
       
       {/* En-tête Global de la Section */}
       <div className="flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
@@ -43,7 +43,7 @@ export function AffinagePage() {
       <Tabs 
         value={activeTab} 
         onValueChange={(value) => setActiveTab(value as "caves" | "suivi")} 
-        className="w-full space-y-6"
+        className="w-full space-y-5 pl-2 sm:pl-3 lg:pl-4"
       >
         <PageTabsPortal>
           <FloatingSubnavigation

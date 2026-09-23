@@ -32,7 +32,7 @@ export function ProductionCostsDashboard({ lots, dateDebut, dateFin, fromageId }
   const monthlyCosts = useMemo(() => aggregateMonthlyCosts(filteredLots), [filteredLots]);
 
   return (
-    <div className="space-y-7">
+    <div className="space-y-4 sm:space-y-5">
       <ProductionCostMetrics categories={categories} lotCount={filteredLots.length} />
       <CostBreakdown categories={categories} hasOtherPeriods={lots.length > 0} />
       <MonthlyCostChart data={monthlyCosts} />

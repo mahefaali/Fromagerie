@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
@@ -36,7 +36,7 @@ afterEach(() => {
 });
 
 describe("UserMenu", () => {
-  it("se ferme quand on clique en dehors du menu", async () => {
+  it("affiche l'initiale et ferme le menu quand on clique ailleurs", async () => {
     const user = userEvent.setup();
 
     render(
@@ -48,11 +48,40 @@ describe("UserMenu", () => {
       </MemoryRouter>,
     );
 
-    await user.click(screen.getByRole("button", { name: /ouvrir le menu de gilles payet démo/i }));
-    expect(screen.getByRole("menu")).toBeInTheDocument();
+    const avatar = screen.getByRole("button", { name: "Menu de Gilles Payet Démo" });
+    expect(avatar).toHaveTextContent("G");
+    await user.click(avatar);
+    expect(screen.getByText("gilles.demo")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Voir mon profil" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Se déconnecter" })).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Bouton externe" }));
 
-    expect(screen.queryByRole("menu")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Voir mon profil" })).not.toBeInTheDocument();
+  });
+
+  it("ouvre la fiche du profil et demande confirmation avant la déconnexion", async () => {
+    const user = userEvent.setup();
+    mocks.logoutMock.mockResolvedValue(undefined);
+    render(<MemoryRouter><UserMenu /></MemoryRouter>);
+
+    await user.click(screen.getByRole("button", { name: "Menu de Gilles Payet Démo" }));
+    await user.click(screen.getByRole("button", { name: "Voir mon profil" }));
+    expect(screen.getByRole("dialog", { name: "Mon profil" })).toHaveTextContent("Propriétaire");
+
+    await user.click(screen.getByRole("button", { name: "Fermer" }));
+    await user.click(screen.getByRole("button", { name: "Menu de Gilles Payet Démo" }));
+    await user.click(screen.getByRole("button", { name: "Se déconnecter" }));
+    expect(screen.getByRole("alertdialog", { name: "Se déconnecter ?" })).toBeInTheDocument();
+    expect(mocks.logoutMock).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole("button", { name: "Annuler" }));
+    expect(mocks.logoutMock).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole("button", { name: "Menu de Gilles Payet Démo" }));
+    await user.click(screen.getByRole("button", { name: "Se déconnecter" }));
+    await user.click(screen.getByRole("button", { name: "Confirmer la déconnexion" }));
+    await waitFor(() => expect(mocks.logoutMock).toHaveBeenCalledOnce());
+    await waitFor(() => expect(mocks.navigateMock).toHaveBeenCalledWith("/login", { replace: true }));
   });
 });

@@ -1,6 +1,15 @@
+import type { LotProductionCost } from "../../profitability/api/profitabilityApi";
 import type { StockFromageFini, StockLossApi } from "../api/stockApi";
 import type { Order, OrderItem } from "../types/orders";
-import type { LossCauseSummary, LossLogEntry, MonthlyLossRate, OrderReturns } from "./unsoldLoss.types";
+import type { AverageProductionCost, LossCauseSummary, LossLogEntry, MonthlyLossRate, OrderReturns } from "./unsoldLoss.types";
+
+const LOSS_TYPE_LABELS: Record<StockLossApi["typePerte"], string> = {
+  INVENDU: "Invendu",
+  RETOUR_CLIENT: "Invendu retourné",
+  DEFAUT_AFFINAGE: "Défaut d'affinage",
+  DLC_DDM_DEPASSEE: "DLC / DDM dépassée",
+  AUTRE: "Autre",
+};
 
 export function orderItemKey(item: OrderItem): string {
   return String(item.reservationId ?? item.id ?? item.name ?? item.productName ?? "Fromage");
@@ -10,7 +19,7 @@ export function mapLossToLogEntry(loss: StockLossApi): LossLogEntry {
   return {
     id: String(loss.id),
     cheeseName: loss.fromageNom,
-    badgeText: loss.typePerte === "RETOUR_CLIENT" ? "Invendu retourné" : loss.typePerte,
+    badgeText: LOSS_TYPE_LABELS[loss.typePerte],
     dateFormatted: new Date(loss.dateHeure).toLocaleDateString("fr-FR"),
     dateIso: loss.dateHeure,
     lotNumber: loss.numeroLot,
@@ -21,6 +30,14 @@ export function mapLossToLogEntry(loss: StockLossApi): LossLogEntry {
     unitCost: Number(loss.coutUnitaireReference),
     totalCost: Number(loss.coutTotal),
   };
+}
+
+export function calculateAgingDefectQuantity(losses: LossLogEntry[]): number {
+  return losses.reduce((total, loss) => {
+    const cause = loss.badgeText.trim().toLocaleLowerCase("fr");
+    const isAgingDefect = cause === "défaut d'affinage" || cause === "defaut_affinage";
+    return isAgingDefect ? total + loss.quantity : total;
+  }, 0);
 }
 
 export function rebuildPersistedReturns(orders: Order[], losses: StockLossApi[]): OrderReturns {
@@ -95,4 +112,29 @@ function updateMonthlyRow(rows: Map<string, Omit<MonthlyLossRate, "monthLabel" |
   row.lostQuantity += lost;
   row.lostCost += cost;
   rows.set(key, row);
+}
+
+export function calculateAverageProductionCosts(lots: LotProductionCost[]): AverageProductionCost[] {
+  const grouped = new Map<number, { cheeseName: string; lotCount: number; unitCount: number; totalCost: number }>();
+
+  lots.forEach((lot) => {
+    const unitCount = Number(lot.nombreUnites);
+    const totalCost = Number(lot.coutTotal);
+    if (!Number.isFinite(unitCount) || unitCount <= 0 || !Number.isFinite(totalCost)) return;
+    const current = grouped.get(lot.fromageId) ?? { cheeseName: lot.fromageNom, lotCount: 0, unitCount: 0, totalCost: 0 };
+    current.lotCount += 1;
+    current.unitCount += unitCount;
+    current.totalCost += totalCost;
+    grouped.set(lot.fromageId, current);
+  });
+
+  return [...grouped.entries()]
+    .map(([fromageId, item]) => ({
+      fromageId,
+      cheeseName: item.cheeseName,
+      lotCount: item.lotCount,
+      unitCount: item.unitCount,
+      averageUnitCost: item.totalCost / item.unitCount,
+    }))
+    .sort((left, right) => left.cheeseName.localeCompare(right.cheeseName, "fr"));
 }

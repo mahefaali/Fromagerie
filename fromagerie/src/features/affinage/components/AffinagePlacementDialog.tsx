@@ -193,9 +193,9 @@ export function AffinagePlacementDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[90vh] max-w-4xl flex-col gap-0 overflow-hidden rounded-xl border-[#ddd4c3] bg-[#fbf8f1] p-0 shadow-2xl sm:rounded-xl">
-        <DialogHeader className="px-8 pb-5 pt-7">
-          <DialogTitle className="text-2xl font-bold tracking-tight text-[#211f19]">{title}</DialogTitle>
+      <DialogContent className="flex max-w-4xl flex-col gap-0 overflow-hidden p-0">
+        <DialogHeader className="border-b border-[#e2dacb]/60 bg-[#f5f2eb]/40 px-6 pb-5 pt-6 sm:px-8">
+          <DialogTitle className="text-2xl font-bold tracking-tight text-[#2c2825]">{title}</DialogTitle>
           <DialogDescription className="mt-1 text-base text-[#716858]">
             {preselectedFabrication ? (
               <>
@@ -389,7 +389,7 @@ export function AffinagePlacementDialog({
           )}
 
           </div>
-          <DialogFooter className="border-t border-[#e2dbcf] bg-[#fbf8f1] px-8 py-5">
+          <DialogFooter className="border-t border-[#e2dacb]/60 bg-[#f5f2eb]/40 px-6 py-5 sm:px-8">
             <Button className="h-11 rounded-full border-[#ddd4c3] bg-[#fbf8f1] px-6 hover:bg-[#f1ece2]" type="button" variant="outline" onClick={() => onOpenChange(false)}>Annuler</Button>
             <Button className="h-11 rounded-full bg-[#365314] px-6 text-white hover:bg-[#2d4511]" type="submit" disabled={isSubmitting || insufficientCompatibleCapacity || insufficientSelectedCapacity || selectedCaveIds.some((id) => !rangeeByCave[id]) || availableCaves.length === 0 || (mode === "create" && fabrications.length === 0)}>
               {isSubmitting ? "Enregistrement..." : "Confirmer"}

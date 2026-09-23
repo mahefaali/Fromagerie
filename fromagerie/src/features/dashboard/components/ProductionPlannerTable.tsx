@@ -88,7 +88,7 @@ export const ProductionPlannerTable: React.FC = () => {
 
       {/* --- PANNEAU DÉTAILLÉ DE PLANIFICATION (SHEET) --- */}
       <Sheet open={!!selectedCellar} onOpenChange={(open) => !open && setSelectedCellar(null)}>
-        <SheetContent className="bg-[#fcfaf7] border-l border-[#e8dfd5] text-[#3d312a] sm:max-w-md">
+        <SheetContent className="sm:max-w-md">
           {selectedCellar && <CellarPlannerDetails cellar={selectedCellar} />}
         </SheetContent>
       </Sheet>

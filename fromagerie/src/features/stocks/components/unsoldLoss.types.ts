@@ -6,6 +6,14 @@ export interface ProductionCostItem {
   unitCost: number | string;
 }
 
+export interface AverageProductionCost {
+  fromageId: number;
+  cheeseName: string;
+  lotCount: number;
+  unitCount: number;
+  averageUnitCost: number;
+}
+
 export interface LossLogEntry {
   id: string;
   cheeseName: string;

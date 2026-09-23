@@ -18,7 +18,7 @@ export function CaveSidebar({
   canManage,
 }: CaveSidebarProps) {
   return (
-    <aside className="space-y-3">
+    <aside className="min-w-0 space-y-3 xl:sticky xl:top-4 xl:self-start">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Warehouse className="size-5 text-primary" />
@@ -31,7 +31,7 @@ export function CaveSidebar({
         )}
       </div>
 
-      <div className="space-y-2">
+      <div className="-mx-1 flex snap-x gap-2 overflow-x-auto px-1 pb-2 xl:mx-0 xl:block xl:space-y-2 xl:overflow-visible xl:px-0 xl:pb-0">
         {caves.map((cave) => {
           const cap = capaciteFor(cave.etageres);
           const isActive = cave.id === selectedId;
@@ -41,7 +41,7 @@ export function CaveSidebar({
               key={cave.id}
               type="button"
               onClick={() => onSelectCave(cave.id)}
-              className={`w-full rounded-lg border p-3 text-left transition-colors ${
+              className={`w-[min(74vw,230px)] shrink-0 snap-start rounded-lg border p-3 text-left transition-colors sm:w-[220px] xl:w-full ${
                 isActive
                   ? "border-primary bg-primary/5"
                   : "border-border bg-card hover:bg-muted/50"

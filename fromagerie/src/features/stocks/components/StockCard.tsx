@@ -41,11 +41,11 @@ export const StockCard: React.FC<StockCardProps> = ({
   onDeclareExpiredLoss,
 }) => {
   return (
-    <Card className="max-w-md border-[#e8e2d5] p-5 shadow-sm">
-      <div className="flex justify-between items-start mb-1">
-        <div>
-          <h3 className="text-lg font-bold text-gray-900">{item.name}</h3>
-          <span className="text-xs font-mono text-gray-500 uppercase tracking-wider">
+    <Card className="min-w-0 border-[#e8e2d5] p-3 shadow-sm sm:p-3.5">
+      <div className="mb-1 flex min-w-0 items-start justify-between gap-2">
+        <div className="min-w-0">
+          <h3 className="truncate text-base font-bold text-gray-900">{item.name}</h3>
+          <span className="block truncate font-mono text-[11px] uppercase tracking-wide text-gray-500">
             {item.code}
           </span>
         </div>
@@ -56,10 +56,10 @@ export const StockCard: React.FC<StockCardProps> = ({
         ) : null}
       </div>
 
-      <div className="grid grid-cols-3 gap-2 my-4 text-xs">
+      <div className="my-2.5 grid grid-cols-3 gap-1.5 text-[11px] sm:gap-2 sm:text-xs">
         <div>
           <span className="text-gray-500 block">Quantité</span>
-          <span className="font-bold text-sm text-gray-900">
+          <span className="text-xs font-bold text-gray-900 sm:text-sm">
             {item.quantity} {item.unit}
           </span>
         </div>
@@ -73,7 +73,7 @@ export const StockCard: React.FC<StockCardProps> = ({
         </div>
       </div>
 
-      <div className="text-xs mb-3">
+      <div className="mb-2.5 text-xs">
         <span className={item.isExpired ? 'font-semibold text-red-700' : 'text-gray-600'}>
           {item.isExpired
             ? `${item.durabilityType} dépassée de ${Math.abs(item.daysBeforeDlc)} jour(s)`
@@ -84,12 +84,12 @@ export const StockCard: React.FC<StockCardProps> = ({
       </div>
 
       {/* Barre de progression de la durabilité */}
-      <div className="w-full bg-gray-200 h-2 rounded-full overflow-hidden mb-3">
+      <div className="mb-2.5 h-1.5 w-full overflow-hidden rounded-full bg-gray-200">
         <div className={`${item.isExpired ? 'bg-red-600' : 'bg-[#2d5a37]'} h-full w-2/3 rounded-full`} />
       </div>
 
       {item.isExpiringSoon && (
-        <div className="bg-[#fdf2ee] border border-[#f5d0c5] rounded-lg p-2.5 text-xs flex items-center gap-2 text-gray-800 mt-2">
+        <div className="mt-2 flex items-start gap-2 rounded-lg border border-[#f5d0c5] bg-[#fdf2ee] p-2 text-[11px] leading-snug text-gray-800 sm:text-xs">
           <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
           <span>
             Ce fromage arrive bientôt à sa {item.durabilityType === 'DLC' ? 'date limite de consommation' : 'date de durabilité minimale'}
@@ -98,7 +98,7 @@ export const StockCard: React.FC<StockCardProps> = ({
       )}
       {item.isExpired && (
         <>
-          <div className="bg-red-50 border border-red-200 rounded-lg p-2.5 text-xs flex items-center gap-2 text-red-900 mt-2">
+          <div className="mt-2 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-2 text-[11px] leading-snug text-red-900 sm:text-xs">
             <AlertTriangle className="w-4 h-4 text-red-700 shrink-0" />
             <span>
               {item.durabilityType === 'DLC'
@@ -113,7 +113,7 @@ export const StockCard: React.FC<StockCardProps> = ({
                 <Button
                   type="button"
                   variant="destructive"
-                  className="mt-4 w-full"
+                  className="mt-3 h-9 w-full text-xs"
                   disabled={declaringLoss}
                 >
                   <Trash2 />

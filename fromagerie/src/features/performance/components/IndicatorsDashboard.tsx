@@ -15,15 +15,15 @@ export function IndicatorsDashboard({ data }: { data: PerformanceDashboard | nul
   const details = mergeIndicatorDetails(data);
 
   return (
-    <div className="space-y-7">
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="space-y-5">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Kpi label="Rendement moyen" value={format(data?.rendementMoyen.valeur, "%", "Non disponible")} hint="Poids de fromage obtenu / volume de lait" />
         <Kpi label="Taux de perte" value={format(data?.tauxPerte.valeur, "%", "Non disponible")} hint="Pertes rapportées aux entrées" evolution={data?.tauxPerte.evolution} suffix="pt" reverseTrend />
         <Kpi label="Poids moyen" value={format(weightAverage, "kg", "Non disponible")} hint="Par pièce et par type de fromage" />
         <Kpi label="Écart d’affinage" value={agingGap == null ? "Non disponible" : `${agingGap >= 0 ? "+" : ""}${number.format(agingGap)} j`} hint="Durée réelle par rapport au prévu" />
       </div>
 
-      <div className="grid gap-5 lg:grid-cols-2">
+      <div className="grid gap-4 lg:grid-cols-2">
         <CostEvolutionChart data={costs} />
         <MarginEvolutionChart data={margins} />
       </div>
@@ -36,10 +36,10 @@ export function IndicatorsDashboard({ data }: { data: PerformanceDashboard | nul
 function Kpi({ label, value, hint, evolution, suffix, reverseTrend = false }: { label: string; value: string; hint: string; evolution?: number | null; suffix?: string; reverseTrend?: boolean }) {
   const positive = evolution != null && (reverseTrend ? evolution <= 0 : evolution >= 0);
   return (
-    <Card className={`${cardClass} gap-3 py-5`}>
-      <CardContent className="px-5">
+    <Card className={`${cardClass} gap-2 py-4`}>
+      <CardContent className="px-4">
         <p className="text-sm font-medium text-[#70634f]">{label}</p>
-        <p className="mt-3 text-3xl font-semibold tracking-tight">{value}</p>
+        <p className="mt-1.5 text-xl font-semibold tracking-tight sm:text-2xl">{value}</p>
         {evolution == null ? (
           <p className="mt-2 min-h-5 text-xs text-[#806f59]">{hint}</p>
         ) : (

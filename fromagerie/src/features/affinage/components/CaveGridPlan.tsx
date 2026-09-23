@@ -64,14 +64,14 @@ export function CaveGridPlan({
   }
 
   return (
-    <Card>
-      <CardHeader className="space-y-0">
+    <Card className="min-w-0 overflow-hidden">
+      <CardHeader className="space-y-0 p-4 sm:p-5">
         <CardTitle className="text-base">Plan de la cave</CardTitle>
         <p className="mt-1 text-xs text-muted-foreground">
           Les places occupées affichent leur numéro de lot; les places disponibles conservent leur numéro physique.
         </p>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="min-w-0 space-y-5 px-4 pb-4 sm:px-5 sm:pb-5">
         {isLoadingOccupations ? (
           <p role="status" aria-live="polite" className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
             Chargement de l’occupation de la cave...
@@ -103,12 +103,12 @@ export function CaveGridPlan({
                 {rangees.map(({ rangee, positions }) => (
                   <div
                     key={rangee}
-                    className="flex items-start gap-3 rounded-md border border-border bg-card/50 p-3"
+                    className="grid min-w-0 gap-2 rounded-lg border border-border bg-card/50 p-2.5 sm:grid-cols-[64px_minmax(0,1fr)] sm:items-start sm:gap-3 sm:p-3"
                   >
-                    <div className="w-16 shrink-0 pt-1 text-xs font-medium text-muted-foreground">
+                    <div className="pt-1 text-[11px] font-semibold text-muted-foreground sm:text-xs">
                       Rangée {rangee}
                     </div>
-                    <div className="flex flex-1 flex-wrap gap-2">
+                    <div className="grid min-w-0 snap-x grid-flow-col auto-cols-[76px] gap-2 overflow-x-auto pb-1 sm:auto-cols-[88px] lg:auto-cols-[minmax(88px,1fr)]">
                       {positions.map((p) => {
                         const positionCode = `${p.etagere}-${p.rangee}-${p.position}`;
                         const occupation = occupationsByPosition.get(positionCode);
@@ -120,13 +120,13 @@ export function CaveGridPlan({
                               ? `Position ${positionCode}, lot ${occupation.numeroLot}`
                               : `Position ${positionCode}, libre`}
                             className={occupation
-                              ? "flex min-h-14 min-w-[90px] flex-col justify-center rounded-md border border-primary/40 bg-primary/10 px-3 py-2 text-xs text-foreground"
-                              : "flex min-h-14 min-w-[90px] flex-col justify-center rounded-md border border-dashed border-border bg-background px-3 py-2 text-xs text-muted-foreground"}
+                              ? "flex min-h-12 min-w-0 snap-start flex-col justify-center overflow-hidden rounded-md border border-primary/40 bg-primary/10 px-2 py-1.5 text-xs text-foreground sm:min-h-14"
+                              : "flex min-h-12 min-w-0 snap-start flex-col justify-center overflow-hidden rounded-md border border-dashed border-border bg-background px-2 py-1.5 text-xs text-muted-foreground sm:min-h-14"}
                           >
                             {occupation ? (
                               <>
                                 <span className="text-[9px] font-semibold uppercase tracking-wider text-primary">Lot</span>
-                                <span className="font-mono text-[11px] font-semibold">{occupation.numeroLot}</span>
+                                <span className="truncate font-mono text-[10px] font-semibold" title={occupation.numeroLot}>{occupation.numeroLot}</span>
                               </>
                             ) : (
                               <>

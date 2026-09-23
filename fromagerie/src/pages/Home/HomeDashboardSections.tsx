@@ -24,7 +24,7 @@ export function AlertList({ title, icon: Icon, items, emptyLabel }: {
         {items.length === 0 ? (
           <p className="text-sm text-[#8c7a6b]">{emptyLabel}</p>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-2">
             {items.slice(0, 4).map((item) => (
               <Link
                 key={`${item.lotId}-${title}`}
@@ -216,9 +216,9 @@ export function SalesHome({ stocks, loading, error }: { stocks: StockFromageFini
 
 export function StatCard({ label, value, hint }: { label: string; value: number; hint: string }) {
   return (
-    <div className="rounded-2xl border border-[#eee7de] bg-white p-4">
+    <div className="rounded-xl border border-[#eee7de] bg-white p-3">
       <p className="text-xs uppercase tracking-[0.18em] text-[#8c7a6b]">{label}</p>
-      <div className="mt-2 text-3xl font-bold text-[#3d312a]">{value}</div>
+      <div className="mt-1 text-xl font-bold text-[#3d312a] sm:text-2xl">{value}</div>
       <p className="mt-1 text-xs text-[#8c7a6b]">{hint}</p>
     </div>
   );

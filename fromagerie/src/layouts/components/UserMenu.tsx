@@ -1,157 +1,122 @@
-"use client";
-
-import { useEffect, useRef, useState } from "react";
-import { LogOut, Settings, User } from "lucide-react";
+import { useState } from "react";
+import { LogOut, UserRound } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { Button } from "./../../components/ui/button";
-import { Link } from "./../../components/common/Link";
-import { useAuth } from "../../features/authentication/hooks/useAuth";
-import { HttpError } from "../../services/http/apiClient";
 
-type UserMenuProps = {
-  menuPlacement?: "top" | "bottom";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "../../components/ui/alert-dialog";
+import {
+  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,
+} from "../../components/ui/dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "../../components/ui/popover";
+import { useAuth } from "../../features/authentication/hooks/useAuth";
+
+const roleLabels = {
+  PROPRIETAIRE: "Propriétaire",
+  FABRICATION: "Fabrication",
+  VENTE: "Vente",
 };
 
-export default function UserMenu({ menuPlacement = "bottom" }: UserMenuProps) {
+export default function UserMenu() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const menuRef = useRef<HTMLDivElement | null>(null);
-  const [isOpen, setIsOpen] = useState(false);
-  const [logoutError, setLogoutError] = useState<string | null>(null);
+  const [open, setOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [logoutConfirmationOpen, setLogoutConfirmationOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [logoutError, setLogoutError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!isOpen) {
-      return;
-    }
+  if (!user) return null;
 
-    const handlePointerDown = (event: MouseEvent | TouchEvent): void => {
-      const target = event.target;
-      if (!(target instanceof Node)) {
-        return;
-      }
+  const firstName = user.nom.trim().split(/\s+/)[0] || user.username;
+  const initial = firstName.charAt(0).toLocaleUpperCase("fr");
 
-      if (menuRef.current?.contains(target)) {
-        return;
-      }
-
-      setIsOpen(false);
-    };
-
-    const handleKeyDown = (event: KeyboardEvent): void => {
-      if (event.key === "Escape") {
-        setIsOpen(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handlePointerDown);
-    document.addEventListener("touchstart", handlePointerDown);
-    document.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      document.removeEventListener("mousedown", handlePointerDown);
-      document.removeEventListener("touchstart", handlePointerDown);
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [isOpen]);
-
-  if (!user) {
-    return null;
-  }
-
-  const isOwner = user.role === "PROPRIETAIRE";
-  const initials = user.nom
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part.charAt(0))
-    .join("")
-    .toUpperCase();
-
-  const handleLogout = async (): Promise<void> => {
+  const handleLogout = async () => {
     setIsLoggingOut(true);
     setLogoutError(null);
-
     try {
       await logout();
+      setLogoutConfirmationOpen(false);
       navigate("/login", { replace: true });
-    } catch (error: unknown) {
-      setLogoutError(
-        error instanceof HttpError ? error.message : "Déconnexion impossible. Veuillez réessayer.",
-      );
+    } catch (error) {
+      setLogoutError(error instanceof Error ? error.message : "Déconnexion impossible. Réessayez.");
     } finally {
       setIsLoggingOut(false);
     }
   };
 
-  return (
-    <div ref={menuRef} className="relative inline-block text-left">
-      {/* Bouton Trigger (Avatar) */}
-      <button
-        type="button"
-        onClick={() => setIsOpen((current) => !current)}
-        className="group relative inline-flex size-10 shrink-0 items-center justify-center rounded-full border border-[#C96A4A] bg-[#C96A4A] text-xs font-semibold uppercase tracking-wider text-[#FFFDF9] shadow-sm transition-all duration-200 hover:border-[#3F4A4F] hover:bg-[#3F4A4F] hover:shadow-md active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#C96A4A] focus-visible:ring-offset-2 sm:size-11 sm:text-sm"
-        aria-label={`Ouvrir le menu de ${user.nom}`}
-        aria-expanded={isOpen}
-        aria-haspopup="menu"
-        title={`${user.nom} - ${user.role}`}
-      >
-        {initials || <User className="size-5 transition-transform duration-200 group-hover:scale-110" aria-hidden="true" />}
-        <span
-          className="absolute bottom-0 right-0 size-3 rounded-full border-2 border-background bg-emerald-500 ring-1 ring-black/5"
-          aria-hidden="true"
-        />
-      </button>
-
-      {/* Dropdown Menu */}
-      {isOpen && (
-        <div
-          className={`absolute right-0 z-[10000] w-[min(18rem,calc(100vw-1rem))] origin-top-right rounded-2xl border border-border/80 bg-background/95 p-3.5 shadow-xl backdrop-blur-sm transition-all ${
-            menuPlacement === "top" ? "bottom-full mb-3" : "top-full mt-2"
-          }`}
-          role="menu"
+  return <>
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          aria-label={`Menu de ${user.nom}`}
+          className="flex size-10 shrink-0 items-center justify-center rounded-full border border-[#355B12]/30 bg-[#355B12] text-sm font-semibold text-white shadow-sm transition-colors hover:bg-[#29470e] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#355B12] focus-visible:ring-offset-2"
         >
-          {/* Header Profil */}
-          <div className="mb-3 rounded-xl bg-muted/70 p-3.5 border border-border/40">
-            <p className="font-semibold text-foreground truncate text-sm">{user.nom}</p>
-            <div className="mt-1 flex items-center gap-1.5">
-              <span className="inline-block size-1.5 rounded-full bg-primary" />
-              <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                {user.role}
-              </p>
-            </div>
-            <p className="mt-2 text-xs font-mono text-muted-foreground/80 truncate">{user.username}</p>
-          </div>
-
-          {/* Actions */}
-          <div className="space-y-1.5">
-            {isOwner && (
-              <Link to="/configuration" className="block w-full">
-                <Button className="w-full justify-start rounded-lg bg-primary px-3.5 py-2.5 text-xs font-bold uppercase tracking-wider text-primary-foreground shadow-sm transition-all hover:bg-primary/90 active:scale-[0.98]">
-                  <Settings className="mr-2.5 size-4" />
-                  Configuration
-                </Button>
-              </Link>
-            )}
-
-            <button
-              type="button"
-              onClick={handleLogout}
-              disabled={isLoggingOut}
-              className="inline-flex w-full items-center justify-start rounded-lg border border-border/60 bg-card px-3.5 py-2.5 text-xs font-semibold uppercase tracking-wider text-foreground transition-all hover:border-destructive/30 hover:bg-destructive/10 hover:text-destructive active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <LogOut className="mr-2.5 size-4" />
-              {isLoggingOut ? "Déconnexion..." : "Déconnexion"}
-            </button>
-            
-            {logoutError && (
-              <p role="alert" className="mt-2 px-1 text-xs font-medium text-destructive">
-                {logoutError}
-              </p>
-            )}
-          </div>
+          {initial}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent
+        align="end"
+        sideOffset={10}
+        className="w-[min(20rem,calc(100vw-2rem))] rounded-2xl border border-[#e2dacb] bg-[#fffcf7] p-1.5 text-[#2c2825] shadow-[0_12px_32px_rgba(44,40,37,0.16)]"
+      >
+        <div className="border-b border-[#e2dacb] px-3.5 py-3.5">
+          <p className="truncate text-base font-semibold leading-6">{user.nom}</p>
+          <p className="truncate text-sm text-[#706960]">{user.username}</p>
         </div>
-      )}
-    </div>
-  );
+        <div className="py-1.5">
+          <button
+            type="button"
+            onClick={() => { setOpen(false); setProfileOpen(true); }}
+            className="flex min-h-11 w-full items-center gap-3 rounded-lg px-3.5 text-left text-sm transition-colors hover:bg-[#f2ebdd] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#355B12]"
+          >
+            <UserRound className="size-4 shrink-0" /> Voir mon profil
+          </button>
+          <button
+            type="button"
+            onClick={() => { setOpen(false); setLogoutError(null); setLogoutConfirmationOpen(true); }}
+            className="flex min-h-11 w-full items-center gap-3 rounded-lg px-3.5 text-left text-sm text-[#b3260c] transition-colors hover:bg-[#fff0eb] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b3260c] disabled:opacity-50"
+          >
+            <LogOut className="size-4 shrink-0" /> Se déconnecter
+          </button>
+        </div>
+      </PopoverContent>
+    </Popover>
+
+    <Dialog open={profileOpen} onOpenChange={setProfileOpen}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Mon profil</DialogTitle>
+          <DialogDescription>Informations de votre compte</DialogDescription>
+        </DialogHeader>
+        <dl className="space-y-3 rounded-xl border border-[#e2dacb] bg-white p-4 text-sm">
+          <div><dt className="text-[#706960]">Nom</dt><dd className="mt-0.5 font-semibold">{user.nom}</dd></div>
+          <div><dt className="text-[#706960]">Identifiant</dt><dd className="mt-0.5 break-all font-semibold">{user.username}</dd></div>
+          <div><dt className="text-[#706960]">Rôle</dt><dd className="mt-0.5 font-semibold">{roleLabels[user.role]}</dd></div>
+        </dl>
+      </DialogContent>
+    </Dialog>
+
+    <AlertDialog open={logoutConfirmationOpen} onOpenChange={(next) => { if (!isLoggingOut) setLogoutConfirmationOpen(next); }}>
+      <AlertDialogContent className="max-w-md">
+        <AlertDialogHeader>
+          <AlertDialogTitle>Se déconnecter ?</AlertDialogTitle>
+          <AlertDialogDescription>Votre session sera fermée. Vous devrez vous reconnecter pour accéder au système.</AlertDialogDescription>
+        </AlertDialogHeader>
+        {logoutError && <p role="alert" className="text-sm text-[#b3260c]">{logoutError}</p>}
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={isLoggingOut}>Annuler</AlertDialogCancel>
+          <AlertDialogAction
+            disabled={isLoggingOut}
+            className="bg-[#b3260c] text-white hover:bg-[#922007]"
+            onClick={(event) => { event.preventDefault(); void handleLogout(); }}
+          >
+            {isLoggingOut ? "Déconnexion..." : "Confirmer la déconnexion"}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  </>;
 }

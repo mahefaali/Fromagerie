@@ -34,13 +34,13 @@ export default function HomePage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#f7f4ef] px-4 py-6 text-[#3d312a] sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-7xl space-y-6">
-        <section className="rounded-3xl border border-[#e8dfd5] bg-[#fcfaf7] p-6 shadow-sm">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+    <main className="min-h-screen bg-[#f7f4ef] py-2 text-[#3d312a] sm:px-1 sm:py-3">
+      <div className="mx-auto max-w-[1440px] space-y-5">
+        <section className="rounded-2xl border border-[#e8dfd5] bg-[#fcfaf7] p-4 shadow-sm sm:p-5">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
             <div>
             <p className="text-xs uppercase tracking-[0.22em] text-[#8c7a6b]">{user?.role === "VENTE" ? "Accueil vente" : "Accueil fabrication"}</p>
-              <h1 className="mt-2 text-3xl font-bold tracking-tight text-[#3d312a]">
+              <h1 className="mt-1.5 text-xl font-bold tracking-tight text-[#3d312a] sm:text-2xl">
                 Qu’est-ce que je dois faire aujourd’hui ?
               </h1>
               <p className="mt-2 max-w-3xl text-sm text-[#706053]">
@@ -65,7 +65,7 @@ export default function HomePage() {
           </div>
 
           {user?.role !== "VENTE" && (
-            <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="mt-4 grid gap-2.5 sm:grid-cols-2 xl:grid-cols-4">
               <StatCard label="Lots suivis" value={dashboard?.lotsEnAffinage ?? 0} hint="En affinage actif" />
               <StatCard label="Actions du jour" value={actionCount} hint="Alertes priorisées" />
               <StatCard label="Lots prêts" value={dashboard?.lotsPrets ?? 0} hint="Sortie ou traitement" />
@@ -74,6 +74,7 @@ export default function HomePage() {
           )}
         </section>
 
+      <div className="space-y-5 pl-2 sm:pl-3 lg:pl-4">
       {user?.role === "VENTE" ? (
         <SalesHome stocks={salesStocks} loading={salesLoading} error={salesError} />
       ) : user?.role === "FABRICATION" ? (
@@ -93,13 +94,13 @@ export default function HomePage() {
               </Card>
             ) : (
               <>
-                <div className="grid gap-6 lg:grid-cols-2">
+                <div className="grid gap-4 lg:grid-cols-2">
                   <AlertList title="Retournements à effectuer" icon={RefreshCw} items={dashboard?.retounementsAEffectuer ?? []} emptyLabel="Aucun retournement prioritaire." />
                   <AlertList title="Sorties d’affinage proches" icon={CalendarClock} items={dashboard?.sortiesProches ?? []} emptyLabel="Aucune sortie dans les 7 prochains jours." />
                   <AlertList title="Lots prêts à sortir" icon={PackageCheck} items={dashboard?.lotsPretsASortir ?? []} emptyLabel="Aucun lot prêt à sortir." />
                   <AlertList title="Déplacements conseillés" icon={MoveRight} items={dashboard?.changementsCaveRecommandes ?? []} emptyLabel="Aucun changement de cave recommandé." />
                 </div>
-                <div className="mt-6">
+                <div className="mt-4">
                   <CapacityPlanning planning={planning} loading={planningLoading} error={planningError} />
                 </div>
               </>
@@ -116,10 +117,14 @@ export default function HomePage() {
         )}
 
         <div className="flex justify-end">
-          <Button onClick={() => navigate("/affinage")} className="bg-[#c85a32] text-white hover:bg-[#b24f2c]">
-            Ouvrir le suivi d’affinage
+          <Button
+            onClick={() => navigate(user?.role === "VENTE" ? "/stock" : "/affinage")}
+            className="bg-[#c85a32] text-white hover:bg-[#b24f2c]"
+          >
+            {user?.role === "VENTE" ? "Ouvrir le stock et les ventes" : "Ouvrir le suivi d’affinage"}
           </Button>
         </div>
+      </div>
       </div>
     </main>
   );

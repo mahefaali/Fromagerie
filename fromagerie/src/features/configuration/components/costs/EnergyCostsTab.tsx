@@ -2,6 +2,7 @@ import { Badge } from "../../../../components/ui/badge";
 import { Button } from "../../../../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../../../../components/ui/card";
 import { Input } from "../../../../components/ui/input";
+import { NumericTextInput } from "../../../../components/ui/numeric-input";
 import { Label } from "../../../../components/ui/label";
 import { TabsContent } from "../../../../components/ui/tabs";
 import { isTypeOperationEnergie, isUniteCalculEnergie } from "./costForm.config";
@@ -44,7 +45,7 @@ export function EnergyCostsTab({ model }: { model: CostsConfigurationModel }) {
             <option value="PAR_FABRICATION">Par fabrication</option>
           </select>
         </div>
-        <Input type="number" step="0.0001" min="0" placeholder="Coût standard" value={energieForm.coutStandard} onChange={(e) => setEnergieForm({ ...energieForm, coutStandard: e.target.value })} />
+        <NumericTextInput min={0} precision={4} placeholder="Coût standard" aria-label="Coût standard" value={energieForm.coutStandard} onValueChange={(value) => setEnergieForm({ ...energieForm, coutStandard: value })} />
         <div className="grid gap-2">
           <Label htmlFor="energie-date-debut">Début de validité</Label>
           <Input id="energie-date-debut" type="date" required value={energieForm.dateDebutValidite} onChange={(e) => setEnergieForm({ ...energieForm, dateDebutValidite: e.target.value })} />

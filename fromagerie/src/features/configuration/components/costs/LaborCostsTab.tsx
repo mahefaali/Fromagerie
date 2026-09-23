@@ -2,6 +2,7 @@ import { Badge } from "../../../../components/ui/badge";
 import { Button } from "../../../../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../../../../components/ui/card";
 import { Input } from "../../../../components/ui/input";
+import { NumericTextInput } from "../../../../components/ui/numeric-input";
 import { Label } from "../../../../components/ui/label";
 import { TabsContent } from "../../../../components/ui/tabs";
 import type { TypeOperationMainOeuvre } from "../../api/costsApi";
@@ -29,11 +30,11 @@ export function LaborCostsTab({ model }: { model: CostsConfigurationModel }) {
         </div>
         <div className="grid gap-2">
           <Label htmlFor="main-oeuvre-duree">Durée standard (minutes)</Label>
-          <Input id="main-oeuvre-duree" type="number" min="1" step="1" value={mainOeuvreForm.dureeStandardMinutes} onChange={(e) => setMainOeuvreForm({ ...mainOeuvreForm, dureeStandardMinutes: e.target.value })} />
+          <NumericTextInput id="main-oeuvre-duree" min={1} integer value={mainOeuvreForm.dureeStandardMinutes} onValueChange={(value) => setMainOeuvreForm({ ...mainOeuvreForm, dureeStandardMinutes: value })} />
         </div>
         <div className="grid gap-2">
           <Label htmlFor="main-oeuvre-cout">Coût horaire</Label>
-          <Input id="main-oeuvre-cout" type="number" min="0" step="0.0001" value={mainOeuvreForm.coutHoraire} onChange={(e) => setMainOeuvreForm({ ...mainOeuvreForm, coutHoraire: e.target.value })} />
+          <NumericTextInput id="main-oeuvre-cout" min={0} precision={4} value={mainOeuvreForm.coutHoraire} onValueChange={(value) => setMainOeuvreForm({ ...mainOeuvreForm, coutHoraire: value })} />
         </div>
         <div className="grid gap-2">
           <Label htmlFor="main-oeuvre-date-debut">Début de validité</Label>

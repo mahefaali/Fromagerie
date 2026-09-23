@@ -51,7 +51,7 @@ export function ProfitabilityDashboard({ analysis, clients }: { analysis: Profit
   </div>;
 }
 
-function SummaryCard({ label, value, hint }: { label: string; value: string; hint: string }) { return <Card className={`${cardClass} gap-3 py-5`}><CardContent className="px-5"><p className="text-sm font-medium text-[#70634f]">{label}</p><p className="mt-3 text-3xl font-semibold tracking-tight">{value}</p><p className="mt-2 min-h-5 text-xs text-[#806f59]">{hint}</p></CardContent></Card>; }
+function SummaryCard({ label, value, hint }: { label: string; value: string; hint: string }) { return <Card className={`${cardClass} gap-2 py-4`}><CardContent className="px-4"><p className="text-sm font-medium text-[#70634f]">{label}</p><p className="mt-1.5 text-xl font-semibold tracking-tight sm:text-2xl">{value}</p><p className="mt-1 min-h-5 text-xs text-[#806f59]">{hint}</p></CardContent></Card>; }
 function RateBadge({ value }: { value: number }) { const style = value >= 45 ? "bg-[#dce5d1] text-[#275c22]" : value >= 35 ? "bg-[#f1dfbd] text-[#875613]" : "bg-[#f2d8cc] text-[#c34625]"; return <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${style}`}><i className="size-1.5 rounded-full bg-current" />{number.format(value)} %</span>; }
 function DialogMetric({ label, value }: { label: string; value: string }) { return <div className="rounded-xl bg-[#f5efe4] p-3"><p className="text-xs text-[#806f59]">{label}</p><p className="mt-1 font-semibold">{value}</p></div>; }
 function formatClientType(value?: string) { return value ? value.toLowerCase().replaceAll("_", " ").replace(/^./, (letter) => letter.toUpperCase()) : "Client"; }

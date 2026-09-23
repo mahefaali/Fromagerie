@@ -3,6 +3,7 @@ import { Controller, useWatch } from "react-hook-form";
 
 import { Button } from "../../../../components/ui/button";
 import { Input } from "../../../../components/ui/input";
+import { NumericTextInput } from "../../../../components/ui/numeric-input";
 import {
   Select,
   SelectContent,
@@ -270,12 +271,11 @@ export function MilkStep({
                         Quantité utilisée
                       </label>
                       <div className="relative">
-                        <Input
+                        <NumericTextInput
                           id={`milk-quantity-${index}`}
                           className="h-12 w-full rounded-2xl border border-[#c8bea9] bg-white px-4 pr-10 text-base font-semibold text-[#241f18] shadow-sm transition-colors hover:border-[#8f8168] focus-visible:border-[#28551c] focus-visible:ring-2 focus-visible:ring-[#28551c]/20"
                           aria-label={`Quantité utilisée pour le lot ${index + 1}`}
-                          type="text"
-                          inputMode="decimal"
+                          min={0}
                           autoComplete="off"
                           placeholder="0"
                           disabled={!selectedLot}
@@ -284,11 +284,11 @@ export function MilkStep({
                               ? (milkUsages[selectedLot.id] ?? "")
                               : ""
                           }
-                          onChange={(event) =>
+                          onValueChange={(value) =>
                             selectedLot &&
                             onMilkUsageChange(
                               selectedLot.id,
-                              event.target.value,
+                              value,
                             )
                           }
                         />

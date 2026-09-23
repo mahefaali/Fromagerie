@@ -2,6 +2,7 @@ import { useState, type FormEvent } from "react";
 import { Button } from "../../../components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "../../../components/ui/dialog";
 import { Input } from "../../../components/ui/input";
+import { Label } from "../../../components/ui/label";
 import type { AnalyseLaitRequest } from "../types";
 import { localDateTimeNow, milkLotFieldClass } from "./milkLotFormStyles";
 
@@ -19,5 +20,9 @@ export function MilkAnalysisDialog({ lotId, onClose, onCreate }: MilkAnalysisDia
       onClose();
     } finally { setSubmitting(false); }
   }
-  return <Dialog open={lotId !== null} onOpenChange={(open) => !open && !submitting && onClose()}><DialogContent className="w-[calc(100%-2rem)] max-w-xl rounded-[28px] bg-[#fffdf8]"><DialogHeader><DialogTitle>Nouvelle analyse</DialogTitle></DialogHeader><form onSubmit={handleSubmit} className="space-y-4"><Input required name="dateAnalyse" type="datetime-local" defaultValue={localDateTimeNow()} className={milkLotFieldClass} /><Input required name="typeAnalyse" placeholder="Type d’analyse" className={milkLotFieldClass} /><div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_130px]"><Input required name="resultat" placeholder="Résultat" className={milkLotFieldClass} /><Input name="unite" placeholder="Unité" className={milkLotFieldClass} /></div><DialogFooter className="gap-3"><Button type="button" variant="outline" disabled={submitting} className="min-h-11 rounded-full" onClick={onClose}>Annuler</Button><Button disabled={submitting} className="min-h-11 rounded-full bg-[#28551c]">{submitting ? "Enregistrement…" : "Enregistrer"}</Button></DialogFooter></form></DialogContent></Dialog>;
+  return <Dialog open={lotId !== null} onOpenChange={(open) => !open && !submitting && onClose()}><DialogContent className="max-w-xl"><DialogHeader><DialogTitle>Nouvelle analyse</DialogTitle></DialogHeader><form onSubmit={handleSubmit} className="space-y-4">
+    <div className="space-y-2"><Label htmlFor="analysis-date">Date de l’analyse</Label><Input id="analysis-date" required name="dateAnalyse" type="datetime-local" defaultValue={localDateTimeNow()} className={milkLotFieldClass} /></div>
+    <div className="space-y-2"><Label htmlFor="analysis-type">Type d’analyse</Label><Input id="analysis-type" required name="typeAnalyse" className={milkLotFieldClass} /></div>
+    <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_130px]"><div className="space-y-2"><Label htmlFor="analysis-result">Résultat</Label><Input id="analysis-result" required name="resultat" className={milkLotFieldClass} /></div><div className="space-y-2"><Label htmlFor="analysis-unit">Unité (facultative)</Label><Input id="analysis-unit" name="unite" className={milkLotFieldClass} /></div></div>
+    <DialogFooter className="gap-3"><Button type="button" variant="outline" disabled={submitting} className="min-h-11 rounded-full" onClick={onClose}>Annuler</Button><Button disabled={submitting} className="min-h-11 rounded-full bg-[#28551c]">{submitting ? "Enregistrement…" : "Enregistrer"}</Button></DialogFooter></form></DialogContent></Dialog>;
 }

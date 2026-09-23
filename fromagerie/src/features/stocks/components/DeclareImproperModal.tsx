@@ -1,12 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-    DialogDescription,
-    DialogFooter,
-} from './../../../components/ui/dialog';
+import { AppDialogContent } from '../../../components/ui/app-dialog';
+import { Dialog } from '../../../components/ui/dialog';
+import { NumericInput } from '../../../components/ui/numeric-input';
 import { Button } from './../../../components/ui/button';
 import { Input } from './../../../components/ui/input';
 import { Label } from './../../../components/ui/label';
@@ -51,9 +46,11 @@ export const DeclareImproperModal: React.FC<DeclareImproperModalProps> = ({
     const [loadingStocks, setLoadingStocks] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [quantityEmpty, setQuantityEmpty] = useState(false);
 
     useEffect(() => {
         if (!isOpen) return;
+        setQuantityEmpty(false);
         setLoadingStocks(true);
         void stockApi.findStocks()
             .then((data) => setStocks(data.filter((stock) => stock.quantitePhysique > 0)))
@@ -65,7 +62,7 @@ export const DeclareImproperModal: React.FC<DeclareImproperModalProps> = ({
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!selectedStock) {
+        if (!selectedStock || quantityEmpty) {
             setError('Sélectionnez un lot disponible.');
             return;
         }
@@ -82,26 +79,20 @@ export const DeclareImproperModal: React.FC<DeclareImproperModalProps> = ({
     };
 
     return (
-        <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="sm:max-w-[500px] bg-[#FBF9F5] border-stone-200 p-6 rounded-2xl max-h-[90vh] overflow-y-auto">
-                <DialogHeader className="space-y-2 text-left">
-                    <DialogTitle className="text-xl font-bold text-stone-900">
-                        Déclarer un fromage impropre à la vente
-                    </DialogTitle>
-                    <DialogDescription className="text-stone-500 text-sm">
-                        Le lot est isolé du stock et tracé avec sa cause : le coût de la perte est calculé automatiquement.
-                    </DialogDescription>
-                </DialogHeader>
-
-                <form onSubmit={handleSubmit} className="space-y-4 py-2">
+        <Dialog open={isOpen} onOpenChange={(open) => { if (!open && !isSubmitting) onClose(); }}>
+            <AppDialogContent title="Déclarer un fromage impropre à la vente" description="Le lot est isolé du stock et tracé avec sa cause : le coût de la perte est calculé automatiquement." footer={<>
+                <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting} className="min-h-11 rounded-xl border-[#e2dacb] bg-white px-5 text-[#2c2825]">Annuler</Button>
+                <Button type="submit" form="declare-improper-form" disabled={isSubmitting || loadingStocks || stocks.length === 0 || quantityEmpty} className="min-h-11 rounded-xl bg-[#2d4a27] px-5 text-white hover:bg-[#233a1e]">Déclarer la perte</Button>
+            </>}>
+                <form id="declare-improper-form" onSubmit={handleSubmit} className="space-y-4">
                     {/* Lot en stock */}
                     <div className="space-y-1.5">
                         <Label className="text-sm font-semibold text-stone-800">Lot en stock</Label>
                         <Select
                             value={formData.batchId}
-                            onValueChange={(val) => setFormData((prev) => ({ ...prev, batchId: val, quantity: 1 }))}
+                            onValueChange={(val) => { setFormData((prev) => ({ ...prev, batchId: val, quantity: 1 })); setQuantityEmpty(false); }}
                         >
-                            <SelectTrigger className="w-full bg-white/80 border-stone-200 rounded-xl text-stone-800 focus:ring-stone-400">
+                            <SelectTrigger aria-label="Lot en stock" className="w-full bg-white/80 border-stone-200 rounded-xl text-stone-800 focus:ring-stone-400">
                                 <SelectValue placeholder="Choisir un lot" />
                             </SelectTrigger>
                             <SelectContent>
@@ -119,25 +110,23 @@ export const DeclareImproperModal: React.FC<DeclareImproperModalProps> = ({
                     {/* Quantité & Date */}
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-1.5">
-                            <Label className="text-sm font-semibold text-stone-800">Quantité perdue</Label>
-                            <Input
-                                type="number"
-                                min="1"
+                            <Label htmlFor="improper-quantity" className="text-sm font-semibold text-stone-800">Quantité perdue</Label>
+                            <NumericInput
+                                id="improper-quantity"
+                                min={1}
+                                integer
                                 value={formData.quantity}
-                                onChange={(e) =>
-                                    setFormData((prev) => ({
-                                        ...prev,
-                                        quantity: Math.min(Number(e.target.value), selectedStock?.quantitePhysique ?? Number(e.target.value)),
-                                    }))
-                                }
+                                onValueChange={(value) => { setQuantityEmpty(value === null); if (value !== null) setFormData((prev) => ({ ...prev, quantity: value })); }}
                                 max={selectedStock?.quantitePhysique}
-                                className="bg-white/80 border-stone-200 rounded-xl text-stone-800 focus-visible:ring-stone-400"
+                                required
+                                className="bg-white/80"
                             />
                         </div>
 
                         <div className="space-y-1.5">
-                            <Label className="text-sm font-semibold text-stone-800">Date du constat</Label>
+                            <Label htmlFor="improper-date" className="text-sm font-semibold text-stone-800">Date du constat</Label>
                             <Input
+                                id="improper-date"
                                 type="date"
                                 value={formData.date}
                                 onChange={(e) => setFormData((prev) => ({ ...prev, date: e.target.value }))}
@@ -153,7 +142,7 @@ export const DeclareImproperModal: React.FC<DeclareImproperModalProps> = ({
                             value={formData.cause}
                             onValueChange={(val) => setFormData((prev) => ({ ...prev, cause: val }))}
                         >
-                            <SelectTrigger className="w-full bg-white/80 border-stone-200 rounded-xl text-stone-800 focus:ring-stone-400">
+                            <SelectTrigger aria-label="Cause" className="w-full bg-white/80 border-stone-200 rounded-xl text-stone-800 focus:ring-stone-400">
                                 <SelectValue placeholder="Sélectionner une cause" />
                             </SelectTrigger>
                             <SelectContent>
@@ -171,7 +160,7 @@ export const DeclareImproperModal: React.FC<DeclareImproperModalProps> = ({
                             value={formData.defectType}
                             onValueChange={(val) => setFormData((prev) => ({ ...prev, defectType: val }))}
                         >
-                            <SelectTrigger className="w-full bg-white/80 border-stone-200 rounded-xl text-stone-800 focus:ring-stone-400">
+                            <SelectTrigger aria-label="Type de défaut" className="w-full bg-white/80 border-stone-200 rounded-xl text-stone-800 focus:ring-stone-400">
                                 <SelectValue placeholder="Sélectionner un type" />
                             </SelectTrigger>
                             <SelectContent>
@@ -194,25 +183,8 @@ export const DeclareImproperModal: React.FC<DeclareImproperModalProps> = ({
                         />
                     </div>
 
-                    <DialogFooter className="pt-4 flex items-center justify-end gap-3">
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={onClose}
-                            className="bg-white hover:bg-stone-100 text-stone-800 border-stone-200 rounded-xl px-5 py-2 font-medium"
-                        >
-                            Annuler
-                        </Button>
-                        <Button
-                            type="submit"
-                            disabled={isSubmitting || loadingStocks || stocks.length === 0}
-                            className="bg-[#2d4a27] hover:bg-[#233a1e] text-white rounded-xl px-5 py-2 font-medium shadow-sm"
-                        >
-                            Déclarer la perte
-                        </Button>
-                    </DialogFooter>
                 </form>
-            </DialogContent>
+            </AppDialogContent>
         </Dialog>
     );
 };

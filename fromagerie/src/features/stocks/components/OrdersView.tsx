@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { toast, Toaster } from 'sonner';
+import React, { useEffect, useMemo, useState } from 'react';
+import { toast } from 'sonner';
 import { useOrders } from './../hooks/useOrders';
 import { OrderCard } from './OrderCard';
 import { CreateOrderModal } from './CreateOrderModal';
@@ -10,6 +10,9 @@ import { type Order, type OrderFilterStatus } from './../types/orders';
 import { ShoppingBag, } from 'lucide-react';
 import { orderApi } from '../api/stockApi';
 import { downloadDocument } from '../utils/downloadDocument';
+import { PaginationControls } from '../../../components/ui/pagination-controls';
+
+const ORDERS_PER_PAGE = 5;
 
 const FILTERS: { id: OrderFilterStatus; label: string }[] = [
   { id: 'all', label: 'Toutes' },
@@ -46,6 +49,20 @@ export const OrdersView: React.FC = () => {
 
 
   const [selectedOrderForInvoice, setSelectedOrderForInvoice] = useState<Order | null>(null);
+  const [page, setPage] = useState(1);
+  const pageCount = Math.max(1, Math.ceil(orders.length / ORDERS_PER_PAGE));
+  const paginatedOrders = useMemo(() => {
+    const start = (page - 1) * ORDERS_PER_PAGE;
+    return orders.slice(start, start + ORDERS_PER_PAGE);
+  }, [orders, page]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [activeFilter]);
+
+  useEffect(() => {
+    setPage((currentPage) => Math.min(currentPage, pageCount));
+  }, [pageCount]);
 
   const downloadPdf = async (kind: 'preparation' | 'delivery' | 'invoice', order: Order) => {
     try {
@@ -91,11 +108,10 @@ export const OrdersView: React.FC = () => {
   return (
     <div>
 
-      <Toaster position="top-right" richColors />
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="mb-4 flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-extrabold text-[#2c2825] flex items-center gap-2">
+          <h1 className="flex items-center gap-2 text-xl font-extrabold text-[#2c2825] sm:text-2xl">
             <ShoppingBag className="w-5 h-5 text-gray-600" />
               Gestion des commandes
           </h1>
@@ -105,21 +121,24 @@ export const OrdersView: React.FC = () => {
         </div>
         <button
           onClick={handleOpenCreateModal}
-          className="bg-[#2d4a27] hover:bg-[#22391e] text-white font-medium px-4 py-2.5 rounded-xl text-sm flex items-center gap-2 transition-all shadow-sm cursor-pointer"
+          className="flex min-h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-[#2d4a27] px-4 py-2 text-sm font-medium text-white shadow-sm transition-all hover:bg-[#22391e] sm:w-auto"
         >
           + Nouvelle commande
         </button>
       </div>
 
+      <div className="pl-2 sm:pl-3 lg:pl-4">
       {/* Badges de filtrage */}
-      <div className="flex items-center gap-2 mb-6 overflow-x-auto pb-1">
+      <div className="mb-4 flex flex-wrap items-center gap-2" role="group" aria-label="Filtrer les commandes par statut">
         {FILTERS.map((f) => {
           const isActive = activeFilter === f.id;
           return (
             <button
+              type="button"
               key={f.id}
               onClick={() => setActiveFilter(f.id)}
-              className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all border cursor-pointer ${isActive
+              aria-pressed={isActive}
+              className={`min-h-11 px-4 py-2 rounded-full text-xs font-semibold transition-all border cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#2d4a27] ${isActive
                 ? 'bg-[#2d4a27] text-white border-[#2d4a27]'
                 : 'bg-white/80 text-gray-700 border-gray-200 hover:bg-gray-100'
                 }`}
@@ -132,8 +151,8 @@ export const OrdersView: React.FC = () => {
 
       {/* Liste des commandes */}
       {orders.length > 0 ? (
-        <div className="space-y-4">
-          {orders.map((order) => (
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 lg:items-stretch">
+          {paginatedOrders.map((order) => (
             <OrderCard
               key={order.id}
               order={order}
@@ -145,14 +164,23 @@ export const OrdersView: React.FC = () => {
               onConfirm={handleConfirmOrder}
             />
           ))}
+          <PaginationControls
+            page={page}
+            pageCount={pageCount}
+            onPageChange={setPage}
+            label="Pagination des commandes"
+            className="mb-16 justify-self-end lg:col-span-2 lg:mb-12"
+          />
         </div>
       ) : (
-        <div className="border border-dashed border-gray-300 rounded-2xl p-12 text-center text-gray-500 text-sm bg-white/40">
+        <div className="rounded-2xl border border-dashed border-gray-300 bg-white/40 p-6 text-center text-sm text-gray-500 sm:p-8">
           Aucune commande pour ce filtre.
         </div>
       )}
 
       {/* Modale d'ajout de commande */}
+      </div>
+
       <CreateOrderModal
         isOpen={isCreateModalOpen}
         onClose={handleCloseCreateModal}

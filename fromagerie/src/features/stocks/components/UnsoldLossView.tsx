@@ -18,8 +18,9 @@ import { DeclareImproperModal, type DeclareFormData } from './DeclareImproperMod
 import { RegisterReturnModal, type ReturnItemFormState } from './RegisterReturnModal';
 import type { Order } from '../types/orders';
 import type { LossLogEntry, OrderReturns, ProductionCostItem } from './unsoldLoss.types';
-import { calculateMonthlyLossRates, mapLossToLogEntry, rebuildPersistedReturns, summarizeLossCauses } from './unsoldLoss.utils';
+import { calculateAgingDefectQuantity, calculateAverageProductionCosts, calculateMonthlyLossRates, mapLossToLogEntry, rebuildPersistedReturns, summarizeLossCauses } from './unsoldLoss.utils';
 import { LossAnalysisTab, LossJournalTab, ProductionCostsTab, ReturnsTab } from './UnsoldLossTabs';
+import { profitabilityApi, type LotProductionCost } from '../../profitability/api/profitabilityApi';
 
 interface StatItem {
     id: string;
@@ -38,6 +39,8 @@ export const UnsoldLossView: React.FC = () => {
     const [orderReturns, setOrderReturns] = useState<OrderReturns>({});
     const [lossEntries, setLossEntries] = useState<LossLogEntry[]>([]);
     const [stockEntries, setStockEntries] = useState<StockFromageFini[]>([]);
+    const [productionCostLots, setProductionCostLots] = useState<LotProductionCost[]>([]);
+    const [productionCostLotsLoading, setProductionCostLotsLoading] = useState(true);
     const [toastState, setToastState] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
     const showToast = (message: string, type: 'success' | 'error') => {
@@ -63,6 +66,13 @@ export const UnsoldLossView: React.FC = () => {
     }, [allOrders]);
 
     const [productionCosts, setProductionCosts] = useState<ProductionCostItem[]>([]);
+
+    useEffect(() => {
+        void profitabilityApi.lots()
+            .then(setProductionCostLots)
+            .catch(() => setProductionCostLots([]))
+            .finally(() => setProductionCostLotsLoading(false));
+    }, []);
 
     useEffect(() => {
         void Promise.all([stockApi.listCosts(), stockApi.listLosses(), stockApi.findStocks()]).then(([costs, losses, stocks]) => {
@@ -98,35 +108,13 @@ export const UnsoldLossView: React.FC = () => {
     const kpiStats: StatItem[] = [
         { id: 'lost-pieces', label: 'Pièces perdues', value: totalLostPieces, icon: Package },
         { id: 'unsold', label: 'Invendus', value: totalUnsoldCount, icon: RotateCcw },
-        { id: 'defects', label: "Défauts d'affinage", value: lossEntries.filter(l => l.badgeText === "Défaut d'affinage").length, icon: ShieldAlert },
+        { id: 'defects', label: "Défauts d'affinage", value: calculateAgingDefectQuantity(lossEntries), icon: ShieldAlert },
         { id: 'total-cost', label: 'Coût total des pertes', value: totalLossCostFormatted, icon: Euro },
     ];
 
     const monthlyLossRates = useMemo(() => calculateMonthlyLossRates(stockEntries, lossEntries), [lossEntries, stockEntries]);
     const lossCauseSummaries = useMemo(() => summarizeLossCauses(lossEntries), [lossEntries]);
-
-    const handleCostChange = (id: string, value: string) => {
-        setProductionCosts((prev) =>
-            prev.map((item) => (item.id === id ? { ...item, unitCost: value } : item))
-        );
-    };
-
-    const handleCostSave = async (cheese: ProductionCostItem) => {
-        const value = Number(cheese.unitCost);
-        if (!Number.isFinite(value) || value < 0) {
-            showToast('Saisissez un coût de production valide.', 'error');
-            return;
-        }
-        try {
-            const saved = await stockApi.updateCost(Number(cheese.id), { coutUnitaire: value });
-            setProductionCosts((current) => current.map((item) => item.id === cheese.id
-                ? { ...item, unitCost: saved.coutUnitaire ?? value }
-                : item));
-            showToast(`Coût paramétré pour ${saved.fromageNom}.`, 'success');
-        } catch (error) {
-            showToast(error instanceof Error ? error.message : 'Enregistrement du coût impossible.', 'error');
-        }
-    };
+    const averageProductionCosts = useMemo(() => calculateAverageProductionCosts(productionCostLots), [productionCostLots]);
 
     const handleDeleteLossEntry = (id: string) => {
         setLossEntries((prev) => prev.filter((item) => item.id !== id));
@@ -149,20 +137,10 @@ export const UnsoldLossView: React.FC = () => {
                 typePerte,
                 motif,
             });
-            setLossEntries((current) => [{
-                id: String(saved.id),
-                cheeseName: saved.fromageNom,
-                badgeText: saved.typePerte,
-                dateFormatted: new Date(saved.dateHeure).toLocaleDateString('fr-FR'),
-                dateIso: saved.dateHeure,
-                lotNumber: saved.numeroLot,
-                orderNumber: 'Interne',
-                clientName: 'Stock',
-                reason: saved.motif || motif,
-                quantity: saved.quantite,
-                unitCost: Number(saved.coutUnitaireReference),
-                totalCost: Number(saved.coutTotal),
-            }, ...current]);
+            setLossEntries((current) => [mapLossToLogEntry({
+                ...saved,
+                motif: saved.motif || motif,
+            }), ...current]);
             setSubTab('journal');
             showToast(`Déclaration enregistrée pour ${saved.fromageNom}.`, 'success');
             return true;
@@ -270,7 +248,7 @@ export const UnsoldLossView: React.FC = () => {
     };
 
     return (
-        <div className="relative space-y-6">
+        <div className="relative space-y-5">
             {toastState && (
                 <div className={`fixed bottom-6 right-6 z-[10000] flex items-center gap-2.5 rounded-2xl border px-4 py-3 text-sm font-semibold text-white shadow-xl animate-in fade-in slide-in-from-bottom-3 duration-200 ${toastState.type === 'error' ? 'border-red-700 bg-red-600' : 'border-[#233a1e] bg-[#2d4a27]'}`}>
                     {toastState.type === 'error' ? <XCircle className="size-5" /> : <CheckCircle2 className="size-5" />}
@@ -279,36 +257,38 @@ export const UnsoldLossView: React.FC = () => {
             )}
 
             <header className="space-y-1">
-                <div className="flex items-center gap-2"><TrendingDown className="size-6 text-red-600" /><h1 className="text-2xl font-bold tracking-tight">Invendus & pertes</h1></div>
+                <div className="flex items-center gap-2"><TrendingDown className="size-5 text-red-600" /><h1 className="text-xl font-bold tracking-tight sm:text-2xl">Invendus & pertes</h1></div>
                 <p className="text-sm text-stone-500">Retours d'invendus, fromages impropres à la vente, coût des pertes et taux de perte par fromage et par mois.</p>
             </header>
 
+            <div className="space-y-5 pl-2 sm:pl-3 lg:pl-4">
             <Button variant="outline" onClick={() => setIsModalOpen(true)} className="flex items-center gap-2 rounded-xl border-stone-300 bg-white px-4 py-2 font-medium text-stone-700 shadow-sm transition-colors duration-200 hover:border-[#c84c28] hover:bg-[#c84c28] hover:text-white">
                 <ShieldAlert className="size-4" />Déclarer un fromage impropre
             </Button>
 
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">{kpiStats.map((stat) => {
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-2.5">{kpiStats.map((stat) => {
                 const Icon = stat.icon;
-                return <Card key={stat.id} className="rounded-2xl border-stone-200/80 bg-white/60 shadow-none"><CardContent className="space-y-2 p-4"><div className="flex items-center gap-2 text-sm font-medium text-stone-600"><Icon className="size-4 text-stone-500" /><span>{stat.label}</span></div><div className="text-2xl font-semibold tracking-tight text-stone-900">{stat.value}</div></CardContent></Card>;
+                return <Card key={stat.id} className="min-w-0 rounded-xl border-stone-200/80 bg-white/60 shadow-none"><CardContent className="space-y-1 p-2.5 sm:p-3"><div className="flex min-w-0 items-center gap-1.5 text-[11px] font-medium leading-tight text-stone-600 sm:text-xs"><Icon className="size-3.5 shrink-0 text-stone-500" /><span>{stat.label}</span></div><div className="text-lg font-semibold tracking-tight text-stone-900 sm:text-xl">{stat.value}</div></CardContent></Card>;
             })}</div>
 
             <DeclareImproperModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSubmit={handleDeclareImproperSubmit} />
             <RegisterReturnModal isOpen={selectedOrderForReturn !== null} order={selectedOrderForReturn} onClose={() => setSelectedOrderForReturn(null)} onSubmit={handleReturnSubmit} />
 
-            <Tabs value={subTab} onValueChange={setSubTab} className="w-full space-y-6">
-                <TabsList className="inline-flex gap-1 rounded-2xl bg-[#EFECE6] p-1">
+            <Tabs value={subTab} onValueChange={setSubTab} className="w-full space-y-5">
+                <TabsList className="flex w-full justify-start gap-1 overflow-x-auto rounded-xl bg-[#EFECE6] p-1 sm:w-max">
                     {[
                         ['retours', "Retours d'invendus"],
                         ['journal', 'Journal des pertes'],
                         ['analyse', 'Analyse & taux'],
                         ['couts', 'Coûts de production'],
-                    ].map(([value, label]) => <TabsTrigger key={value} value={value} className="cursor-pointer rounded-xl px-4 py-2 text-sm font-medium text-stone-600 transition-all data-[state=active]:bg-white data-[state=active]:text-stone-900 data-[state=active]:shadow-sm">{label}</TabsTrigger>)}
+                    ].map(([value, label]) => <TabsTrigger key={value} value={value} className="shrink-0 cursor-pointer whitespace-nowrap rounded-lg px-3 py-2 text-xs font-medium text-stone-600 transition-all data-[state=active]:bg-white data-[state=active]:text-stone-900 data-[state=active]:shadow-sm sm:text-sm">{label}</TabsTrigger>)}
                 </TabsList>
                 <TabsContent value="retours"><ReturnsTab orders={deliveredOrders} returns={orderReturns} onSelect={setSelectedOrderForReturn} /></TabsContent>
                 <TabsContent value="journal"><LossJournalTab entries={lossEntries} onDelete={handleDeleteLossEntry} /></TabsContent>
                 <TabsContent value="analyse"><LossAnalysisTab causes={lossCauseSummaries} rates={monthlyLossRates} /></TabsContent>
-                <TabsContent value="couts"><ProductionCostsTab costs={productionCosts} onChange={handleCostChange} onSave={(item) => void handleCostSave(item)} /></TabsContent>
+                <TabsContent value="couts"><ProductionCostsTab averages={averageProductionCosts} averagesLoading={productionCostLotsLoading} /></TabsContent>
             </Tabs>
+            </div>
         </div>
     );
 };

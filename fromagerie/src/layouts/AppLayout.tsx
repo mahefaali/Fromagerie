@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ChartNoAxesCombined,
-  LogOut,
+  ChevronUp,
   SearchCheck,
   Settings,
 } from "lucide-react";
@@ -9,40 +9,37 @@ import Navigation from "../components/ui/navigation";
 import { Button } from "../components/ui/button";
 import { WvcLogo } from "../services/wordpress/WvcLogo";
 import { PageTabsHostProvider } from "./components/PageTabsPortal";
-import {
-  Link,
-  Outlet,
-  useLocation,
-  useNavigate,
-} from "react-router-dom";
+import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../features/authentication/hooks/useAuth";
-import { toast } from "sonner";
 import { FloatingSubnavigation } from "../components/ui/FloatingSubnavigation";
+import UserMenu from "./components/UserMenu";
 
 export function AppLayout() {
   const [pageTabsHost, setPageTabsHost] = useState<HTMLDivElement | null>(null);
-  const [isSubnavigationOpen, setIsSubnavigationOpen] = useState(true);
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const { user, logout } = useAuth();
+  const [subnavigationExpanded, setSubnavigationExpanded] = useState(true);
+  const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const isPilotage =
     location.pathname === "/rentabilite" ||
     location.pathname === "/tracabilite";
+  const hasSubnavigation = [
+    "/fabrication",
+    "/affinage",
+    "/stock",
+    "/rentabilite",
+    "/tracabilite",
+  ].some(
+    (path) =>
+      location.pathname === path || location.pathname.startsWith(`${path}/`),
+  );
 
-  const handleLogout = async () => {
-    setIsLoggingOut(true);
-    try {
-      await logout();
-      navigate("/login", { replace: true });
-    } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Déconnexion impossible.",
-      );
-    } finally {
-      setIsLoggingOut(false);
-    }
-  };
+  useEffect(() => {
+    if (!hasSubnavigation) return;
+    const collapseOnScroll = () => setSubnavigationExpanded(false);
+    window.addEventListener("scroll", collapseOnScroll, { capture: true, passive: true });
+    return () => window.removeEventListener("scroll", collapseOnScroll, true);
+  }, [hasSubnavigation]);
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col relative">
@@ -74,42 +71,51 @@ export function AppLayout() {
                 </Link>
               </Button>
             )}
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => void handleLogout()}
-              disabled={isLoggingOut}
-              className="rounded-full border-[#D8C3A5] bg-white/70 hover:border-destructive/40 hover:text-destructive"
-            >
-              <LogOut className="size-4" />
-              <span className="hidden sm:inline">
-                {isLoggingOut ? "Déconnexion..." : "Déconnexion"}
-              </span>
-            </Button>
+            <UserMenu />
           </div>
         </div>
       </header>
 
-      <Navigation onNavigate={() => setIsSubnavigationOpen(true)} />
+      <Navigation onNavigate={() => setSubnavigationExpanded(true)} />
 
-      <div
-        className={`pointer-events-none fixed inset-x-0 bottom-[5.35rem] z-[9998] flex origin-bottom justify-center px-3 transition-[opacity,transform,filter] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none sm:bottom-[6.35rem] ${isSubnavigationOpen ? "translate-y-0 scale-100 opacity-100 blur-0" : "translate-y-5 scale-95 opacity-0 blur-[2px]"}`}
-        aria-hidden={!isSubnavigationOpen}
-        inert={!isSubnavigationOpen}
-      >
+      <div className="pointer-events-none fixed inset-x-0 bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-[9998] flex flex-col items-center px-3 sm:bottom-[calc(5rem+env(safe-area-inset-bottom))]">
+        {hasSubnavigation && !subnavigationExpanded && (
+          <button
+            type="button"
+            aria-label="Afficher la sous-navigation"
+            onClick={() => setSubnavigationExpanded(true)}
+            className="pointer-events-auto flex size-10 items-center justify-center rounded-full border-2 border-[#355B12]/75 bg-transparent text-[#355B12] transition-colors hover:border-[#355B12] hover:bg-[#355B12]/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          >
+            <ChevronUp className="size-5" />
+          </button>
+        )}
         <div
           ref={setPageTabsHost}
-          className={`${isSubnavigationOpen ? "pointer-events-auto" : "pointer-events-none"} flex max-w-[calc(100vw-1.5rem)] items-center overflow-x-auto rounded-2xl border border-[#DDD3C5] bg-[#FFFDF9]/95 p-2 shadow-[0_12px_28px_rgba(63,53,42,0.18)] backdrop-blur-md empty:hidden no-scrollbar`}
+          className={`pointer-events-auto max-w-[calc(100vw-1.5rem)] items-center overflow-x-auto rounded-xl border border-[#DDD3C5] bg-[#FFFDF9]/95 p-1 shadow-[0_12px_28px_rgba(63,53,42,0.18)] backdrop-blur-md empty:hidden no-scrollbar sm:p-1.5 ${subnavigationExpanded ? "flex" : "hidden"}`}
           aria-label="Sous-navigation de la page"
         >
           {isPilotage && (
             <FloatingSubnavigation
-              value={location.pathname === "/tracabilite" ? "/tracabilite" : "/rentabilite"}
+              value={
+                location.pathname === "/tracabilite"
+                  ? "/tracabilite"
+                  : "/rentabilite"
+              }
               items={[
                 ...(user?.role === "PROPRIETAIRE"
-                  ? [{ value: "/rentabilite" as const, label: "Coûts & rentabilité", icon: ChartNoAxesCombined }]
+                  ? [
+                      {
+                        value: "/rentabilite" as const,
+                        label: "Coûts & rentabilité",
+                        icon: ChartNoAxesCombined,
+                      },
+                    ]
                   : []),
-                { value: "/tracabilite" as const, label: "Traçabilité", icon: SearchCheck },
+                {
+                  value: "/tracabilite" as const,
+                  label: "Traçabilité",
+                  icon: SearchCheck,
+                },
               ]}
               onValueChange={(path) => navigate(path)}
               ariaLabel="Navigation du pilotage"
@@ -119,12 +125,10 @@ export function AppLayout() {
       </div>
 
       <main
-        className="w-full flex-1 p-4 pb-24 md:p-6 md:pb-28"
-        onClick={(event) => {
-          if (event.currentTarget.contains(event.target as Node)) {
-            setIsSubnavigationOpen(false);
-          }
+        onClickCapture={(event) => {
+          if (!pageTabsHost?.contains(event.target as Node)) setSubnavigationExpanded(false);
         }}
+        className={`w-full flex-1 p-4 md:p-6 ${hasSubnavigation && subnavigationExpanded ? "pb-[calc(8.5rem+env(safe-area-inset-bottom))] sm:pb-[calc(9rem+env(safe-area-inset-bottom))]" : "pb-[calc(7.5rem+env(safe-area-inset-bottom))]"}`}
       >
         <PageTabsHostProvider host={pageTabsHost}>
           <Outlet />

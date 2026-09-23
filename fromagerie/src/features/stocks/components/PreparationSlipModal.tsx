@@ -1,7 +1,8 @@
-import React, { useEffect } from 'react';
-import { createPortal } from 'react-dom';
-import { X, MapPin, Download } from 'lucide-react';
-import { type Order } from './../types/orders';
+import { Download, MapPin } from "lucide-react";
+
+import { AppDialogContent } from "../../../components/ui/app-dialog";
+import { Dialog } from "../../../components/ui/dialog";
+import type { Order } from "../types/orders";
 
 interface PreparationSlipModalProps {
   isOpen: boolean;
@@ -11,124 +12,52 @@ interface PreparationSlipModalProps {
   onDownloadPdf?: (order: Order) => void;
 }
 
-export const PreparationSlipModal: React.FC<PreparationSlipModalProps> = ({
-  isOpen,
-  order,
-  onClose,
-  onMarkAsPrepared,
-  onDownloadPdf,
-}) => {
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    if (isOpen) window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
-
-  if (!isOpen || !order) return null;
-
-  // Vérifie si la commande a déjà été préparée
-  const isAlreadyPrepared = order.status === 'prepared' || order.status === 'delivered';
+export function PreparationSlipModal({ isOpen, order, onClose, onMarkAsPrepared, onDownloadPdf }: PreparationSlipModalProps) {
+  const isAlreadyPrepared = order?.status === "prepared" || order?.status === "delivered";
 
   const handleConfirmPrepared = () => {
-    if (onMarkAsPrepared) {
-      onMarkAsPrepared(order.id);
-    }
+    if (!order) return;
+    onMarkAsPrepared?.(order.id);
     onClose();
   };
 
-  return createPortal(
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-xs p-4">
-      <div className="bg-[#fcfbfa] w-full max-w-lg rounded-2xl shadow-2xl border border-[#e2dacb] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-        
-        {/* Header */}
-        <div className="p-6 pb-4 flex items-start justify-between border-b border-[#e2dacb]/40">
-          <div>
-            <h2 className="text-lg font-extrabold text-[#2c2825]">
-              Bon de préparation — {order.code || order.id}
-            </h2>
-            <p className="text-xs text-gray-500 mt-0.5">
-              {order.clientName} · livraison le {order.expectedDeliveryDate}
-            </p>
-          </div>
-          <button
-            onClick={onClose}
-            type="button"
-            className="text-gray-400 hover:text-gray-700 p-1 rounded-lg transition-colors cursor-pointer"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Content */}
-        <div className="p-6 space-y-4">
-          <h3 className="text-xs font-bold text-gray-600 uppercase tracking-wider">
-            À PRÉPARER
-          </h3>
-
-          <div className="space-y-3">
-            {order.items?.map((item) => {
-              const itemName = item.name || item.productName || 'Article';
-              const location = item.location || 'Emplacement non attribué';
-              const batchCode = item.batchCode || 'Lot non attribué';
-
-              return (
-                <div
-                  key={item.id}
-                  className="bg-[#f5f2eb]/80 rounded-2xl p-4 border border-[#e2dacb]/80 space-y-1.5"
-                >
-                  <div className="font-extrabold text-sm text-[#2c2825]">
-                    {item.quantity} {item.unit} {itemName}
-                  </div>
-                  <div className="flex items-center gap-1.5 text-xs text-gray-600">
-                    <MapPin className="w-3.5 h-3.5 text-gray-500 shrink-0" />
-                    <span>
-                      → {location} · Lot {batchCode} ({item.quantity})
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Footer Actions */}
-        <div className="p-5 bg-[#f5f2eb]/40 border-t border-[#e2dacb]/60 flex items-center justify-end gap-3">
-          <button type="button" onClick={() => onDownloadPdf?.(order)} className="flex items-center gap-2 rounded-xl border border-[#2d4a27] bg-white px-5 py-2.5 text-xs font-bold text-[#2d4a27] hover:bg-[#edf3eb]">
-            <Download className="size-4" /> Télécharger le PDF
-          </button>
-          {isAlreadyPrepared ? (
-            /* Affichage pour une commande déjà préparée */
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-6 py-2.5 rounded-xl bg-[#c85a32] hover:bg-[#b34e2a] text-white text-sm font-bold shadow-xs transition-all cursor-pointer"
-            >
-              Fermer
-            </button>
-          ) : (
-            /* Affichage initial pour validation de la préparation */
+  return (
+    <Dialog open={isOpen && order !== null} onOpenChange={(open) => { if (!open) onClose(); }}>
+      {order && (
+        <AppDialogContent
+          title={`Bon de préparation — ${order.code || order.id}`}
+          description={`${order.clientName} · livraison le ${order.expectedDeliveryDate}`}
+          footer={
             <>
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-5 py-2.5 rounded-xl bg-[#f0eae1] hover:bg-[#e4dcce] text-[#2c2825] text-xs font-bold transition-all cursor-pointer"
-              >
-                Fermer
+              <button type="button" onClick={() => onDownloadPdf?.(order)} className="flex min-h-11 items-center gap-2 rounded-xl border border-[#2d4a27] bg-white px-4 py-2.5 text-xs font-bold text-[#2d4a27] hover:bg-[#edf3eb]">
+                <Download className="size-4" /> Télécharger le PDF
               </button>
-              <button
-                type="button"
-                onClick={handleConfirmPrepared}
-                className="px-5 py-2.5 rounded-xl bg-[#2d4a27] hover:bg-[#233a1e] text-white text-xs font-bold shadow-xs transition-all cursor-pointer"
-              >
-                Marquer préparée
-              </button>
+              <button type="button" onClick={onClose} className="min-h-11 rounded-xl bg-[#f0eae1] px-5 py-2.5 text-xs font-bold text-[#2c2825] hover:bg-[#e4dcce]">Fermer</button>
+              {!isAlreadyPrepared && <button type="button" onClick={handleConfirmPrepared} className="min-h-11 rounded-xl bg-[#2d4a27] px-5 py-2.5 text-xs font-bold text-white hover:bg-[#233a1e]">Marquer préparée</button>}
             </>
-          )}
-        </div>
-      </div>
-    </div>,
-    document.body
+          }
+        >
+          <div className="space-y-4">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-gray-600">À préparer</h3>
+            <div className="space-y-3">
+              {order.items?.map((item) => {
+                const itemName = item.name || item.productName || "Article";
+                const location = item.location || "Emplacement non attribué";
+                const batchCode = item.batchCode || "Lot non attribué";
+                return (
+                  <div key={item.id} className="space-y-1.5 rounded-2xl border border-[#e2dacb]/80 bg-[#f5f2eb]/80 p-4">
+                    <div className="text-sm font-extrabold text-[#2c2825]">{item.quantity} {item.unit} {itemName}</div>
+                    <div className="flex items-center gap-1.5 text-xs text-gray-600">
+                      <MapPin className="size-3.5 shrink-0 text-gray-500" />
+                      <span>→ {location} · Lot {batchCode} ({item.quantity})</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </AppDialogContent>
+      )}
+    </Dialog>
   );
-};
+}

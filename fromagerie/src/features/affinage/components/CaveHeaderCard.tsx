@@ -25,9 +25,9 @@ export function CaveHeaderCard({
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
+      <CardHeader className="flex flex-wrap items-start justify-between gap-3 space-y-0 p-4">
         <div className="min-w-0 flex-1">
-          <CardTitle className="text-xl">{cave.nom}</CardTitle>
+          <CardTitle className="text-lg">{cave.nom}</CardTitle>
           {cave.description && (
             <p className="mt-1 text-sm text-muted-foreground">{cave.description}</p>
           )}
@@ -46,8 +46,8 @@ export function CaveHeaderCard({
           )}
         </div>
       </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+      <CardContent className="px-4 pb-4">
+        <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
           <StatItem
             icon={<Package className="size-4" />}
             label="Capacité"
@@ -87,12 +87,12 @@ function StatItem({
   hint?: string;
 }) {
   return (
-    <div className="rounded-md border border-border bg-card/50 p-3">
+    <div className="rounded-lg border border-border bg-card/50 p-2.5">
       <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
         {icon}
         {label}
       </div>
-      <p className="mt-1 text-lg font-semibold text-foreground">{value}</p>
+      <p className="mt-1 text-base font-semibold text-foreground">{value}</p>
       {hint && <p className="mt-0.5 text-[10px] text-muted-foreground">{hint}</p>}
     </div>
   );

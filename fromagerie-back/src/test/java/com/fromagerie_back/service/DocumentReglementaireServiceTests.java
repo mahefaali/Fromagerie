@@ -87,7 +87,7 @@ class DocumentReglementaireServiceTests {
         when(tracabilite.byNumeroLotDescendant("FAB-2026-0098")).thenReturn(trace); when(tracabilite.byNumeroLotDescendant("FAB-2026-0099")).thenReturn(trace);
         PdfDocument result=service.registre(LocalDate.of(2026,9,1),LocalDate.of(2026,9,30)); String text=text(result);
         assertThat(result.filename()).isEqualTo("registre-tracabilite-2026-09-01-2026-09-30.pdf");
-        assertThat(text).contains("FAB-2026-0098", "FAB-2026-0099", "Produit : 50", "Livré : 30", "Perdu : 2", "Disponible : 18");
+        assertThat(text).contains("Lot fabrication", "Lots de lait", "Produit", "Livré", "Perdu", "Disponible", "FAB-2026-0098", "FAB-2026-0099", "50 u", "30 u", "2 u", "18 u");
     }
 
     @Test void registreVideProduitUnPdfValide() throws Exception {

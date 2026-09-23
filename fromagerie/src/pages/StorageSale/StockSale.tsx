@@ -50,6 +50,7 @@ const StockView: React.FC = () => {
   return (
     <>
       <StockHeader />
+      <div className="pl-2 sm:pl-3 lg:pl-4">
       <StockAlertBanner items={[...expiredItems, ...expiringSoonItems].map((item) => ({
         id: String(item.id),
         name: item.fromageNom,
@@ -71,7 +72,7 @@ const StockView: React.FC = () => {
       />
 
       {loading ? (
-        <div className="mt-8 rounded-2xl border border-dashed border-stone-300 p-12 text-center text-stone-500 bg-white/50">
+        <div className="mt-5 rounded-2xl border border-dashed border-stone-300 p-6 text-center text-stone-500 bg-white/50 sm:p-8">
           Chargement du stock fini...
         </div>
       ) : (
@@ -82,6 +83,7 @@ const StockView: React.FC = () => {
           onDeclareExpiredLoss={declareExpiredLoss}
         />
       )}
+      </div>
     </>
   );
 };
@@ -90,12 +92,12 @@ export const StockSale: React.FC = () => {
   const [activeTab, setActiveTab] = usePersistentTab<ActiveTab>('subnavigation:stock-sales', 'stock');
 
   return (
-    <div className="min-h-screen bg-background p-6 lg:p-8 font-sans text-[#2c2825]">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-background py-2 font-sans text-[#2c2825] sm:px-1 sm:py-3">
+      <div className="mx-auto max-w-[1440px]">
         <Tabs
           value={activeTab}
           onValueChange={(value) => setActiveTab(value as ActiveTab)}
-          className="w-full gap-6"
+          className="w-full gap-5"
         >
           <PageTabsPortal>
             <FloatingSubnavigation

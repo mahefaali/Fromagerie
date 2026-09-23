@@ -35,7 +35,7 @@ export default function AffinageTracker() {
     && tracker.detail?.joursRestants <= 0;
 
   return (
-    <div className="relative mx-auto w-full max-w-7xl min-w-0 p-3 sm:p-6">
+    <div className="relative mx-auto w-full max-w-[1440px] min-w-0 py-2 sm:px-1 sm:py-3">
       <Toaster position="top-right" toastOptions={{ duration: 4000 }} />
 
       {tracker.loadError && (
@@ -45,8 +45,8 @@ export default function AffinageTracker() {
         </div>
       )}
 
-      <div className="flex min-w-0 flex-col gap-6 xl:flex-row xl:items-start">
-        <div className="w-full shrink-0 xl:w-72">
+      <div className="grid min-w-0 grid-cols-1 gap-4 xl:grid-cols-[15.5rem_minmax(0,1fr)] xl:items-start">
+        <div className="min-w-0 xl:sticky xl:top-4">
           <AffinageLotList
             lots={tracker.sidebarLots}
             selectedId={tracker.selectedId === null ? null : String(tracker.selectedId)}
@@ -55,7 +55,7 @@ export default function AffinageTracker() {
           />
         </div>
 
-        <div className="w-full min-w-0 flex-1 space-y-6">
+        <div className="min-w-0 space-y-4">
           {tracker.detail && !tracker.isDetailLoading ? (
             <>
               <AffinageLotHeader
@@ -74,7 +74,7 @@ export default function AffinageTracker() {
           ) : tracker.selectedId !== null ? (
             <div className="flex min-h-72 items-center justify-center rounded-2xl border bg-card text-sm text-muted-foreground">Chargement du lot...</div>
           ) : (
-            <div className="flex min-h-72 flex-col items-center justify-center rounded-2xl border border-dashed bg-card/60 p-8 text-center">
+            <div className="flex min-h-56 flex-col items-center justify-center rounded-2xl border border-dashed bg-card/60 p-6 text-center">
               <Warehouse className="mb-3 size-9 text-emerald-800" />
               <h2 className="font-semibold">Aucun lot en affinage</h2>
               <p className="mt-1 max-w-md text-sm text-muted-foreground">

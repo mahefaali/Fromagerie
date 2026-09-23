@@ -2,6 +2,7 @@ import { Badge } from "../../../../components/ui/badge";
 import { Button } from "../../../../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../../../../components/ui/card";
 import { Input } from "../../../../components/ui/input";
+import { NumericTextInput } from "../../../../components/ui/numeric-input";
 import { Label } from "../../../../components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../../components/ui/select";
 import { TabsContent } from "../../../../components/ui/tabs";
@@ -18,9 +19,9 @@ export function PackagingCostsTab({ model }: { model: CostsConfigurationModel })
     <Card>
       <CardHeader><CardTitle>Nouvel emballage</CardTitle></CardHeader>
       <CardContent className="grid gap-3 md:grid-cols-2">
-        <Input placeholder="Nom" value={emballageForm.nom} onChange={(e) => setEmballageForm({ ...emballageForm, nom: e.target.value })} />
-        <Input placeholder="Unité" value={emballageForm.unite} onChange={(e) => setEmballageForm({ ...emballageForm, unite: e.target.value })} />
-        <Input type="number" step="0.0001" min="0" placeholder="Coût unitaire" value={emballageForm.coutUnitaire} onChange={(e) => setEmballageForm({ ...emballageForm, coutUnitaire: e.target.value })} />
+        <div className="space-y-2"><Label htmlFor="packaging-name">Nom</Label><Input id="packaging-name" value={emballageForm.nom} onChange={(e) => setEmballageForm({ ...emballageForm, nom: e.target.value })} /></div>
+        <div className="space-y-2"><Label htmlFor="packaging-unit">Unité</Label><Input id="packaging-unit" value={emballageForm.unite} onChange={(e) => setEmballageForm({ ...emballageForm, unite: e.target.value })} /></div>
+        <div className="space-y-2"><Label htmlFor="packaging-cost">Coût unitaire (€)</Label><NumericTextInput id="packaging-cost" min={0} precision={4} value={emballageForm.coutUnitaire} onValueChange={(value) => setEmballageForm({ ...emballageForm, coutUnitaire: value })} /></div>
         <Button className="rounded-xl" onClick={() => void runSubmission(submitEmballage)}>Ajouter</Button>
       </CardContent>
     </Card>
@@ -51,7 +52,7 @@ export function PackagingCostsTab({ model }: { model: CostsConfigurationModel })
         </div>
         <div className="grid min-w-0 gap-2">
           <Label htmlFor="configuration-emballage-quantite">Quantité par fromage</Label>
-          <Input id="configuration-emballage-quantite" type="number" min="0.0001" step="0.0001" placeholder="Ex. 0,10" value={configurationEmballageForm.quantiteParUnite} onChange={(e) => setConfigurationEmballageForm({ ...configurationEmballageForm, quantiteParUnite: e.target.value })} />
+          <NumericTextInput id="configuration-emballage-quantite" min={0.0001} precision={4} placeholder="Ex. 0,10" value={configurationEmballageForm.quantiteParUnite} onValueChange={(value) => setConfigurationEmballageForm({ ...configurationEmballageForm, quantiteParUnite: value })} />
         </div>
         <div className="flex min-w-0 items-end">
           <Button className="w-full rounded-xl" disabled={!configurationEmballageForm.fromageId || !configurationEmballageForm.emballageId || !configurationEmballageForm.quantiteParUnite} onClick={() => void runSubmission(submitConfigurationEmballage)}>Associer</Button>

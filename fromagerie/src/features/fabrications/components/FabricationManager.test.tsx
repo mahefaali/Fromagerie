@@ -181,6 +181,37 @@ describe("registre des fabrications", () => {
     expect(screen.getByText("Jean Démo")).toBeInTheDocument();
   });
 
+  it("filtre les fabrications par avancement avec les trois cartes", async () => {
+    const enAffinage = { ...fabrication, id: 12, numeroLot: "FAB-AFFINAGE" };
+    const termine = { ...fabrication, id: 13, numeroLot: "FAB-TERMINE" };
+    apiMocks.findAll.mockResolvedValue([fabrication, enAffinage, termine]);
+    affinageApiMocks.findAll.mockResolvedValue([
+      { fabricationId: enAffinage.id, statut: "EN_AFFINAGE" },
+      { fabricationId: termine.id, statut: "TERMINE" },
+    ]);
+    const user = userEvent.setup();
+
+    render(<FabricationManager />);
+
+    const fabriqueFilter = await screen.findByRole("button", { name: /Fabriqué.*1/ });
+    const affinageFilter = screen.getByRole("button", { name: /En affinage.*1/ });
+    const termineFilter = screen.getByRole("button", { name: /Terminé.*1/ });
+
+    await user.click(affinageFilter);
+    expect(screen.getByText("Lot FAB-AFFINAGE")).toBeInTheDocument();
+    expect(screen.queryByText(`Lot ${fabrication.numeroLot}`)).not.toBeInTheDocument();
+    expect(screen.queryByText("Lot FAB-TERMINE")).not.toBeInTheDocument();
+
+    await user.click(termineFilter);
+    expect(screen.getByText("Lot FAB-TERMINE")).toBeInTheDocument();
+    expect(screen.queryByText("Lot FAB-AFFINAGE")).not.toBeInTheDocument();
+
+    await user.click(termineFilter);
+    expect(screen.getByText(`Lot ${fabrication.numeroLot}`)).toBeInTheDocument();
+    expect(screen.getByText("Lot FAB-AFFINAGE")).toBeInTheDocument();
+    expect(fabriqueFilter).toHaveAttribute("aria-pressed", "false");
+  });
+
   it("affiche un état vide lorsque le registre ne contient aucune fabrication", async () => {
     apiMocks.findAll.mockResolvedValue([]);
 
@@ -213,6 +244,7 @@ describe("registre des fabrications", () => {
     expect(apiMocks.findById).toHaveBeenCalledWith(fabrication.id);
     expect(await screen.findByText("Caillé homogène")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: `Lot ${fabrication.numeroLot}` })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Fermer le détail de la fabrication" }));
     expect(await screen.findByRole("button", { name: "Passer en affinage" })).toBeInTheDocument();
   });
 

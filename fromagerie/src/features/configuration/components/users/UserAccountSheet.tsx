@@ -33,14 +33,14 @@ export function UserAccountSheet(props: UserAccountSheetProps) {
       <Field label="Statut" htmlFor="user-status"><select id="user-status" value={form.actif ? "ACTIF" : "SUSPENDU"} onChange={(event) => update("actif", event.target.value === "ACTIF")} className={inputClass}>
         <option value="ACTIF">Actif</option><option value="SUSPENDU">Suspendu</option>
       </select></Field>
-      <div className="flex gap-2"><button type="submit" disabled={saving} className="rounded-sm bg-primary px-4 py-2 text-sm font-bold text-primary-foreground disabled:opacity-60">{saving ? "Enregistrement..." : "Enregistrer"}</button>
-        <button type="button" onClick={() => onOpenChange(false)} className="rounded-sm border border-border px-4 py-2 text-sm">Annuler</button></div>
+      <div className="flex flex-wrap gap-2"><button type="submit" disabled={saving} className="min-h-11 rounded-xl bg-[#2d4a27] px-4 py-2 text-sm font-bold text-white hover:bg-[#233a1e] disabled:opacity-60">{saving ? "Enregistrement..." : "Enregistrer"}</button>
+        <button type="button" onClick={() => onOpenChange(false)} className="min-h-11 rounded-xl border border-[#e2dacb] bg-white px-4 py-2 text-sm text-[#2c2825]">Annuler</button></div>
     </form><SheetFooter />
   </SheetContent></Sheet>;
 }
 
-const inputClass = "w-full rounded-sm border border-border bg-background px-3 py-2 text-sm disabled:opacity-60";
+const inputClass = "w-full rounded-xl border border-[#e2dacb] bg-white px-3 py-2 text-sm text-[#2c2825] focus:border-[#2d4a27] focus:outline-none focus:ring-2 focus:ring-[#2d4a27]/20 disabled:opacity-60";
 
 function Field({ label, htmlFor, children }: { label: string; htmlFor: string; children: ReactNode }) {
-  return <div><label htmlFor={htmlFor} className="mb-1 block text-xs text-secondary">{label}</label>{children}</div>;
+  return <div><label htmlFor={htmlFor} className="mb-1 block text-xs font-semibold text-[#2c2825]">{label}</label>{children}</div>;
 }

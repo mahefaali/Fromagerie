@@ -12,8 +12,8 @@ import type { RecipeManagerState } from "./useRecipeManager";
 
 export function RecipeManagerView({ manager }: { manager: RecipeManagerState }) {
   return <>
-    <header className="flex flex-wrap items-end justify-between gap-4">
-      <div><h1 className="text-3xl font-semibold tracking-tight">Gestion des recettes</h1><p className="text-sm text-muted-foreground">Recettes des fromages, variantes, historique et coûts matière première.</p></div>
+    <header className="flex flex-wrap items-end justify-between gap-3">
+      <div><h1 className="text-xl font-semibold tracking-tight sm:text-2xl">Gestion des recettes</h1><p className="text-sm text-muted-foreground">Recettes des fromages, variantes, historique et coûts matière première.</p></div>
       <div className="flex flex-wrap items-end gap-2"><div className="w-60 max-w-full">
         <Label htmlFor="cheese-select" className="text-xs text-muted-foreground">Type de fromage</Label>
         <Select value={manager.selectedCheeseId === null ? "" : String(manager.selectedCheeseId)} onValueChange={(value) => manager.selectCheese(Number(value))} disabled={manager.cheeseOptions.length === 0}>
@@ -25,8 +25,10 @@ export function RecipeManagerView({ manager }: { manager: RecipeManagerState }) 
       </div>
     </header>
 
-    {manager.isOwner && manager.catalogError && <CatalogWarning manager={manager} />}
-    <RecipeContent manager={manager} />
+    <div className="space-y-5 pl-2 sm:pl-3 lg:pl-4">
+      {manager.isOwner && manager.catalogError && <CatalogWarning manager={manager} />}
+      <RecipeContent manager={manager} />
+    </div>
   </>;
 }
 
@@ -65,11 +67,11 @@ function MissingBaseRecipe({ manager }: { manager: RecipeManagerState }) {
 }
 
 function EmptyPanel({ message, children }: { message: string; children?: React.ReactNode }) {
-  return <div className="rounded-xl border border-dashed p-10 text-center"><Beaker className="mx-auto size-9 text-primary" /><p className="mt-4 font-medium">{message}</p>{children}</div>;
+  return <div className="rounded-xl border border-dashed p-6 text-center sm:p-8"><Beaker className="mx-auto size-8 text-primary" /><p className="mt-3 font-medium">{message}</p>{children}</div>;
 }
 
 function StatusPanel({ message }: { message: string }) {
-  return <div role="status" aria-live="polite" className="rounded-xl border p-10 text-center text-sm text-muted-foreground">{message}</div>;
+  return <div role="status" aria-live="polite" className="rounded-xl border p-6 text-center text-sm text-muted-foreground sm:p-8">{message}</div>;
 }
 
 function ErrorPanel({ title, message, onRetry }: { title: string; message: string; onRetry: () => void | Promise<void> }) {

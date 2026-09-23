@@ -93,7 +93,7 @@ export function AddCareDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md rounded-2xl bg-[#FCFAF7] p-6 text-foreground border-none shadow-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-md">
         <DialogHeader className="space-y-1.5 text-left">
           <DialogTitle className="text-xl font-bold text-foreground">
             Ajouter un soin

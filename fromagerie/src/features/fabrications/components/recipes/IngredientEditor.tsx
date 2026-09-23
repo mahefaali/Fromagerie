@@ -4,6 +4,7 @@ import { toast } from "sonner";
 
 import { Button } from "../../../../components/ui/button";
 import { Input } from "../../../../components/ui/input";
+import { NumericTextInput } from "../../../../components/ui/numeric-input";
 import { Label } from "../../../../components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../../components/ui/select";
 import type { CreateMatierePremiereRequest, MatierePremiere, UniteMesure } from "../../types/recipe.types";
@@ -82,7 +83,7 @@ export function IngredientEditor({ ingredients, materials, onChange, onCreateMat
         return (
           <div key={ingredient.localId} className="grid gap-2 rounded-lg border p-3 sm:grid-cols-[1fr_120px_70px_40px] sm:items-end">
             <div className="grid gap-1"><Label htmlFor={`material-${ingredient.localId}`} className="text-xs">Matière première</Label><Select value={ingredient.matierePremiereId === null ? "" : String(ingredient.matierePremiereId)} onValueChange={(value) => update(ingredient.localId, { matierePremiereId: Number(value) })}><SelectTrigger id={`material-${ingredient.localId}`} aria-label="Matière première"><SelectValue placeholder="Sélectionner" /></SelectTrigger><SelectContent>{materials.map((item) => <SelectItem key={item.id} value={String(item.id)} disabled={!item.actif}>{item.nom}{item.actif ? "" : " (inactive)"}</SelectItem>)}</SelectContent></Select></div>
-            <div className="grid gap-1"><Label htmlFor={`quantity-${ingredient.localId}`} className="text-xs">Quantité</Label><Input id={`quantity-${ingredient.localId}`} type="number" min="0" step="0.0001" value={ingredient.quantite} onChange={(event) => update(ingredient.localId, { quantite: event.target.value })} /></div>
+            <div className="grid gap-1"><Label htmlFor={`quantity-${ingredient.localId}`} className="text-xs">Quantité</Label><NumericTextInput id={`quantity-${ingredient.localId}`} min={0} precision={4} value={ingredient.quantite} onValueChange={(value) => update(ingredient.localId, { quantite: value })} /></div>
             <div className="pb-2 text-xs text-muted-foreground">{material?.uniteReference ?? "Unité"}</div>
             <Button type="button" variant="ghost" size="icon" aria-label="Retirer l’ingrédient" onClick={() => onChange(ingredients.filter((item) => item.localId !== ingredient.localId))}><Trash2 className="size-4" /></Button>
           </div>
@@ -115,7 +116,7 @@ export function IngredientEditor({ ingredients, materials, onChange, onCreateMat
               </select>
             </div>
           </div>
-          <div className="grid max-w-xs gap-1"><Label htmlFor="new-material-cost" className="text-xs">Coût unitaire de référence (€)</Label><Input id="new-material-cost" type="number" min="0" step="0.0001" value={unitCost} disabled={isCreatingMaterial} onChange={(event) => setUnitCost(event.target.value)} placeholder="0,00" /></div>
+          <div className="grid max-w-xs gap-1"><Label htmlFor="new-material-cost" className="text-xs">Coût unitaire de référence (€)</Label><NumericTextInput id="new-material-cost" min={0} precision={4} value={unitCost} disabled={isCreatingMaterial} onValueChange={setUnitCost} placeholder="0,00" /></div>
           <p className="text-xs text-muted-foreground">Cette valeur servira au serveur pour calculer le coût estimé de la recette.</p>
           <Button type="button" size="sm" className="w-fit" disabled={isCreatingMaterial} onClick={() => void submitMaterial()}>{isCreatingMaterial ? "Ajout en cours..." : "Ajouter à la recette"}</Button>
         </div>

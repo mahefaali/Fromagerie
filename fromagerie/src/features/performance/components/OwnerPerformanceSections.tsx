@@ -1,5 +1,5 @@
 import { ArrowUpRight } from "lucide-react";
-import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 import { Card, CardContent, CardHeader, CardTitle } from "../../../components/ui/card";
 import type { ProfitabilityGroup } from "../../profitability/api/profitabilityApi";
@@ -10,9 +10,9 @@ const preciseMoney = new Intl.NumberFormat("fr-FR", { style: "currency", currenc
 const number = new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 1 });
 
 export function KpiCard({ label, value, hint, evolution }: { label: string; value: string; hint: string; evolution?: number | null }) {
-  return <Card className={`${OWNER_CARD_CLASS} gap-4 py-5`}><CardContent className="px-5">
+  return <Card className={`${OWNER_CARD_CLASS} gap-3 py-4`}><CardContent className="px-4">
     <p className="text-sm font-medium text-[#6f624f]">{label}</p>
-    <p className="mt-3 text-3xl font-semibold tracking-tight text-[#171b18]">{value}</p>
+    <p className="mt-1.5 text-xl font-semibold tracking-tight text-[#171b18] sm:text-2xl">{value}</p>
     <div className="mt-2 min-h-6">{evolution != null
       ? <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${evolution >= 0 ? "bg-[#dfe6d2] text-[#2b5b22]" : "bg-[#f3dcd2] text-[#a54127]"}`}><ArrowUpRight className={`mr-1 size-3.5 ${evolution < 0 ? "rotate-90" : ""}`} />{evolution >= 0 ? "+" : ""}{number.format(evolution)} %</span>
       : <span className="text-sm text-[#8b7c68]">{hint}</span>}</div>
@@ -20,7 +20,7 @@ export function KpiCard({ label, value, hint, evolution }: { label: string; valu
 }
 
 export function CostAndMarginChart({ data }: { data: ChartPoint[] }) {
-  return <Card className={OWNER_CARD_CLASS}><CardHeader><CardTitle className="text-lg">Coût au kg et marge</CardTitle><p className="text-sm text-[#786a56]">Évolution mensuelle</p></CardHeader><CardContent className="h-80 pb-5">{data.length === 0 ? <EmptyState label="Aucune évolution mensuelle disponible." /> : <ResponsiveContainer width="100%" height="100%"><LineChart data={data} margin={{ top: 12, right: 8, left: 0, bottom: 0 }}><CartesianGrid stroke="#ddd5c8" vertical={false} /><XAxis dataKey="mois" axisLine={false} tickLine={false} tick={{ fill: "#7e705d", fontSize: 12 }} /><YAxis yAxisId="cost" axisLine={false} tickLine={false} width={52} tickFormatter={(value) => `${value} €`} tick={{ fill: "#7e705d", fontSize: 12 }} /><YAxis yAxisId="margin" orientation="right" axisLine={false} tickLine={false} width={58} tickFormatter={(value) => money.format(value)} tick={{ fill: "#7e705d", fontSize: 12 }} /><Tooltip formatter={(value, name) => [name === "Coût/kg" ? preciseMoney.format(Number(value)) : money.format(Number(value)), name]} contentStyle={{ borderRadius: 12, borderColor: "#d9d0c1", background: "#fffdf8" }} /><Line yAxisId="cost" type="monotone" dataKey="cout" name="Coût/kg" stroke="#789d5d" strokeWidth={3} dot={false} connectNulls /><Line yAxisId="margin" type="monotone" dataKey="marge" name="Marge" stroke="#c94b29" strokeWidth={3} dot={false} connectNulls /></LineChart></ResponsiveContainer>}</CardContent></Card>;
+  return <Card className={OWNER_CARD_CLASS}><CardHeader><CardTitle className="text-lg">Coût au kg et marge</CardTitle><p className="text-sm text-[#786a56]">Évolution mensuelle · coût à gauche, marge à droite</p></CardHeader><CardContent className="relative h-80 pb-5 pt-6">{data.length === 0 ? <EmptyState label="Aucune évolution mensuelle disponible." /> : <><span className="absolute left-6 top-0 text-xs font-semibold text-[#66894f]">Coût/kg</span><span className="absolute right-6 top-0 text-xs font-semibold text-[#c94b29]">Marge</span><ResponsiveContainer width="100%" height="100%"><LineChart data={data} margin={{ top: 12, right: 8, left: 0, bottom: 0 }}><CartesianGrid stroke="#ddd5c8" vertical={false} /><XAxis dataKey="mois" axisLine={false} tickLine={false} tick={{ fill: "#7e705d", fontSize: 12 }} /><YAxis yAxisId="cost" domain={[0, "auto"]} axisLine={false} tickLine={false} width={58} tickFormatter={(value) => `${number.format(Number(value))} €`} tick={{ fill: "#66894f", fontSize: 12 }} /><YAxis yAxisId="margin" domain={[0, "auto"]} orientation="right" axisLine={false} tickLine={false} width={58} tickFormatter={(value) => money.format(value)} tick={{ fill: "#c94b29", fontSize: 12 }} /><Tooltip formatter={(value, name) => [name === "Coût/kg" ? preciseMoney.format(Number(value)) : money.format(Number(value)), name]} contentStyle={{ borderRadius: 12, borderColor: "#d9d0c1", background: "#fffdf8" }} /><Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 12, paddingTop: 8 }} /><Line yAxisId="cost" type="monotone" dataKey="cout" name="Coût/kg" stroke="#789d5d" strokeWidth={3} dot={{ r: 4, fill: "#789d5d", stroke: "#fffdf8", strokeWidth: 2 }} activeDot={{ r: 6 }} connectNulls /><Line yAxisId="margin" type="monotone" dataKey="marge" name="Marge" stroke="#c94b29" strokeWidth={3} dot={{ r: 4, fill: "#c94b29", stroke: "#fffdf8", strokeWidth: 2 }} activeDot={{ r: 6 }} connectNulls /></LineChart></ResponsiveContainer></>}</CardContent></Card>;
 }
 
 export function CostBreakdown({ items, total }: { items: CostItem[]; total: number }) {

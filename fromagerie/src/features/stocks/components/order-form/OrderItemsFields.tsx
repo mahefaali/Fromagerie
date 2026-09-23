@@ -1,4 +1,5 @@
 import { Plus, Trash2 } from "lucide-react";
+import { NumericInput } from "../../../../components/ui/numeric-input";
 
 import type { OrderFormItem } from "./createOrderForm";
 
@@ -24,9 +25,9 @@ export function OrderItemsFields({ items, fromages, onAdd, onRemove, onSelectChe
         <button type="button" onClick={() => onRemove(item.rowId)} disabled={items.length === 1} className="p-2 text-red-600 transition-colors hover:text-red-800 disabled:opacity-30" aria-label={`Supprimer la ligne ${index + 1}`}><Trash2 className="size-4" /></button>
       </div>
       <div className="grid grid-cols-1 items-center gap-3 sm:grid-cols-3">
-        <Field label="Quantité"><input aria-label={`Quantité de la ligne ${index + 1}`} type="number" min="1" value={item.quantity} onChange={(event) => onUpdate(item.rowId, "quantity", Number(event.target.value))} className={inputClass} /></Field>
+        <Field label="Quantité"><NumericInput aria-label={`Quantité de la ligne ${index + 1}`} min={1} integer required value={item.quantity} onValueChange={(value) => onUpdate(item.rowId, "quantity", value)} className={inputClass} /></Field>
         <Field label="Unité"><label className="flex cursor-pointer items-center gap-1.5 pt-1 text-xs"><input type="radio" name={`unit-${item.rowId}`} value="u" checked={item.unit === "u"} onChange={() => onUpdate(item.rowId, "unit", "u")} className="accent-[#2d4a27]" /> unités</label></Field>
-        <Field label="Prix unitaire (€)"><input aria-label={`Prix unitaire de la ligne ${index + 1}`} type="number" step="0.01" value={item.pricePerUnit} onChange={(event) => onUpdate(item.rowId, "pricePerUnit", Number(event.target.value))} className={inputClass} /></Field>
+        <Field label="Prix unitaire (€)"><NumericInput aria-label={`Prix unitaire de la ligne ${index + 1}`} min={0} precision={2} required value={item.pricePerUnit} onValueChange={(value) => onUpdate(item.rowId, "pricePerUnit", value)} className={inputClass} /></Field>
       </div>
     </div>)}</div>
   </div>;

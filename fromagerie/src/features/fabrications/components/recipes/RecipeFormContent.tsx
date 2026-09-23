@@ -2,6 +2,7 @@ import { Plus, RefreshCw, X } from "lucide-react";
 
 import { Button } from "../../../../components/ui/button";
 import { Input } from "../../../../components/ui/input";
+import { NumericTextInput } from "../../../../components/ui/numeric-input";
 import { Label } from "../../../../components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../../../components/ui/select";
 import { Separator } from "../../../../components/ui/separator";
@@ -141,13 +142,11 @@ export function RecipeFormContent({ props, form }: { props: RecipeFormDialogProp
       )}
       <div className="grid gap-2">
         <Label htmlFor="recipe-milk-reference">Quantité de lait de référence (L)</Label>
-        <Input
+        <NumericTextInput
           id="recipe-milk-reference"
-          type="number"
           min={0.0001}
-          step="any"
           value={milkReferenceQuantity}
-          onChange={(event) => setMilkReferenceQuantity(event.target.value)}
+          onValueChange={setMilkReferenceQuantity}
           aria-describedby="recipe-milk-reference-help"
           className="h-11 rounded-xl border-[#D8C3A5] bg-white"
         />
@@ -157,14 +156,13 @@ export function RecipeFormContent({ props, form }: { props: RecipeFormDialogProp
       </div>
       <div className="grid gap-2">
         <Label htmlFor="recipe-turning-frequency">Fréquence de retournement (jours)</Label>
-        <Input
+        <NumericTextInput
           id="recipe-turning-frequency"
-          type="number"
           min={1}
           max={365}
-          step={1}
+          integer
           value={turningFrequency}
-          onChange={(event) => setTurningFrequency(event.target.value)}
+          onValueChange={setTurningFrequency}
           placeholder="Ex. 3"
           aria-describedby="recipe-turning-frequency-help"
           className="h-11 rounded-xl border-[#D8C3A5] bg-white"

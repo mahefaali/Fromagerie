@@ -55,23 +55,31 @@ public class DocumentReglementaireService {
         if (debut == null || fin == null) throw new BusinessValidationException("Les dates de début et de fin sont obligatoires");
         if (debut.isAfter(fin)) throw new BusinessValidationException("La date de début doit précéder ou égaler la date de fin");
         List<Fabrication> items = fabrications.findForTraceabilityRegister(debut.atStartOfDay(), fin.plusDays(1).atStartOfDay());
-        List<String> lignes = new ArrayList<>();
-        lignes.add("## PERIODE"); lignes.add("Du " + debut + " au " + fin);
-        lignes.add("## LOTS");
-        if (items.isEmpty()) lignes.add("Aucune donnée ne correspond à cette période.");
+        List<List<String>> lignes = new ArrayList<>();
         for (Fabrication fabrication : items) {
             TracabiliteDescendanteResponse trace = tracabilite.byNumeroLotDescendant(fabrication.getNumeroLot());
             List<UtilisationLotLait> usages = utilisationsLait.findByFabricationIdOrderByLotLaitDateTraiteAsc(fabrication.getId());
             String lots = usages.isEmpty() ? "Non détaillés" : usages.stream()
                     .map(u -> u.getLotLait().getNumeroLot() + " (" + decimal(u.getQuantiteUtilisee()) + " L)")
                     .reduce((a, b) -> a + ", " + b).orElse("Non détaillés");
-            lignes.add(fabrication.getNumeroLot() + " | " + fabrication.getDateHeureDebut().toLocalDate()
-                    + " | " + fabrication.getRecette().getFromage().getNom());
-            lignes.add("Lait : " + lots + " | Produit : " + trace.quantiteProduite() + " u | Livré : "
-                    + trace.quantiteLivree() + " u | Perdu : " + trace.quantitePerdue()
-                    + " u | Disponible : " + trace.quantiteDisponible() + " u");
+            lignes.add(List.of(
+                    fabrication.getNumeroLot(),
+                    fabrication.getDateHeureDebut().toLocalDate().toString(),
+                    fabrication.getRecette().getFromage().getNom(),
+                    lots,
+                    trace.quantiteProduite() + " u",
+                    trace.quantiteLivree() + " u",
+                    trace.quantitePerdue() + " u",
+                    trace.quantiteDisponible() + " u"));
         }
-        return pdf.documentReglementaire("REGISTRE DE TRACABILITE", debut + " - " + fin, lignes,
+        return pdf.documentReglementaireAvecTable(
+                "REGISTRE DE TRACABILITE",
+                debut + " - " + fin,
+                "Du " + debut + " au " + fin,
+                List.of("Lot fabrication", "Date", "Fromage", "Lots de lait", "Produit", "Livré", "Perdu", "Disponible"),
+                lignes,
+                new float[] {76, 54, 67, 112, 43, 40, 40, 55},
+                "Aucune donnée ne correspond à cette période.",
                 "registre-tracabilite-" + debut + "-" + fin + ".pdf");
     }
 

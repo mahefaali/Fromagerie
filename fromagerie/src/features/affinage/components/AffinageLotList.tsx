@@ -40,13 +40,9 @@ export function AffinageLotList({
         )}
       </div>
 
-      {/* 
-        Disposition en Grille : 
-        - Mobile (< 640px) : 1 colonne 
-        - Tablette (640px - 1023px) : 2 colonnes (optimise l'espace vertical)
-        - Desktop (>= 1024px) : 1 colonne (format barre latérale)
-      */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-2 w-full min-w-0">
+      {/* Sur mobile et tablette, les lots restent sur une rangée défilable.
+          À partir de xl, ils deviennent la barre latérale verticale. */}
+      <div className="-mx-1 flex min-w-0 snap-x gap-2 overflow-x-auto px-1 pb-2 xl:mx-0 xl:grid xl:grid-cols-1 xl:overflow-visible xl:px-0 xl:pb-0">
         {lots.map((lot) => {
           const isSelected = lot.id === selectedId;
 
@@ -55,7 +51,7 @@ export function AffinageLotList({
               key={lot.id}
               type="button"
               onClick={() => onSelectLot(lot.id)}
-              className={`w-full min-w-0 overflow-hidden rounded-lg border p-2.5 sm:p-3 text-left transition-all duration-150 flex items-center justify-between gap-2.5 ${
+              className={`w-[min(72vw,15rem)] min-w-0 shrink-0 snap-start overflow-hidden rounded-lg border p-2.5 text-left sm:w-[13.75rem] xl:w-full transition-all duration-150 flex items-center justify-between gap-2.5 ${
                 isSelected
                   ? "border-primary/80 bg-primary/5 ring-1 ring-primary/30 shadow-xs"
                   : "border-border hover:bg-muted/50"

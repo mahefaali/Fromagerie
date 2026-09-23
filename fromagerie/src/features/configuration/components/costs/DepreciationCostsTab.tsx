@@ -2,6 +2,7 @@ import { Badge } from "../../../../components/ui/badge";
 import { Button } from "../../../../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../../../../components/ui/card";
 import { Input } from "../../../../components/ui/input";
+import { NumericTextInput } from "../../../../components/ui/numeric-input";
 import { Label } from "../../../../components/ui/label";
 import { TabsContent } from "../../../../components/ui/tabs";
 import { EMPTY_AMORTISSEMENT, EMPTY_EQUIPEMENT } from "./costForm.config";
@@ -66,7 +67,7 @@ export function DepreciationCostsTab({ model }: { model: CostsConfigurationModel
         </div>
         <div className="grid gap-2">
           <Label htmlFor="amortissement-cout">Coût par fabrication</Label>
-          <Input id="amortissement-cout" type="number" min="0" step="0.0001" value={amortissementForm.coutParFabrication} onChange={(e) => setAmortissementForm({ ...amortissementForm, coutParFabrication: e.target.value })} />
+          <NumericTextInput id="amortissement-cout" min={0} precision={4} value={amortissementForm.coutParFabrication} onValueChange={(value) => setAmortissementForm({ ...amortissementForm, coutParFabrication: value })} />
         </div>
         <div className="grid gap-2">
           <Label htmlFor="amortissement-date-debut">Début de validité</Label>

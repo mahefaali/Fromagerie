@@ -5,7 +5,7 @@ import { useRecipeManager } from "./recipes/useRecipeManager";
 export function RecipeManager() {
   const manager = useRecipeManager();
 
-  return <div className="min-h-[calc(100vh-7.5rem)] w-full space-y-6 py-4 sm:py-6">
+  return <div className="mx-auto min-h-[calc(100vh-7.5rem)] w-full max-w-[1440px] space-y-5 py-3 sm:py-5">
     <RecipeManagerView manager={manager} />
     <RecipeManagerDialogs manager={manager} />
   </div>;

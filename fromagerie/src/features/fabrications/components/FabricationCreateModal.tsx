@@ -338,7 +338,7 @@ export default function FabricationCreateModal({
       title={`${fabrication ? "Modification · " : ""}Étape ${currentStep + 1} / ${FABRICATION_STEPS.length} · ${FABRICATION_STEPS[currentStep].title}`}
       description={FABRICATION_STEPS[currentStep].description}
       footer={
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-xs text-muted-foreground">Les champs marqués * sont obligatoires.</p>
           <div className="grid grid-cols-2 gap-2 sm:flex">
             <Button

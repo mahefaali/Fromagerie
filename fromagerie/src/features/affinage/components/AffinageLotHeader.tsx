@@ -45,10 +45,10 @@ export function AffinageLotHeader({
 
   return (
     <Card className="w-full min-w-0 max-w-full overflow-hidden">
-      <CardHeader className="p-3.5 sm:p-5 md:p-6 space-y-4 min-w-0">
+      <CardHeader className="min-w-0 space-y-3 p-3.5 sm:p-4">
 
-        {/* En-tête : Passer en ligne uniquement à partir du breakpoint `md` (768px+) */}
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between min-w-0">
+        {/* L’en-tête reste empilé sur tablette afin de laisser toute la largeur aux actions */}
+        <div className="flex min-w-0 flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
           <div className="min-w-0 space-y-1 flex-1">
             <h2 className="text-base sm:text-lg md:text-xl font-bold tracking-tight text-foreground break-words">
               {lot.recipeName}
@@ -56,29 +56,29 @@ export function AffinageLotHeader({
                 <span className="font-normal text-muted-foreground"> · {lot.variant}</span>
               )}
             </h2>
-            <p className="text-xs text-muted-foreground truncate">
+            <p className="break-words text-xs text-muted-foreground">
               Lot <span className="font-mono font-medium">{lot.batchCode}</span> · {lot.pieceCount} pièce(s) ·
               Opérateur : {lot.operator}
             </p>
           </div>
 
-          <div className="flex w-full flex-wrap gap-2 md:w-auto md:justify-end">
+          <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:flex-wrap xl:w-auto xl:justify-end">
             {lot.quantityRemaining > 0 && (
-              <Button variant="outline" onClick={onPlaceRemaining} className="flex-1 md:flex-none">
+              <Button variant="outline" onClick={onPlaceRemaining} className="w-full sm:w-auto">
                 <Boxes className="size-4" /> Placer le reste ({lot.quantityRemaining})
               </Button>
             )}
             {lot.quantityPlaced > 0 && (
-              <Button variant="outline" onClick={onMove} className="flex-1 md:flex-none">
+              <Button variant="outline" onClick={onMove} className="w-full sm:w-auto">
                 <MoveRight className="size-4" /> Déplacer
               </Button>
             )}
             {canRelease && (
-              <Button onClick={onRelease} className="flex-1 bg-[#c86343] text-white hover:bg-[#ad5035] md:flex-none">
+              <Button onClick={onRelease} className="w-full bg-[#c86343] text-white hover:bg-[#ad5035] sm:w-auto">
                 <PackageCheck className="size-4" /> Sortir vers le stock
               </Button>
             )}
-            <Button onClick={onAddCare} className="flex-1 bg-emerald-800 text-white hover:bg-emerald-900 md:flex-none">
+            <Button onClick={onAddCare} className="w-full bg-emerald-800 text-white hover:bg-emerald-900 sm:w-auto">
               <Plus className="size-4" /> Ajouter un soin
             </Button>
           </div>

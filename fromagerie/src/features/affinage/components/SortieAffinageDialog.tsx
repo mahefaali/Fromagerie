@@ -88,7 +88,7 @@ export function SortieAffinageDialog({ open, lotCode, quantity, emplacements, on
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md rounded-2xl bg-[#FCFAF7]">
+      <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>Sortir l'affinage vers le stock</DialogTitle>
           <DialogDescription>

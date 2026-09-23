@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { Warehouse, Thermometer, Droplets } from "lucide-react";
 
 import { Button } from "./../../../components/ui/button";
-import { Input } from "./../../../components/ui/input";
+import { NumericInput } from "./../../../components/ui/numeric-input";
 import { Label } from "./../../../components/ui/label";
 import { Badge } from "./../../../components/ui/badge";
 import {
@@ -149,12 +149,12 @@ export function ChooseCaveDialog({
           <Label htmlFor="affinage-days" className="text-sm">
             Durée d'affinage souhaitée (jours)
           </Label>
-          <Input
+          <NumericInput
             id="affinage-days"
-            type="number"
             min={1}
+            integer
             value={days}
-            onChange={(e) => setDays(Math.max(1, Number(e.target.value) || 1))}
+            onValueChange={(value) => { if (value !== null) setDays(value); }}
             className="mt-1 w-40"
           />
         </div>

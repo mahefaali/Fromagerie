@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import { RefreshCw } from "lucide-react";
 
 import { Button } from "../../../components/ui/button";
-import { Modal } from "../../../components/ui/modal";
+import { AppDialogContent } from "../../../components/ui/app-dialog";
+import { Dialog } from "../../../components/ui/dialog";
 import { fabricationApi } from "../api/fabricationApi";
 import type { FabricationDetail } from "../types/fabrication.types";
 import { FabricationDetails } from "./FabricationDetails";
@@ -28,6 +29,7 @@ export function FabricationDetailsModal({ fabricationId, onClose }: FabricationD
     let active = true;
     setIsLoading(true);
     setError(null);
+    setFabrication(null);
 
     fabricationApi.findById(fabricationId)
       .then((detail) => {
@@ -48,19 +50,13 @@ export function FabricationDetailsModal({ fabricationId, onClose }: FabricationD
   }, [fabricationId, retryKey]);
 
   return (
-    <Modal
-      open={fabricationId !== null}
-      onOpenChange={(open) => !open && onClose()}
-      title={fabrication ? `Lot ${fabrication.numeroLot}` : "Détail de la fabrication"}
-      description={fabrication ? `${fabrication.fromageNom} · ${fabrication.recetteNom}` : undefined}
-      footer={
-        <div className="flex justify-end">
-          <Button type="button" variant="outline" className="min-h-11" onClick={onClose}>
-            Fermer
-          </Button>
-        </div>
-      }
-    >
+    <Dialog open={fabricationId !== null} onOpenChange={(open) => { if (!open) onClose(); }}>
+      <AppDialogContent
+        title={fabrication ? `Lot ${fabrication.numeroLot}` : "Détail de la fabrication"}
+        description={fabrication ? `${fabrication.fromageNom} · ${fabrication.recetteNom}` : undefined}
+        className="max-w-3xl"
+        footer={<Button type="button" variant="outline" aria-label="Fermer le détail de la fabrication" className="min-h-11 rounded-xl border-[#e2dacb] bg-white" onClick={onClose}>Fermer</Button>}
+      >
       {isLoading ? (
         <div role="status" className="p-10 text-center text-sm text-muted-foreground">
           Chargement du détail...
@@ -76,6 +72,7 @@ export function FabricationDetailsModal({ fabricationId, onClose }: FabricationD
       ) : fabrication ? (
         <FabricationDetails fabrication={fabrication} />
       ) : null}
-    </Modal>
+      </AppDialogContent>
+    </Dialog>
   );
 }

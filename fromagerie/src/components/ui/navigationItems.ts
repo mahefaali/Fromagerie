@@ -21,6 +21,7 @@ export const mainNavItems = [
   {
     to: "/home",
     label: "Accueil",
+    mobileLabel: "Accueil",
     icon: Home,
     paths: ["/home"],
     roles: ["PROPRIETAIRE", "FABRICATION", "VENTE"],
@@ -28,6 +29,7 @@ export const mainNavItems = [
   {
     to: "/fabrication",
     label: "Production",
+    mobileLabel: "Prod.",
     icon: Factory,
     paths: ["/fabrication"],
     roles: ["PROPRIETAIRE", "FABRICATION"],
@@ -35,6 +37,7 @@ export const mainNavItems = [
   {
     to: "/affinage",
     label: "Affinage",
+    mobileLabel: "Affinage",
     icon: Beef,
     paths: ["/affinage"],
     roles: ["PROPRIETAIRE", "FABRICATION"],
@@ -42,6 +45,7 @@ export const mainNavItems = [
   {
     to: "/stock",
     label: "Stock & ventes",
+    mobileLabel: "Stock",
     icon: Archive,
     paths: ["/stock"],
     roles: ["PROPRIETAIRE", "VENTE"],
@@ -49,6 +53,7 @@ export const mainNavItems = [
   {
     to: "/rentabilite",
     label: "Pilotage",
+    mobileLabel: "Pilotage",
     icon: ChartNoAxesCombined,
     paths: ["/rentabilite", "/tracabilite"],
     roles: ["PROPRIETAIRE"],
@@ -57,6 +62,7 @@ export const mainNavItems = [
   to: string;
   fallbackTo?: string;
   label: string;
+  mobileLabel: string;
   icon: typeof Home;
   paths: readonly string[];
   roles: readonly UserRole[];

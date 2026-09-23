@@ -24,13 +24,13 @@ interface AnalyticsFiltersProps {
 
 export function AnalyticsFilters({ recipes, allRecipes, cheeses, recettesError, filters, anomalyParameter, onCheeseChange, onRecipeChange, onStartDateChange, onEndDateChange, onAnomalyParameterChange }: AnalyticsFiltersProps) {
   return (
-    <section className="rounded-3xl border border-border/70 bg-card/60 p-4 shadow-sm sm:p-5" aria-label="Filtres du suivi">
+    <section className="rounded-2xl border border-border/70 bg-card/60 p-4 shadow-sm" aria-label="Filtres du suivi">
       <div className="mb-4 flex items-center gap-2">
         <CalendarDays className="size-4 text-primary" />
         <h3 className="text-sm font-semibold">Périmètre d’analyse</h3>
         <span className="text-xs text-muted-foreground">Les filtres sont appliqués par le serveur.</span>
       </div>
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+      <div className="grid gap-3 sm:grid-cols-2 2xl:grid-cols-5">
         <FilterField label="Fromage" htmlFor="analytics-fromage">
           <Select value={filters.fromageId === undefined ? ALL_VALUE : String(filters.fromageId)} onValueChange={(value) => onCheeseChange(value === ALL_VALUE ? undefined : Number(value))}>
             <SelectTrigger id="analytics-fromage" className="min-h-11 w-full bg-background/70"><SelectValue placeholder="Tous les fromages" /></SelectTrigger>

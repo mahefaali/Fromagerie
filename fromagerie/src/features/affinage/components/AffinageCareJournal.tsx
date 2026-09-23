@@ -64,11 +64,11 @@ export function AffinageCareJournal({
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   return (
-    <div className="rounded-2xl bg-[#F5F0E6] p-6 text-foreground space-y-6">
+    <div className="space-y-4 rounded-2xl bg-[#F5F0E6] p-4 text-foreground sm:space-y-5 sm:p-5">
       <h3 className="text-xl font-bold text-foreground">Journal de soins</h3>
 
       {/* Cartes de résumé en haut */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3 sm:gap-3">
         {/* Dernier Retournement */}
         <div className="flex items-center gap-3 rounded-xl border border-black/5 bg-[#ECE6D8]/60 p-3.5">
           <RotateCw className="size-4 text-muted-foreground shrink-0" />
@@ -107,7 +107,7 @@ export function AffinageCareJournal({
 
       {/* Liste/Timeline des cartes de soins */}
       {logs.length > 0 ? (
-        <div className="relative pl-6 space-y-4 before:absolute before:left-2.5 before:top-4 before:bottom-4 before:w-[1px] before:bg-black/10">
+        <div className="relative space-y-3.5 pl-5 sm:pl-6 before:absolute before:left-2.5 before:top-4 before:bottom-4 before:w-[1px] before:bg-black/10">
           {logs.map((log) => (
             <div key={log.id} className="relative">
               {/* Puce / Icône sur la ligne temporelle */}
@@ -118,8 +118,8 @@ export function AffinageCareJournal({
               {/* Carte de soin */}
               <div className="rounded-2xl border border-black/5 bg-[#ECE6D8]/60 p-4 space-y-2.5">
                 {/* En-tête de la carte */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex min-w-0 flex-wrap items-center gap-2.5">
                     <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-[#DCE8D6] text-[#2A481B]">
                       {log.type}
                     </span>
